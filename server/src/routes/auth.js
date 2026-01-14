@@ -73,37 +73,42 @@ router.post("/register", async (req, res) => {
     // Generate join code
     const joinCode = generateJoinCode();
 
-    // Create owner user
-    const owner = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name: ownerName,
-        role: "OWNER",
-      },
+    // Use transaction to ensure atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      // Create owner user
+      const owner = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name: ownerName,
+          role: "OWNER",
+        },
+      });
+
+      console.log("Created owner user:", owner.id);
+
+      // Create business
+      const business = await tx.business.create({
+        data: {
+          name: businessName,
+          joinCode,
+          ownerUserId: owner.id,
+          subscriptionStatus: "active",
+        },
+      });
+
+      console.log("Created business:", business.id);
+
+      // Update user with businessId
+      const updatedOwner = await tx.user.update({
+        where: { id: owner.id },
+        data: { businessId: business.id },
+      });
+
+      console.log("Updated user with businessId");
+
+      return { owner: updatedOwner, business };
     });
-
-    console.log("Created owner user:", owner.id);
-
-    // Create business
-    const business = await prisma.business.create({
-      data: {
-        name: businessName,
-        joinCode,
-        ownerUserId: owner.id,
-        subscriptionStatus: "active",
-      },
-    });
-
-    console.log("Created business:", business.id);
-
-    // Update user with businessId
-    await prisma.user.update({
-      where: { id: owner.id },
-      data: { businessId: business.id },
-    });
-
-    console.log("Updated user with businessId");
 
     // Return success (don't return token - user must login)
     res.json({
@@ -115,11 +120,29 @@ router.post("/register", async (req, res) => {
       console.error("Validation error:", error.errors);
       return res.status(400).json({ error: "Validation error", details: error.errors });
     }
+    
+    // Log full error for debugging
     console.error("Register error:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error code:", error.code);
+    
+    // Return more helpful error message
+    let errorMessage = "Internal server error";
+    if (error.code === "P2002") {
+      errorMessage = "A record with this email already exists";
+    } else if (error.code === "P1001") {
+      errorMessage = "Database connection error. Please check database configuration.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      error: errorMessage,
+      ...(process.env.NODE_ENV === "development" && {
+        details: error.stack,
+        code: error.code,
+      }),
     });
   }
 });
