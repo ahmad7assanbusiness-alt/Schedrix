@@ -95,15 +95,12 @@ model ShiftAssignment {
   id          String @id @default(cuid())
   scheduleId  String
   date        DateTime
-  label       String // "Morning" or "Evening"
   startTime   String @default("09:00")
   endTime     String @default("17:00")
-  position    String?
+  position    String // Position name (e.g., "Cash", "Floater", "Host")
   assignedUserId String?
   createdAt  DateTime @default(now())
 
   schedule    ScheduleWeek @relation(fields: [scheduleId], references: [id])
   assignedUser   User? @relation(fields: [assignedUserId], references: [id])
-
-  @@unique([scheduleId, date, label])
 }

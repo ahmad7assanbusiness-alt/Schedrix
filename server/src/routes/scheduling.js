@@ -12,8 +12,10 @@ const createScheduleSchema = z.object({
 
 const assignmentSchema = z.object({
   date: z.string().datetime(),
-  label: z.enum(["Morning", "Evening"]),
-  assignedUserId: z.string().nullable(),
+  position: z.string().min(1, "Position is required"),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  assignedUserId: z.string().nullable().optional(),
 });
 
 // POST /schedules (manager only)
@@ -114,7 +116,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// POST /schedules/:id/assignments (manager only)
+// POST /schedules/:id/assignments (manager only - create assignment)
 router.post("/:id/assignments", authMiddleware, managerOnly, async (req, res) => {
   try {
     if (!req.user.businessId) {
@@ -132,7 +134,7 @@ router.post("/:id/assignments", authMiddleware, managerOnly, async (req, res) =>
       return res.status(404).json({ error: "Schedule not found" });
     }
 
-    const { date, label, assignedUserId } = assignmentSchema.parse(req.body);
+    const { date, position, startTime, endTime, assignedUserId } = assignmentSchema.parse(req.body);
 
     // If assigning to a user, verify they're in the business
     if (assignedUserId) {
@@ -148,25 +150,23 @@ router.post("/:id/assignments", authMiddleware, managerOnly, async (req, res) =>
       }
     }
 
-    // Upsert assignment
-    const assignment = await prisma.shiftAssignment.upsert({
-      where: {
-        scheduleId_date_label: {
-          scheduleId: req.params.id,
-          date: new Date(date),
-          label,
-        },
-      },
-      update: {
-        assignedUserId: assignedUserId || null,
-      },
-      create: {
+    // Create assignment (allow multiple per day/position)
+    const assignment = await prisma.shiftAssignment.create({
+      data: {
         scheduleId: req.params.id,
         date: new Date(date),
-        label,
-        startTime: label === "Morning" ? "09:00" : "17:00",
-        endTime: label === "Morning" ? "17:00" : "21:00",
+        position,
+        startTime: startTime || "09:00",
+        endTime: endTime || "17:00",
         assignedUserId: assignedUserId || null,
+      },
+      include: {
+        assignedUser: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -175,7 +175,115 @@ router.post("/:id/assignments", authMiddleware, managerOnly, async (req, res) =>
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: "Validation error", details: error.errors });
     }
-    console.error("Assign shift error:", error);
+    console.error("Create assignment error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /schedules/:id/assignments/:assignmentId (manager only - update assignment)
+router.put("/:id/assignments/:assignmentId", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const schedule = await prisma.scheduleWeek.findFirst({
+      where: {
+        id: req.params.id,
+        businessId: req.user.businessId,
+      },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ error: "Schedule not found" });
+    }
+
+    const assignment = await prisma.shiftAssignment.findFirst({
+      where: {
+        id: req.params.assignmentId,
+        scheduleId: req.params.id,
+      },
+    });
+
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    const updateData = {};
+    if (req.body.position !== undefined) updateData.position = req.body.position;
+    if (req.body.startTime !== undefined) updateData.startTime = req.body.startTime;
+    if (req.body.endTime !== undefined) updateData.endTime = req.body.endTime;
+    if (req.body.assignedUserId !== undefined) {
+      if (req.body.assignedUserId) {
+        const user = await prisma.user.findFirst({
+          where: {
+            id: req.body.assignedUserId,
+            businessId: req.user.businessId,
+          },
+        });
+        if (!user) {
+          return res.status(404).json({ error: "User not found in business" });
+        }
+      }
+      updateData.assignedUserId = req.body.assignedUserId || null;
+    }
+
+    const updated = await prisma.shiftAssignment.update({
+      where: { id: req.params.assignmentId },
+      data: updateData,
+      include: {
+        assignedUser: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Update assignment error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /schedules/:id/assignments/:assignmentId (manager only - delete assignment)
+router.delete("/:id/assignments/:assignmentId", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const schedule = await prisma.scheduleWeek.findFirst({
+      where: {
+        id: req.params.id,
+        businessId: req.user.businessId,
+      },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ error: "Schedule not found" });
+    }
+
+    const assignment = await prisma.shiftAssignment.findFirst({
+      where: {
+        id: req.params.assignmentId,
+        scheduleId: req.params.id,
+      },
+    });
+
+    if (!assignment) {
+      return res.status(404).json({ error: "Assignment not found" });
+    }
+
+    await prisma.shiftAssignment.delete({
+      where: { id: req.params.assignmentId },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete assignment error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
