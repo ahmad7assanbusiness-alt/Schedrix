@@ -1,4 +1,18 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) return envUrl;
+  
+  // Development fallback
+  if (import.meta.env.DEV) {
+    return "http://localhost:4000";
+  }
+  
+  // Production safety check
+  console.error("VITE_API_URL environment variable is not set in production!");
+  throw new Error("API URL is not configured. Please set VITE_API_URL environment variable.");
+};
+
+const API_URL = getApiUrl();
 
 function getToken() {
   return localStorage.getItem("token");
@@ -43,7 +57,8 @@ async function apiRequest(endpoint, options = {}) {
     return response.json();
   } catch (error) {
     if (error.name === "TypeError" && error.message.includes("fetch")) {
-      throw new Error("Cannot connect to server. Make sure the server is running on http://localhost:4000");
+      const apiUrl = API_URL || "the API server";
+      throw new Error(`Cannot connect to server at ${apiUrl}. Please check your network connection and API configuration.`);
     }
     throw error;
   }

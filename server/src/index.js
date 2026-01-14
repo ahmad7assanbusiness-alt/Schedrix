@@ -18,6 +18,10 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "live" });
+});
+
 // Routes
 app.use("/auth", authRoutes);
 app.use("/business", businessRoutes);
