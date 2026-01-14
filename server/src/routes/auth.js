@@ -25,6 +25,9 @@ const loginSchema = z.object({
 const joinSchema = z.object({
   joinCode: z.string().min(1),
   employeeName: z.string().min(1),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  phone: z.string().optional(),
 });
 
 // Generate a random join code
@@ -201,10 +204,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// POST /auth/join - Join as employee (keep existing functionality)
+// POST /auth/join - Join as employee
 router.post("/join", async (req, res) => {
   try {
-    const { joinCode, employeeName } = joinSchema.parse(req.body);
+    const { joinCode, employeeName, email, password, phone } = joinSchema.parse(req.body);
 
     // Normalize join code: trim whitespace and convert to uppercase
     const normalizedJoinCode = joinCode.trim().toUpperCase();
@@ -217,28 +220,34 @@ router.post("/join", async (req, res) => {
       return res.status(404).json({ error: "Invalid join code" });
     }
 
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create employee user
+    // Note: firstName/lastName are combined into name, phone is not stored in current schema
     const employee = await prisma.user.create({
       data: {
         name: employeeName,
+        email,
+        password: hashedPassword,
         role: "EMPLOYEE",
         businessId: business.id,
       },
     });
 
-    const token = generateToken(employee.id);
-
+    // Return success (don't return token - user must login)
     res.json({
-      token,
-      user: {
-        id: employee.id,
-        name: employee.name,
-        role: employee.role,
-      },
-      business: {
-        id: business.id,
-        name: business.name,
-      },
+      success: true,
+      message: "Registration successful. Please login.",
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
