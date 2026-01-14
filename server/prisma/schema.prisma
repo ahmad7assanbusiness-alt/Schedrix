@@ -26,7 +26,6 @@ enum ScheduleStatus {
 model Business {
   id                 String   @id @default(cuid())
   name               String
-  address            String?
   joinCode           String   @unique
   subscriptionStatus String   @default("inactive")
   ownerUserId        String
