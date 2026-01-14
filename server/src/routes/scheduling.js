@@ -421,11 +421,11 @@ router.post("/:id/publish", authMiddleware, managerOnly, async (req, res) => {
 });
 
 const updateScheduleStructureSchema = z.object({
-  rows: z.array(z.string()).optional(),
+  rows: z.array(z.string()).nullable().optional(),
   columns: z.array(z.object({
     label: z.string(),
-    date: z.string().datetime().optional(),
-  })).optional(),
+    date: z.string().datetime().nullable().optional(),
+  })).nullable().optional(),
 });
 
 // PUT /schedules/:id/structure (manager only - update rows and columns)
