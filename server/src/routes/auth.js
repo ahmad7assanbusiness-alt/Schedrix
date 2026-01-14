@@ -53,6 +53,9 @@ router.get("/check-owners", async (req, res) => {
 // POST /auth/register - Register a new owner and business
 router.post("/register", async (req, res) => {
   try {
+    // Log incoming request for debugging
+    console.log("Registration request body:", JSON.stringify(req.body, null, 2));
+    
     const { businessName, ownerName, email, password } = registerSchema.parse(req.body);
 
     // Check if email already exists
@@ -80,6 +83,8 @@ router.post("/register", async (req, res) => {
       },
     });
 
+    console.log("Created owner user:", owner.id);
+
     // Create business
     const business = await prisma.business.create({
       data: {
@@ -90,11 +95,15 @@ router.post("/register", async (req, res) => {
       },
     });
 
+    console.log("Created business:", business.id);
+
     // Update user with businessId
     await prisma.user.update({
       where: { id: owner.id },
       data: { businessId: business.id },
     });
+
+    console.log("Updated user with businessId");
 
     // Return success (don't return token - user must login)
     res.json({
@@ -103,6 +112,7 @@ router.post("/register", async (req, res) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("Validation error:", error.errors);
       return res.status(400).json({ error: "Validation error", details: error.errors });
     }
     console.error("Register error:", error);
