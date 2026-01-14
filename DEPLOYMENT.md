@@ -1,16 +1,89 @@
 # Deployment Guide
 
 This guide covers deploying the ScheduleManager app to production with:
-- **Backend**: Railway
+- **Backend**: Render (FREE) or Railway
 - **Frontend**: Vercel
 
 ## Prerequisites
 
-- GitHub repository connected to Railway and Vercel
-- PostgreSQL database (Railway PostgreSQL or Supabase)
+- GitHub repository connected to Render/Railway and Vercel
+- PostgreSQL database (Render PostgreSQL, Supabase, or Railway PostgreSQL)
 - Node.js 18+ runtime
 
-## Backend Deployment (Railway)
+## Backend Deployment (Render - FREE)
+
+**Render offers a free tier for web services!**
+
+### 1. Create Account and Connect Repository
+
+1. Go to [render.com](https://render.com)
+2. Sign up for free (GitHub login works)
+3. Click "New +" → "Web Service"
+4. Connect your GitHub repository: `ahmad7assanbusiness-alt/Schedrix`
+5. Select the `dev` branch (or `main`)
+
+### 2. Configure Web Service
+
+**Settings:**
+- **Name**: `schedrix-backend` (or any name)
+- **Region**: Choose closest to you (Oregon, Frankfurt, Singapore)
+- **Branch**: `dev` (or `main`)
+- **Root Directory**: `server` (important!)
+- **Runtime**: `Node`
+- **Build Command**: `npm install && npx prisma generate`
+- **Start Command**: `npm start`
+- **Plan**: **Free** (select "Starter" plan - it's free!)
+
+### 3. Set Environment Variables
+
+In the "Environment" section, add:
+
+```
+DATABASE_URL=postgresql://user:password@host:5432/database
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+NODE_ENV=production
+```
+
+**Important:**
+- `DATABASE_URL`: Use Render PostgreSQL, Supabase, or any PostgreSQL database
+- `JWT_SECRET`: Generate a strong random string (e.g., `openssl rand -base64 32`)
+- `PORT`: Render automatically sets this (no need to set manually)
+
+### 4. Create PostgreSQL Database (Optional - Free on Render)
+
+If you need a database:
+1. Click "New +" → "PostgreSQL"
+2. Choose **Free** plan
+3. Copy the **Internal Database URL** (for Render services) or **External Database URL** (for external access)
+4. Use this as your `DATABASE_URL`
+
+### 5. Deploy
+
+Click "Create Web Service" - Render will:
+1. Install dependencies
+2. Generate Prisma client
+3. Start your server
+4. Provide a public URL: `https://your-app.onrender.com`
+
+**Note:** Free tier services spin down after 15 minutes of inactivity, but wake up automatically on first request (may take 30-60 seconds).
+
+### 6. Get Your Backend URL
+
+After deployment, Render provides a URL like:
+- `https://schedrix-backend.onrender.com`
+
+Copy this URL - you'll need it for the frontend.
+
+### 7. Verify Backend is Running
+
+Test the health endpoint:
+```bash
+curl https://your-app.onrender.com/api/health
+```
+
+Should return: `{"status":"live"}`
+
+## Backend Deployment (Railway - Alternative)
 
 ### 1. Connect Repository to Railway
 
@@ -134,20 +207,21 @@ The frontend automatically uses `http://localhost:4000` in development mode (whe
 
 ## Environment Variable Summary
 
-### Backend (Railway)
+### Backend (Render/Railway)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `JWT_SECRET` | Yes | Secret key for JWT tokens |
-| `PORT` | No | Auto-set by Railway |
+| `PORT` | No | Auto-set by platform |
 | `HOST` | No | Defaults to `0.0.0.0` |
+| `NODE_ENV` | No | Set to `production` |
 
 ### Frontend (Vercel)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_API_URL` | Yes (Production) | Backend API URL from Railway |
+| `VITE_API_URL` | Yes (Production) | Backend API URL from Render/Railway (e.g., `https://your-app.onrender.com`) |
 
 **Local Development:** Frontend falls back to `http://localhost:4000` if `VITE_API_URL` is not set.
 
@@ -178,9 +252,10 @@ The frontend automatically uses `http://localhost:4000` in development mode (whe
 - Ensure `VITE_API_URL` is set (required in production)
 
 **API connection errors:**
-- Verify `VITE_API_URL` points to your Railway backend URL
+- Verify `VITE_API_URL` points to your Render/Railway backend URL
 - Check backend is running and accessible
-- Test backend health endpoint: `curl https://your-backend.railway.app/api/health`
+- Test backend health endpoint: `curl https://your-backend.onrender.com/api/health`
+- **Render Free Tier**: Services may take 30-60 seconds to wake up after inactivity
 
 **404 errors on routes:**
 - `vercel.json` is configured for SPA routing
@@ -200,22 +275,38 @@ The frontend automatically uses `http://localhost:4000` in development mode (whe
 
 ## Production Checklist
 
-- [ ] Backend deployed to Railway
-- [ ] Database connected and migrations run
-- [ ] `DATABASE_URL` set in Railway
-- [ ] `JWT_SECRET` set in Railway (strong random value)
-- [ ] Backend health endpoint accessible
+- [ ] Backend deployed to Render (free) or Railway
+- [ ] Database connected (Render PostgreSQL, Supabase, or Railway)
+- [ ] `DATABASE_URL` set in backend platform
+- [ ] `JWT_SECRET` set in backend platform (strong random value)
+- [ ] Backend health endpoint accessible (`/api/health`)
 - [ ] Frontend deployed to Vercel
-- [ ] `VITE_API_URL` set in Vercel (points to Railway backend)
+- [ ] `VITE_API_URL` set in Vercel (points to Render/Railway backend)
 - [ ] Frontend loads without errors
 - [ ] API calls work from frontend to backend
 - [ ] Local development still works
 
 ## Continuous Deployment
 
-Both Railway and Vercel automatically redeploy on git push:
+All platforms automatically redeploy on git push:
 
+- **Render**: Redeploys when code is pushed to the connected branch
 - **Railway**: Redeploys when code is pushed to the connected branch
 - **Vercel**: Redeploys when code is pushed (configure branch in settings)
 
 No manual deployment needed - just push to your repository!
+
+## Free Tier Limitations
+
+### Render Free Tier:
+- ✅ Free web services (spins down after 15 min inactivity)
+- ✅ Free PostgreSQL database (90 days, then $7/month)
+- ✅ Automatic wake-up on request (30-60 second delay)
+- ✅ 750 hours/month free compute time
+- ⚠️ Service may take 30-60 seconds to wake up after inactivity
+
+### Railway:
+- ✅ $5/month free credit (enough for small projects)
+- ⚠️ Requires payment method (but uses free credits first)
+
+**Recommendation**: Start with **Render** for completely free deployment!
