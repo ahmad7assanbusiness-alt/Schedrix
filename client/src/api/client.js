@@ -51,6 +51,16 @@ async function apiRequest(endpoint, options = {}) {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: "Request failed" }));
+      
+      // Format validation errors with details
+      if (error.error === "Validation error" && error.details && Array.isArray(error.details)) {
+        const messages = error.details.map((detail) => {
+          const field = detail.path?.join(".") || "field";
+          return `${field}: ${detail.message}`;
+        });
+        throw new Error(messages.join(", "));
+      }
+      
       throw new Error(error.error || "Request failed");
     }
 
