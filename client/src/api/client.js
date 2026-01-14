@@ -23,23 +23,30 @@ async function apiRequest(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (response.status === 401) {
-    setToken(null);
-    window.location.href = "/welcome";
-    throw new Error("Unauthorized");
+    if (response.status === 401) {
+      setToken(null);
+      window.location.href = "/welcome";
+      throw new Error("Unauthorized");
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Request failed" }));
+      throw new Error(error.error || "Request failed");
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
+      throw new Error("Cannot connect to server. Make sure the server is running on http://localhost:4000");
+    }
+    throw error;
   }
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(error.error || "Request failed");
-  }
-
-  return response.json();
 }
 
 export const api = {

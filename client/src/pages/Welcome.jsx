@@ -83,6 +83,7 @@ const styles = {
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-md)",
     background: "white",
+    color: "var(--gray-900)",
     transition: "all var(--transition-base)",
     fontFamily: "var(--font-family)",
   },

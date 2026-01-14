@@ -187,6 +187,7 @@ body {
   border: 2px solid var(--gray-200);
   border-radius: var(--radius-md);
   background: white;
+  color: var(--gray-900);
   transition: all var(--transition-base);
   font-family: var(--font-family);
 }
