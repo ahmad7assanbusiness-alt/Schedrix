@@ -48,7 +48,6 @@ router.post("/bootstrap-owner", async (req, res) => {
         joinCode,
         ownerUserId: owner.id,
         subscriptionStatus: "active",
-        users: { connect: { id: owner.id } },
       },
     });
 
