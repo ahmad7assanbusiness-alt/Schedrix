@@ -426,6 +426,43 @@ const styles = {
     cursor: "pointer",
     minWidth: "40px",
   },
+  actionButton: {
+    padding: "var(--spacing-sm) var(--spacing-md)",
+    background: "var(--primary)",
+    color: "white",
+    border: "none",
+    borderRadius: "var(--radius-md)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 600,
+    cursor: "pointer",
+    marginRight: "var(--spacing-sm)",
+    transition: "all var(--transition-base)",
+  },
+  actionButtonGroup: {
+    display: "flex",
+    gap: "var(--spacing-sm)",
+    marginBottom: "var(--spacing-lg)",
+    flexWrap: "wrap",
+  },
+  editableCell: {
+    padding: "var(--spacing-xs)",
+    border: "2px solid var(--primary)",
+    borderRadius: "var(--radius-sm)",
+    fontSize: "var(--font-size-base)",
+    width: "100%",
+    minWidth: "100px",
+  },
+  positionCell: {
+    position: "relative",
+    padding: "var(--spacing-md)",
+    cursor: "pointer",
+  },
+  positionCellEditing: {
+    padding: "var(--spacing-xs)",
+  },
+  columnHeaderEditing: {
+    padding: "var(--spacing-xs)",
+  },
 };
 
 export default function Schedule() {
@@ -449,6 +486,10 @@ export default function Schedule() {
   const [customRows, setCustomRows] = useState([""]);
   const [customColumns, setCustomColumns] = useState([{ label: "", date: "" }]);
   const [useCustomStructure, setUseCustomStructure] = useState(false);
+  const [editingPosition, setEditingPosition] = useState(null);
+  const [editingColumn, setEditingColumn] = useState(null);
+  const [editingPositionValue, setEditingPositionValue] = useState("");
+  const [editingColumnValue, setEditingColumnValue] = useState({ label: "", date: "" });
 
   useEffect(() => {
     loadSchedules();
@@ -546,6 +587,178 @@ export default function Schedule() {
     }
   }
 
+  async function addColumn() {
+    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    try {
+      const currentColumns = selectedSchedule.columns && Array.isArray(selectedSchedule.columns) 
+        ? selectedSchedule.columns 
+        : dates.map(d => ({ label: d.label, date: d.date ? d.date.toISOString() : undefined }));
+      
+      const newColumn = { label: `Column ${currentColumns.length + 1}`, date: undefined };
+      const updatedColumns = [...currentColumns, newColumn];
+      
+      await api.put(`/schedules/${selectedSchedule.id}/structure`, {
+        columns: updatedColumns,
+      });
+      loadSchedule(selectedSchedule.id);
+    } catch (err) {
+      setError(err.message || "Failed to add column");
+    }
+  }
+
+  async function addRow() {
+    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    try {
+      const currentRows = selectedSchedule.rows && Array.isArray(selectedSchedule.rows)
+        ? selectedSchedule.rows
+        : positions;
+      
+      const newRow = `Position ${currentRows.length + 1}`;
+      const updatedRows = [...currentRows, newRow];
+      
+      await api.put(`/schedules/${selectedSchedule.id}/structure`, {
+        rows: updatedRows,
+      });
+      loadSchedule(selectedSchedule.id);
+    } catch (err) {
+      setError(err.message || "Failed to add row");
+    }
+  }
+
+  async function updateScheduleStructure(rows, columns) {
+    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    try {
+      await api.put(`/schedules/${selectedSchedule.id}/structure`, {
+        rows: rows !== undefined ? rows : selectedSchedule.rows,
+        columns: columns !== undefined ? columns : selectedSchedule.columns,
+      });
+      loadSchedule(selectedSchedule.id);
+    } catch (err) {
+      setError(err.message || "Failed to update schedule structure");
+    }
+  }
+
+  function startEditingPosition(position, index) {
+    if (selectedSchedule.status === "PUBLISHED") return;
+    setEditingPosition(index);
+    setEditingPositionValue(position);
+  }
+
+  async function savePositionEdit() {
+    if (editingPosition === null) return;
+    try {
+      const currentRows = selectedSchedule.rows && Array.isArray(selectedSchedule.rows)
+        ? [...selectedSchedule.rows]
+        : [...positions];
+      
+      if (editingPositionValue.trim() === "") {
+        setError("Position name cannot be empty");
+        return;
+      }
+      
+      currentRows[editingPosition] = editingPositionValue.trim();
+      await updateScheduleStructure(currentRows, undefined);
+      setEditingPosition(null);
+      setEditingPositionValue("");
+    } catch (err) {
+      setError(err.message || "Failed to update position");
+    }
+  }
+
+  function startEditingColumn(column, index) {
+    if (selectedSchedule.status === "PUBLISHED") return;
+    setEditingColumn(index);
+    setEditingColumnValue({
+      label: column.label || "",
+      date: column.date ? new Date(column.date).toISOString().split("T")[0] : "",
+    });
+  }
+
+  async function saveColumnEdit() {
+    if (editingColumn === null) return;
+    try {
+      const currentColumns = selectedSchedule.columns && Array.isArray(selectedSchedule.columns)
+        ? [...selectedSchedule.columns]
+        : dates.map(d => ({ label: d.label, date: d.date ? d.date.toISOString() : undefined }));
+      
+      if (editingColumnValue.label.trim() === "") {
+        setError("Column label cannot be empty");
+        return;
+      }
+      
+      currentColumns[editingColumn] = {
+        label: editingColumnValue.label.trim(),
+        date: editingColumnValue.date ? new Date(editingColumnValue.date).toISOString() : undefined,
+      };
+      
+      await updateScheduleStructure(undefined, currentColumns);
+      setEditingColumn(null);
+      setEditingColumnValue({ label: "", date: "" });
+    } catch (err) {
+      setError(err.message || "Failed to update column");
+    }
+  }
+
+  async function deleteRow(index) {
+    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!confirm("Are you sure you want to delete this position? All assignments in this row will be deleted.")) return;
+    
+    try {
+      const currentRows = selectedSchedule.rows && Array.isArray(selectedSchedule.rows)
+        ? [...selectedSchedule.rows]
+        : [...positions];
+      
+      const positionToDelete = currentRows[index];
+      currentRows.splice(index, 1);
+      
+      // Delete all assignments for this position
+      if (selectedSchedule.assignments) {
+        const assignmentsToDelete = selectedSchedule.assignments.filter(
+          a => a.position === positionToDelete
+        );
+        for (const assignment of assignmentsToDelete) {
+          await api.delete(`/schedules/${selectedSchedule.id}/assignments/${assignment.id}`);
+        }
+      }
+      
+      await updateScheduleStructure(currentRows, undefined);
+      loadSchedule(selectedSchedule.id);
+    } catch (err) {
+      setError(err.message || "Failed to delete row");
+    }
+  }
+
+  async function deleteColumn(index) {
+    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!confirm("Are you sure you want to delete this column? All assignments in this column will be deleted.")) return;
+    
+    try {
+      const currentColumns = selectedSchedule.columns && Array.isArray(selectedSchedule.columns)
+        ? [...selectedSchedule.columns]
+        : dates.map(d => ({ label: d.label, date: d.date ? d.date.toISOString() : undefined }));
+      
+      const columnToDelete = currentColumns[index];
+      currentColumns.splice(index, 1);
+      
+      // Delete all assignments for this column
+      if (selectedSchedule.assignments && columnToDelete.date) {
+        const targetDate = new Date(columnToDelete.date).toISOString().split("T")[0];
+        const assignmentsToDelete = selectedSchedule.assignments.filter(a => {
+          const assignmentDate = new Date(a.date).toISOString().split("T")[0];
+          return assignmentDate === targetDate;
+        });
+        for (const assignment of assignmentsToDelete) {
+          await api.delete(`/schedules/${selectedSchedule.id}/assignments/${assignment.id}`);
+        }
+      }
+      
+      await updateScheduleStructure(undefined, currentColumns);
+      loadSchedule(selectedSchedule.id);
+    } catch (err) {
+      setError(err.message || "Failed to delete column");
+    }
+  }
+
   function getDates() {
     if (!selectedSchedule) return [];
     
@@ -640,17 +853,31 @@ export default function Schedule() {
   }
 
   async function handleSaveAssignment() {
-    if (!modalDate || !modalPosition) {
+    if (!modalDate) {
+      setError("Date is required. Please ensure the column has a date.");
+      return;
+    }
+    if (!modalPosition || modalPosition.trim() === "") {
       setError("Position is required");
       return;
     }
     try {
+      // If position doesn't exist in the schedule, add it to rows
+      const currentRows = selectedSchedule.rows && Array.isArray(selectedSchedule.rows)
+        ? [...selectedSchedule.rows]
+        : [...positions];
+      
+      if (!currentRows.includes(modalPosition.trim())) {
+        currentRows.push(modalPosition.trim());
+        await updateScheduleStructure(currentRows, undefined);
+      }
+
       if (modalAssignment) {
         // Update existing assignment
         await api.put(
           `/schedules/${selectedSchedule.id}/assignments/${modalAssignment.id}`,
           {
-            position: modalPosition,
+            position: modalPosition.trim(),
             assignedUserId: modalEmployeeId || null,
             startTime: modalStartTime,
             endTime: modalEndTime,
@@ -660,7 +887,7 @@ export default function Schedule() {
         // Create new assignment
         await api.post(`/schedules/${selectedSchedule.id}/assignments`, {
           date: new Date(modalDate).toISOString(),
-          position: modalPosition,
+          position: modalPosition.trim(),
           assignedUserId: modalEmployeeId || null,
           startTime: modalStartTime,
           endTime: modalEndTime,
@@ -960,19 +1187,93 @@ export default function Schedule() {
                 )}
               </div>
 
+              {selectedSchedule.status === "DRAFT" && (
+                <div style={styles.actionButtonGroup}>
+                  <button onClick={addRow} style={styles.actionButton}>
+                    + Add Row (Position)
+                  </button>
+                  <button onClick={addColumn} style={styles.actionButton}>
+                    + Add Column
+                  </button>
+                </div>
+              )}
+
               {dates.length > 0 ? (
                 <div style={styles.tableContainer}>
                   <table style={styles.table}>
                     <thead style={styles.tableHeader}>
                       <tr>
-                        <th style={styles.tableHeaderCellFirst}>Position</th>
+                        <th style={styles.tableHeaderCellFirst}>
+                          Position
+                          {selectedSchedule.status === "DRAFT" && positions.length === 0 && (
+                            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
+                              Click "+ Add Row" to start
+                            </div>
+                          )}
+                        </th>
                         {dates.map((dateObj, idx) => (
                           <th key={dateObj.date ? dateObj.date.toISOString() : `col-${idx}`} style={styles.tableHeaderCell}>
-                            {dateObj.label || (dateObj.date ? dateObj.date.toLocaleDateString("en-US", {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                            }) : `Column ${idx + 1}`)}
+                            {editingColumn === idx ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-xs)" }}>
+                                <input
+                                  type="text"
+                                  value={editingColumnValue.label}
+                                  onChange={(e) => setEditingColumnValue({ ...editingColumnValue, label: e.target.value })}
+                                  placeholder="Column label"
+                                  style={styles.editableCell}
+                                  autoFocus
+                                  onBlur={saveColumnEdit}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveColumnEdit();
+                                    if (e.key === "Escape") {
+                                      setEditingColumn(null);
+                                      setEditingColumnValue({ label: "", date: "" });
+                                    }
+                                  }}
+                                />
+                                <input
+                                  type="date"
+                                  value={editingColumnValue.date}
+                                  onChange={(e) => setEditingColumnValue({ ...editingColumnValue, date: e.target.value })}
+                                  placeholder="Date (optional)"
+                                  style={{ ...styles.editableCell, fontSize: "var(--font-size-xs)" }}
+                                />
+                                {selectedSchedule.status === "DRAFT" && dates.length > 1 && (
+                                  <button
+                                    onClick={() => deleteColumn(idx)}
+                                    style={{ ...styles.removeButton, fontSize: "var(--font-size-xs)", padding: "2px 6px" }}
+                                    title="Delete column"
+                                  >
+                                    ×
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <div
+                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--spacing-xs)" }}
+                              >
+                                <span
+                                  onClick={() => startEditingColumn(dateObj, idx)}
+                                  style={{ cursor: selectedSchedule.status === "DRAFT" ? "pointer" : "default", flex: 1 }}
+                                  title={selectedSchedule.status === "DRAFT" ? "Click to edit" : ""}
+                                >
+                                  {dateObj.label || (dateObj.date ? dateObj.date.toLocaleDateString("en-US", {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                  }) : `Column ${idx + 1}`)}
+                                </span>
+                                {selectedSchedule.status === "DRAFT" && dates.length > 1 && (
+                                  <button
+                                    onClick={() => deleteColumn(idx)}
+                                    style={{ ...styles.removeButton, fontSize: "var(--font-size-xs)", padding: "2px 6px" }}
+                                    title="Delete column"
+                                  >
+                                    ×
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </th>
                         ))}
                       </tr>
@@ -980,9 +1281,38 @@ export default function Schedule() {
                     <tbody>
                       {positions.length === 0 ? (
                         <tr>
-                          <td colSpan={dates.length + 1} style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--gray-500)" }}>
-                            Click on any cell to create an assignment. Positions will be created automatically.
+                          <td style={styles.tableCellFirst}>
+                            {selectedSchedule.status === "DRAFT" ? (
+                              <div style={{ color: "var(--gray-500)", fontSize: "var(--font-size-sm)", textAlign: "center" }}>
+                                Click "+ Add Row" above
+                              </div>
+                            ) : (
+                              "—"
+                            )}
                           </td>
+                          {dates.map((dateObj, dateIdx) => {
+                            const date = dateObj.date || dateObj;
+                            const dateKey = date ? date.toISOString() : `col-${dateIdx}`;
+                            return (
+                              <td
+                                key={dateKey}
+                                style={{
+                                  ...styles.tableCell,
+                                  cursor: selectedSchedule.status === "DRAFT" ? "pointer" : "default",
+                                }}
+                                onClick={() => {
+                                  if (selectedSchedule.status === "DRAFT") {
+                                    // Create a temporary position name for the modal
+                                    openModal(dateObj, "");
+                                  }
+                                }}
+                              >
+                                <div style={styles.emptyCell}>
+                                  {selectedSchedule.status === "DRAFT" ? "Click to create assignment" : "—"}
+                                </div>
+                              </td>
+                            );
+                          })}
                         </tr>
                       ) : (
                         positions.map((position, rowIndex) => (
@@ -995,7 +1325,44 @@ export default function Schedule() {
                                 : styles.tableRowOdd),
                             }}
                           >
-                            <td style={styles.tableCellFirst}>{position}</td>
+                            <td style={styles.tableCellFirst}>
+                              {editingPosition === rowIndex ? (
+                                <input
+                                  type="text"
+                                  value={editingPositionValue}
+                                  onChange={(e) => setEditingPositionValue(e.target.value)}
+                                  style={styles.editableCell}
+                                  autoFocus
+                                  onBlur={savePositionEdit}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") savePositionEdit();
+                                    if (e.key === "Escape") {
+                                      setEditingPosition(null);
+                                      setEditingPositionValue("");
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--spacing-xs)" }}>
+                                  <span
+                                    onClick={() => startEditingPosition(position, rowIndex)}
+                                    style={{ cursor: selectedSchedule.status === "DRAFT" ? "pointer" : "default", flex: 1 }}
+                                    title={selectedSchedule.status === "DRAFT" ? "Click to edit" : ""}
+                                  >
+                                    {position}
+                                  </span>
+                                  {selectedSchedule.status === "DRAFT" && positions.length > 1 && (
+                                    <button
+                                      onClick={() => deleteRow(rowIndex)}
+                                      style={{ ...styles.removeButton, fontSize: "var(--font-size-xs)", padding: "2px 6px" }}
+                                      title="Delete row"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </td>
                             {dates.map((dateObj, dateIdx) => {
                               const date = dateObj.date || dateObj;
                               const assignments = getAssignmentsForDateAndPosition(

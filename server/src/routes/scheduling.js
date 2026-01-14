@@ -325,5 +325,51 @@ router.post("/:id/publish", authMiddleware, managerOnly, async (req, res) => {
   }
 });
 
+const updateScheduleStructureSchema = z.object({
+  rows: z.array(z.string()).optional(),
+  columns: z.array(z.object({
+    label: z.string(),
+    date: z.string().datetime().optional(),
+  })).optional(),
+});
+
+// PUT /schedules/:id/structure (manager only - update rows and columns)
+router.put("/:id/structure", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const schedule = await prisma.scheduleWeek.findFirst({
+      where: {
+        id: req.params.id,
+        businessId: req.user.businessId,
+      },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ error: "Schedule not found" });
+    }
+
+    const { rows, columns } = updateScheduleStructureSchema.parse(req.body);
+
+    const updated = await prisma.scheduleWeek.update({
+      where: { id: req.params.id },
+      data: {
+        rows: rows !== undefined ? rows : schedule.rows,
+        columns: columns !== undefined ? columns : schedule.columns,
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Validation error", details: error.errors });
+    }
+    console.error("Update schedule structure error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
 
