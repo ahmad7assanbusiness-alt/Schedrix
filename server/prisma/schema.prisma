@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  EMPLOYEE
+}
+
+enum RequestStatus {
+  OPEN
+  CLOSED
+}
+
+enum ScheduleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Business {
+  id                 String   @id @default(cuid())
+  name               String
+  joinCode           String   @unique
+  subscriptionStatus String   @default("inactive")
+  ownerUserId        String
+  createdAt          DateTime @default(now())
+
+  users              User[]
+  availabilityRequests AvailabilityRequest[]
+  schedules          ScheduleWeek[]
+}
+
+model User {
+  id         String   @id @default(cuid())
+  name       String
+  email      String?  @unique
+  password   String?
+  role       Role     @default(EMPLOYEE)
+  businessId String?
+  createdAt  DateTime @default(now())
+
+  business            Business?            @relation(fields: [businessId], references: [id])
+  availabilityEntries AvailabilityEntry[]
+  assignments         ShiftAssignment[]
+}
+
+model AvailabilityRequest {
+  id          String        @id @default(cuid())
+  businessId  String
+  startDate   DateTime
+  endDate     DateTime
+  status      RequestStatus @default(OPEN)
+  createdByUserId String
+  createdAt   DateTime @default(now())
+
+  business    Business          @relation(fields: [businessId], references: [id])
+  entries     AvailabilityEntry[]
+}
+
+model AvailabilityEntry {
+  id         String @id @default(cuid())
+  requestId  String
+  userId     String
+  date       DateTime
+  blocks     Json // {morning: boolean, evening: boolean}
+  note       String?
+  createdAt  DateTime @default(now())
+
+  request    AvailabilityRequest @relation(fields: [requestId], references: [id])
+  user       User   @relation(fields: [userId], references: [id])
+
+  @@unique([requestId, userId, date])
+}
+
+model ScheduleWeek {
+  id         String @id @default(cuid())
+  businessId String
+  startDate  DateTime
+  endDate    DateTime
+  status     ScheduleStatus @default(DRAFT)
+  createdByUserId String
+  createdAt  DateTime @default(now())
+
+  business   Business @relation(fields: [businessId], references: [id])
+  assignments ShiftAssignment[]
+}
+
+model ShiftAssignment {
+  id          String @id @default(cuid())
+  scheduleId  String
+  date        DateTime
+  label       String // "Morning" or "Evening"
+  startTime   String @default("09:00")
+  endTime     String @default("17:00")
+  position    String?
+  assignedUserId String?
+  createdAt  DateTime @default(now())
+
+  schedule    ScheduleWeek @relation(fields: [scheduleId], references: [id])
+  assignedUser   User? @relation(fields: [assignedUserId], references: [id])
+
+  @@unique([scheduleId, date, label])
+}

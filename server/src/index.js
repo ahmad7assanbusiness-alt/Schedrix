@@ -1,6 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import authRoutes from "./routes/auth.js";
+import businessRoutes from "./routes/business.js";
+import availabilityRoutes from "./routes/availability.js";
+import schedulingRoutes from "./routes/scheduling.js";
 
 dotenv.config();
 
@@ -14,7 +18,12 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
+// Routes
+app.use("/auth", authRoutes);
+app.use("/business", businessRoutes);
+app.use("/availability-requests", availabilityRoutes);
+app.use("/schedules", schedulingRoutes);
+
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-

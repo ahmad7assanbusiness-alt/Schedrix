@@ -1,0 +1,22 @@
+{
+  "name": "schedrix",
+  "version": "1.0.0",
+  "description": "Enterprise-grade schedule and workforce planning platform.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahmad7assanbusiness-alt/Schedrix.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ahmad7assanbusiness-alt/Schedrix/issues"
+  },
+  "homepage": "https://github.com/ahmad7assanbusiness-alt/Schedrix#readme"
+}
