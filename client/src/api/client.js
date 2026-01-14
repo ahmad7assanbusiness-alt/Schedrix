@@ -50,7 +50,14 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Request failed" }));
+      let error;
+      try {
+        error = await response.json();
+      } catch (e) {
+        // If response is not JSON, get text instead
+        const text = await response.text();
+        throw new Error(`Request failed (${response.status} ${response.statusText}): ${text || "Unknown error"}`);
+      }
       
       // Format validation errors with details
       if (error.error === "Validation error" && error.details && Array.isArray(error.details)) {
@@ -61,7 +68,7 @@ async function apiRequest(endpoint, options = {}) {
         throw new Error(messages.join(", "));
       }
       
-      throw new Error(error.error || "Request failed");
+      throw new Error(error.error || `Request failed (${response.status})`);
     }
 
     return response.json();
