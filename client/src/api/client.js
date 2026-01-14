@@ -77,6 +77,8 @@ async function apiRequest(endpoint, options = {}) {
 export const api = {
   get: (endpoint) => apiRequest(endpoint, { method: "GET" }),
   post: (endpoint, data) => apiRequest(endpoint, { method: "POST", body: JSON.stringify(data) }),
+  put: (endpoint, data) => apiRequest(endpoint, { method: "PUT", body: JSON.stringify(data) }),
+  delete: (endpoint) => apiRequest(endpoint, { method: "DELETE" }),
   setToken,
   getToken,
 };
