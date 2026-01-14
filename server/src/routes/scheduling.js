@@ -8,6 +8,11 @@ const router = express.Router();
 const createScheduleSchema = z.object({
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
+  rows: z.array(z.string()).optional(), // Array of row labels (positions)
+  columns: z.array(z.object({
+    label: z.string(),
+    date: z.string().datetime().optional(), // Optional date for date-based columns
+  })).optional(), // Array of column definitions
 });
 
 const assignmentSchema = z.object({
@@ -25,7 +30,7 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
       return res.status(403).json({ error: "Not part of a business" });
     }
 
-    const { startDate, endDate } = createScheduleSchema.parse(req.body);
+    const { startDate, endDate, rows, columns } = createScheduleSchema.parse(req.body);
 
     const schedule = await prisma.scheduleWeek.create({
       data: {
@@ -34,6 +39,8 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
         endDate: new Date(endDate),
         status: "DRAFT",
         createdByUserId: req.user.id,
+        rows: rows || null,
+        columns: columns || null,
       },
     });
 

@@ -86,6 +86,8 @@ model ScheduleWeek {
   status     ScheduleStatus @default(DRAFT)
   createdByUserId String
   createdAt  DateTime @default(now())
+  rows       Json? // Array of row labels (positions) e.g., ["Cash", "Floater", "Host"]
+  columns    Json? // Array of column definitions e.g., [{"label": "Monday", "date": "2024-01-15"}, ...]
 
   business   Business @relation(fields: [businessId], references: [id])
   assignments ShiftAssignment[]

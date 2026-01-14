@@ -367,6 +367,65 @@ const styles = {
     cursor: "pointer",
     marginTop: "var(--spacing-xs)",
   },
+  rowColumnSection: {
+    marginTop: "var(--spacing-xl)",
+    padding: "var(--spacing-lg)",
+    background: "var(--gray-50)",
+    borderRadius: "var(--radius-md)",
+    border: "1px solid var(--gray-200)",
+  },
+  rowColumnTitle: {
+    fontSize: "var(--font-size-lg)",
+    fontWeight: 700,
+    color: "var(--gray-900)",
+    marginBottom: "var(--spacing-md)",
+  },
+  rowColumnList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--spacing-sm)",
+    marginBottom: "var(--spacing-md)",
+  },
+  rowColumnItem: {
+    display: "flex",
+    gap: "var(--spacing-sm)",
+    alignItems: "center",
+  },
+  rowColumnInput: {
+    flex: 1,
+    padding: "var(--spacing-sm) var(--spacing-md)",
+    border: "2px solid var(--gray-200)",
+    borderRadius: "var(--radius-md)",
+    fontSize: "var(--font-size-base)",
+  },
+  rowColumnDateInput: {
+    padding: "var(--spacing-sm) var(--spacing-md)",
+    border: "2px solid var(--gray-200)",
+    borderRadius: "var(--radius-md)",
+    fontSize: "var(--font-size-base)",
+    width: "150px",
+  },
+  addButton: {
+    padding: "var(--spacing-sm) var(--spacing-lg)",
+    background: "var(--primary)",
+    color: "white",
+    border: "none",
+    borderRadius: "var(--radius-md)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "all var(--transition-base)",
+  },
+  removeButton: {
+    padding: "var(--spacing-sm)",
+    background: "var(--error)",
+    color: "white",
+    border: "none",
+    borderRadius: "var(--radius-md)",
+    fontSize: "var(--font-size-sm)",
+    cursor: "pointer",
+    minWidth: "40px",
+  },
 };
 
 export default function Schedule() {
@@ -387,6 +446,9 @@ export default function Schedule() {
   const [modalEndTime, setModalEndTime] = useState("17:00");
   const [draggedAssignment, setDraggedAssignment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
+  const [customRows, setCustomRows] = useState([""]);
+  const [customColumns, setCustomColumns] = useState([{ label: "", date: "" }]);
+  const [useCustomStructure, setUseCustomStructure] = useState(false);
 
   useEffect(() => {
     loadSchedules();
@@ -406,12 +468,27 @@ export default function Schedule() {
     setLoading(true);
     setError(null);
     try {
+      const rows = useCustomStructure ? customRows.filter(r => r.trim() !== "") : undefined;
+      const columns = useCustomStructure 
+        ? customColumns
+            .filter(c => c.label.trim() !== "")
+            .map(c => ({
+              label: c.label,
+              date: c.date ? new Date(c.date).toISOString() : undefined,
+            }))
+        : undefined;
+
       const schedule = await api.post("/schedules", {
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
+        rows,
+        columns,
       });
       setStartDate("");
       setEndDate("");
+      setCustomRows([""]);
+      setCustomColumns([{ label: "", date: "" }]);
+      setUseCustomStructure(false);
       loadSchedules();
       loadSchedule(schedule.id);
     } catch (err) {
@@ -419,6 +496,34 @@ export default function Schedule() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function addRow() {
+    setCustomRows([...customRows, ""]);
+  }
+
+  function removeRow(index) {
+    setCustomRows(customRows.filter((_, i) => i !== index));
+  }
+
+  function updateRow(index, value) {
+    const newRows = [...customRows];
+    newRows[index] = value;
+    setCustomRows(newRows);
+  }
+
+  function addColumn() {
+    setCustomColumns([...customColumns, { label: "", date: "" }]);
+  }
+
+  function removeColumn(index) {
+    setCustomColumns(customColumns.filter((_, i) => i !== index));
+  }
+
+  function updateColumn(index, field, value) {
+    const newColumns = [...customColumns];
+    newColumns[index] = { ...newColumns[index], [field]: value };
+    setCustomColumns(newColumns);
   }
 
   async function loadSchedule(scheduleId) {
@@ -443,17 +548,41 @@ export default function Schedule() {
 
   function getDates() {
     if (!selectedSchedule) return [];
+    
+    // If custom columns are defined, use them
+    if (selectedSchedule.columns && Array.isArray(selectedSchedule.columns) && selectedSchedule.columns.length > 0) {
+      return selectedSchedule.columns.map((col, index) => ({
+        label: col.label,
+        date: col.date ? new Date(col.date) : null,
+        index,
+      }));
+    }
+    
+    // Otherwise, generate dates from startDate to endDate (backward compatibility)
     const start = new Date(selectedSchedule.startDate);
     const end = new Date(selectedSchedule.endDate);
     const dates = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d));
+      dates.push({
+        label: d.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        }),
+        date: new Date(d),
+        index: dates.length,
+      });
     }
     return dates;
   }
 
-  function getAssignmentsForDateAndPosition(date, position) {
+  function getAssignmentsForDateAndPosition(dateObj, position) {
     if (!selectedSchedule || !selectedSchedule.assignments) return [];
+    
+    // Handle both date objects and column objects
+    const date = dateObj?.date || dateObj;
+    if (!date) return [];
+    
     const dateStr = new Date(date).toISOString().split("T")[0];
     return selectedSchedule.assignments.filter(
       (a) =>
@@ -463,7 +592,15 @@ export default function Schedule() {
   }
 
   function getUniquePositions() {
-    if (!selectedSchedule || !selectedSchedule.assignments) return [];
+    if (!selectedSchedule) return [];
+    
+    // If custom rows are defined, use them
+    if (selectedSchedule.rows && Array.isArray(selectedSchedule.rows) && selectedSchedule.rows.length > 0) {
+      return selectedSchedule.rows;
+    }
+    
+    // Otherwise, extract positions from assignments (backward compatibility)
+    if (!selectedSchedule.assignments) return [];
     const positions = new Set();
     selectedSchedule.assignments.forEach((a) => {
       if (a.position) {
@@ -473,8 +610,10 @@ export default function Schedule() {
     return Array.from(positions).sort();
   }
 
-  function openModal(date, position, assignment = null) {
+  function openModal(dateObj, position, assignment = null) {
     if (selectedSchedule.status === "PUBLISHED") return;
+    // Extract date from date object if it exists
+    const date = dateObj?.date || dateObj;
     setModalDate(date);
     setModalPosition(position || "");
     setModalAssignment(assignment);
@@ -554,22 +693,32 @@ export default function Schedule() {
     e.dataTransfer.setData("text/plain", assignment.id);
   }
 
-  function handleDragOver(e, date, position) {
+  function handleDragOver(e, dateObj, position) {
     if (selectedSchedule.status === "PUBLISHED") return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    setDragOverCell({ date, position });
+    const date = dateObj?.date || dateObj;
+    const dateKey = date ? date.toISOString() : `col-${dateObj.index || 0}`;
+    setDragOverCell({ dateKey, position, dateObj });
   }
 
   function handleDragLeave(e) {
     setDragOverCell(null);
   }
 
-  async function handleDrop(e, targetDate, targetPosition) {
+  async function handleDrop(e, targetDateObj, targetPosition) {
     e.preventDefault();
     setDragOverCell(null);
     
     if (!draggedAssignment || selectedSchedule.status === "PUBLISHED") return;
+    
+    // Get the actual date from the date object
+    const targetDate = targetDateObj?.date || targetDateObj;
+    if (!targetDate) {
+      setError("Cannot drop assignment on a column without a date");
+      setDraggedAssignment(null);
+      return;
+    }
     
     const targetDateStr = new Date(targetDate).toISOString().split("T")[0];
     const sourceDateStr = new Date(draggedAssignment.date).toISOString().split("T")[0];
@@ -584,11 +733,10 @@ export default function Schedule() {
             assignedUserId: draggedAssignment.assignedUserId || null,
             startTime: draggedAssignment.startTime || "09:00",
             endTime: draggedAssignment.endTime || "17:00",
+            date: new Date(targetDate).toISOString(),
           }
         );
-        // Also update the date by creating a new assignment and deleting the old one
-        // Or update via the API if it supports date updates
-        // For now, we'll update position and reload
+        // Reload schedule to get updated data
         loadSchedule(selectedSchedule.id);
       } catch (err) {
         setError(err.message || "Failed to move assignment");
@@ -643,6 +791,99 @@ export default function Schedule() {
                     />
                   </div>
                 </div>
+
+                <div style={styles.formGroup}>
+                  <label style={{ ...styles.label, display: "flex", alignItems: "center", gap: "var(--spacing-sm)" }}>
+                    <input
+                      type="checkbox"
+                      checked={useCustomStructure}
+                      onChange={(e) => setUseCustomStructure(e.target.checked)}
+                      style={{ width: "auto" }}
+                    />
+                    Use Custom Rows and Columns
+                  </label>
+                  <p style={{ fontSize: "var(--font-size-sm)", color: "var(--gray-600)", marginTop: "var(--spacing-xs)" }}>
+                    Define custom row labels (positions) and column labels for your schedule
+                  </p>
+                </div>
+
+                {useCustomStructure && (
+                  <>
+                    <div style={styles.rowColumnSection}>
+                      <h3 style={styles.rowColumnTitle}>Rows (Positions)</h3>
+                      <div style={styles.rowColumnList}>
+                        {customRows.map((row, index) => (
+                          <div key={index} style={styles.rowColumnItem}>
+                            <input
+                              type="text"
+                              value={row}
+                              onChange={(e) => updateRow(index, e.target.value)}
+                              placeholder={`Row ${index + 1} (e.g., Cash, Floater, Host)`}
+                              style={styles.rowColumnInput}
+                            />
+                            {customRows.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeRow(index)}
+                                style={styles.removeButton}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addRow}
+                        style={styles.addButton}
+                      >
+                        + Add Row
+                      </button>
+                    </div>
+
+                    <div style={styles.rowColumnSection}>
+                      <h3 style={styles.rowColumnTitle}>Columns</h3>
+                      <div style={styles.rowColumnList}>
+                        {customColumns.map((column, index) => (
+                          <div key={index} style={styles.rowColumnItem}>
+                            <input
+                              type="text"
+                              value={column.label}
+                              onChange={(e) => updateColumn(index, "label", e.target.value)}
+                              placeholder={`Column ${index + 1} Label (e.g., Monday, Week 1)`}
+                              style={styles.rowColumnInput}
+                            />
+                            <input
+                              type="date"
+                              value={column.date}
+                              onChange={(e) => updateColumn(index, "date", e.target.value)}
+                              placeholder="Date (optional)"
+                              style={styles.rowColumnDateInput}
+                            />
+                            {customColumns.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeColumn(index)}
+                                style={styles.removeButton}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addColumn}
+                        style={styles.addButton}
+                      >
+                        + Add Column
+                      </button>
+                    </div>
+                  </>
+                )}
+
                 <button
                   type="submit"
                   disabled={loading}
@@ -725,13 +966,13 @@ export default function Schedule() {
                     <thead style={styles.tableHeader}>
                       <tr>
                         <th style={styles.tableHeaderCellFirst}>Position</th>
-                        {dates.map((date) => (
-                          <th key={date.toISOString()} style={styles.tableHeaderCell}>
-                            {date.toLocaleDateString("en-US", {
+                        {dates.map((dateObj, idx) => (
+                          <th key={dateObj.date ? dateObj.date.toISOString() : `col-${idx}`} style={styles.tableHeaderCell}>
+                            {dateObj.label || (dateObj.date ? dateObj.date.toLocaleDateString("en-US", {
                               weekday: "short",
                               month: "short",
                               day: "numeric",
-                            })}
+                            }) : `Column ${idx + 1}`)}
                           </th>
                         ))}
                       </tr>
@@ -755,25 +996,27 @@ export default function Schedule() {
                             }}
                           >
                             <td style={styles.tableCellFirst}>{position}</td>
-                            {dates.map((date) => {
+                            {dates.map((dateObj, dateIdx) => {
+                              const date = dateObj.date || dateObj;
                               const assignments = getAssignmentsForDateAndPosition(
-                                date,
+                                dateObj,
                                 position
                               );
-                              const isDragOver = dragOverCell?.date?.toISOString() === date.toISOString() && dragOverCell?.position === position;
+                              const dateKey = date ? date.toISOString() : `col-${dateIdx}`;
+                              const isDragOver = dragOverCell?.dateKey === dateKey && dragOverCell?.position === position;
                               return (
                                 <td
-                                  key={date.toISOString()}
+                                  key={dateKey}
                                   style={{
                                     ...styles.tableCell,
                                     ...(isDragOver ? styles.tableCellDragOver : {}),
                                   }}
-                                  onDragOver={(e) => handleDragOver(e, date, position)}
+                                  onDragOver={(e) => handleDragOver(e, dateObj, position)}
                                   onDragLeave={handleDragLeave}
-                                  onDrop={(e) => handleDrop(e, date, position)}
+                                  onDrop={(e) => handleDrop(e, dateObj, position)}
                                   onClick={() => {
                                     if (selectedSchedule.status === "DRAFT") {
-                                      openModal(date, position);
+                                      openModal(dateObj, position);
                                     }
                                   }}
                                 >
@@ -790,7 +1033,7 @@ export default function Schedule() {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           if (selectedSchedule.status === "DRAFT") {
-                                            openModal(date, position, assignment);
+                                            openModal(dateObj, position, assignment);
                                           }
                                         }}
                                         style={{
