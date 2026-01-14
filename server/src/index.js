@@ -10,6 +10,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const HOST = process.env.HOST || "0.0.0.0";
 
 app.use(cors());
 app.use(express.json());
@@ -28,6 +29,6 @@ app.use("/business", businessRoutes);
 app.use("/availability-requests", availabilityRoutes);
 app.use("/schedules", schedulingRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server listening on ${HOST}:${PORT}`);
 });
