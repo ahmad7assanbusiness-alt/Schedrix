@@ -69,7 +69,11 @@ router.post("/bootstrap-owner", async (req, res) => {
       return res.status(400).json({ error: "Validation error", details: error.errors });
     }
     console.error("Bootstrap error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ 
+      error: "Internal server error",
+      message: error.message,
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined
+    });
   }
 });
 
