@@ -15,8 +15,13 @@ const submitEntriesSchema = z.object({
   entries: z.array(
     z.object({
       date: z.string().datetime(),
-      morning: z.boolean(),
-      evening: z.boolean(),
+      morning: z.boolean().optional(),
+      evening: z.boolean().optional(),
+      double: z.boolean().optional(),
+      morningStartTime: z.string().optional(),
+      morningEndTime: z.string().optional(),
+      eveningStartTime: z.string().optional(),
+      eveningEndTime: z.string().optional(),
     })
   ),
 });
@@ -125,6 +130,22 @@ router.post("/entries", authMiddleware, employeeOnly, async (req, res) => {
     // Upsert entries
     const results = [];
     for (const entry of entries) {
+      // Determine shift types
+      const isDouble = entry.double === true;
+      const isMorning = entry.morning === true || isDouble;
+      const isEvening = entry.evening === true || isDouble;
+
+      // Build blocks object with time slots
+      const blocks = {
+        morning: isMorning,
+        evening: isEvening,
+        double: isDouble,
+        morningStartTime: entry.morningStartTime || null,
+        morningEndTime: entry.morningEndTime || null,
+        eveningStartTime: entry.eveningStartTime || null,
+        eveningEndTime: entry.eveningEndTime || null,
+      };
+
       const result = await prisma.availabilityEntry.upsert({
         where: {
           requestId_userId_date: {
@@ -134,13 +155,13 @@ router.post("/entries", authMiddleware, employeeOnly, async (req, res) => {
           },
         },
         update: {
-          blocks: { morning: entry.morning, evening: entry.evening },
+          blocks,
         },
         create: {
           requestId,
           userId: req.user.id,
           date: new Date(entry.date),
-          blocks: { morning: entry.morning, evening: entry.evening },
+          blocks,
         },
       });
       results.push(result);
