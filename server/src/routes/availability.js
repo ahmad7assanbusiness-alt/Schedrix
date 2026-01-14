@@ -15,6 +15,7 @@ const submitEntriesSchema = z.object({
   entries: z.array(
     z.object({
       date: z.string().datetime(),
+      off: z.boolean().optional(),
       morning: z.boolean().optional(),
       evening: z.boolean().optional(),
       double: z.boolean().optional(),
@@ -131,19 +132,21 @@ router.post("/entries", authMiddleware, employeeOnly, async (req, res) => {
     const results = [];
     for (const entry of entries) {
       // Determine shift types
+      const isOff = entry.off === true;
       const isDouble = entry.double === true;
       const isMorning = entry.morning === true || isDouble;
       const isEvening = entry.evening === true || isDouble;
 
       // Build blocks object with time slots
       const blocks = {
+        off: isOff,
         morning: isMorning,
         evening: isEvening,
         double: isDouble,
-        morningStartTime: entry.morningStartTime || null,
-        morningEndTime: entry.morningEndTime || null,
-        eveningStartTime: entry.eveningStartTime || null,
-        eveningEndTime: entry.eveningEndTime || null,
+        morningStartTime: isOff ? null : (entry.morningStartTime || null),
+        morningEndTime: isOff ? null : (entry.morningEndTime || null),
+        eveningStartTime: isOff ? null : (entry.eveningStartTime || null),
+        eveningEndTime: isOff ? null : (entry.eveningEndTime || null),
       };
 
       const result = await prisma.availabilityEntry.upsert({

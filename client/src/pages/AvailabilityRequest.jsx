@@ -396,6 +396,7 @@ export default function AvailabilityRequest() {
                 <tr>
                   <th style={styles.tableHeaderCell}>Date</th>
                   <th style={styles.tableHeaderCell}>Employee</th>
+                  <th style={styles.tableHeaderCell}>Status</th>
                   <th style={styles.tableHeaderCell}>Morning</th>
                   <th style={styles.tableHeaderCell}>Evening</th>
                   <th style={styles.tableHeaderCell}>Double</th>
@@ -406,6 +407,7 @@ export default function AvailabilityRequest() {
                   const blocks = typeof entry.blocks === "string" 
                     ? JSON.parse(entry.blocks) 
                     : entry.blocks;
+                  const isOff = blocks.off === true;
                   const isDouble = blocks.double === true;
                   const isMorning = blocks.morning === true || isDouble;
                   const isEvening = blocks.evening === true || isDouble;
@@ -421,21 +423,34 @@ export default function AvailabilityRequest() {
                       </td>
                       <td style={styles.tableCell}>{entry.user.name}</td>
                       <td style={styles.tableCell}>
-                        {isMorning ? (
+                        {isOff ? (
+                          <span style={{ color: "var(--error)", fontWeight: 600 }}>Off / NA</span>
+                        ) : (
+                          <span style={{ color: "var(--success)", fontWeight: 600 }}>Available</span>
+                        )}
+                      </td>
+                      <td style={styles.tableCell}>
+                        {isOff ? (
+                          <span style={styles.crossIcon}>—</span>
+                        ) : isMorning ? (
                           <span style={styles.checkIcon}>✓</span>
                         ) : (
                           <span style={styles.crossIcon}>✗</span>
                         )}
                       </td>
                       <td style={styles.tableCell}>
-                        {isEvening ? (
+                        {isOff ? (
+                          <span style={styles.crossIcon}>—</span>
+                        ) : isEvening ? (
                           <span style={styles.checkIcon}>✓</span>
                         ) : (
                           <span style={styles.crossIcon}>✗</span>
                         )}
                       </td>
                       <td style={styles.tableCell}>
-                        {isDouble ? (
+                        {isOff ? (
+                          <span style={styles.crossIcon}>—</span>
+                        ) : isDouble ? (
                           <span style={styles.checkIcon}>✓</span>
                         ) : (
                           <span style={styles.crossIcon}>✗</span>

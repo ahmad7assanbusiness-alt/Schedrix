@@ -48,10 +48,6 @@ const styles = {
     fontWeight: 600,
     marginBottom: "var(--spacing-lg)",
     transition: "all var(--transition-base)",
-    "&:hover": {
-      color: "var(--primary-dark)",
-      transform: "translateX(-4px)",
-    },
   },
   error: {
     padding: "var(--spacing-md)",
@@ -68,10 +64,6 @@ const styles = {
     padding: "var(--spacing-lg)",
     marginBottom: "var(--spacing-lg)",
     transition: "all var(--transition-base)",
-    "&:hover": {
-      borderColor: "var(--primary)",
-      boxShadow: "var(--shadow-md)",
-    },
   },
   dateHeader: {
     display: "flex",
@@ -171,18 +163,29 @@ const styles = {
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
+  timeSlotRow: {
+    display: "flex",
+    gap: "var(--spacing-sm)",
+    alignItems: "center",
+  },
   timeSlotInput: {
+    flex: 1,
     padding: "var(--spacing-sm) var(--spacing-md)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-md)",
     fontSize: "var(--font-size-base)",
     fontFamily: "monospace",
     transition: "all var(--transition-base)",
-    "&:focus": {
-      outline: "none",
-      borderColor: "var(--primary)",
-      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.1)",
-    },
+  },
+  timeSlotSelect: {
+    padding: "var(--spacing-sm) var(--spacing-md)",
+    border: "2px solid var(--gray-200)",
+    borderRadius: "var(--radius-md)",
+    fontSize: "var(--font-size-base)",
+    fontFamily: "monospace",
+    background: "white",
+    cursor: "pointer",
+    transition: "all var(--transition-base)",
   },
   submitButton: {
     width: "100%",
@@ -197,15 +200,6 @@ const styles = {
     transition: "all var(--transition-base)",
     boxShadow: "0 4px 14px 0 rgba(16, 185, 129, 0.39)",
     marginTop: "var(--spacing-xl)",
-    "&:hover:not(:disabled)": {
-      transform: "translateY(-2px)",
-      boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4)",
-    },
-    "&:disabled": {
-      opacity: 0.6,
-      cursor: "not-allowed",
-      transform: "none",
-    },
   },
   loading: {
     textAlign: "center",
@@ -225,6 +219,33 @@ const styles = {
     color: "var(--gray-900)",
   },
 };
+
+// Convert 12-hour format to 24-hour format
+function convert12To24(time12, ampm) {
+  if (!time12) return null;
+  const [hours, minutes] = time12.split(":").map(Number);
+  let hours24 = hours;
+  if (ampm === "PM" && hours !== 12) {
+    hours24 = hours + 12;
+  } else if (ampm === "AM" && hours === 12) {
+    hours24 = 0;
+  }
+  return `${String(hours24).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+// Convert 24-hour format to 12-hour format
+function convert24To12(time24) {
+  if (!time24) return { time: "12:00", ampm: "AM" };
+  const [hours, minutes] = time24.split(":").map(Number);
+  let hours12 = hours;
+  const ampm = hours >= 12 ? "PM" : "AM";
+  if (hours === 0) {
+    hours12 = 12;
+  } else if (hours > 12) {
+    hours12 = hours - 12;
+  }
+  return { time: `${hours12}:${String(minutes).padStart(2, "0")}`, ampm };
+}
 
 export default function AvailabilitySubmit() {
   const navigate = useNavigate();
@@ -261,12 +282,20 @@ export default function AvailabilitySubmit() {
     const newEntries = {};
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateKey = d.toISOString().split("T")[0];
+      const morning12 = convert24To12("09:00");
+      const morningEnd12 = convert24To12("17:00");
+      const evening12 = convert24To12("17:00");
+      const eveningEnd12 = convert24To12("21:00");
       newEntries[dateKey] = {
-        shiftType: null, // "morning", "evening", "double", or null
-        morningStartTime: "09:00",
-        morningEndTime: "17:00",
-        eveningStartTime: "17:00",
-        eveningEndTime: "21:00",
+        shiftType: null, // "morning", "evening", "double", "off", or null
+        morningStartTime: morning12.time,
+        morningStartAmPm: morning12.ampm,
+        morningEndTime: morningEnd12.time,
+        morningEndAmPm: morningEnd12.ampm,
+        eveningStartTime: evening12.time,
+        eveningStartAmPm: evening12.ampm,
+        eveningEndTime: eveningEnd12.time,
+        eveningEndAmPm: eveningEnd12.ampm,
       };
     }
     setEntries(newEntries);
@@ -300,23 +329,33 @@ export default function AvailabilitySubmit() {
       const entriesArray = Object.entries(entries)
         .filter(([_, entry]) => entry.shiftType !== null)
         .map(([dateKey, entry]) => {
+          const isOff = entry.shiftType === "off";
           const isDouble = entry.shiftType === "double";
           const isMorning = entry.shiftType === "morning" || isDouble;
           const isEvening = entry.shiftType === "evening" || isDouble;
 
           return {
             date: new Date(dateKey).toISOString(),
+            off: isOff,
             morning: isMorning,
             evening: isEvening,
             double: isDouble,
-            morningStartTime: isMorning ? entry.morningStartTime : undefined,
-            morningEndTime: isMorning ? entry.morningEndTime : undefined,
-            eveningStartTime: isEvening ? entry.eveningStartTime : undefined,
-            eveningEndTime: isEvening ? entry.eveningEndTime : undefined,
+            morningStartTime: isMorning
+              ? convert12To24(entry.morningStartTime, entry.morningStartAmPm)
+              : undefined,
+            morningEndTime: isMorning
+              ? convert12To24(entry.morningEndTime, entry.morningEndAmPm)
+              : undefined,
+            eveningStartTime: isEvening
+              ? convert12To24(entry.eveningStartTime, entry.eveningStartAmPm)
+              : undefined,
+            eveningEndTime: isEvening
+              ? convert12To24(entry.eveningEndTime, entry.eveningEndAmPm)
+              : undefined,
           };
         });
 
-      await api.post("/availability-entries", {
+      await api.post("/availability-requests/entries", {
         requestId: request.id,
         entries: entriesArray,
       });
@@ -497,6 +536,36 @@ export default function AvailabilitySubmit() {
                         <span style={styles.shiftOptionTitle}>Double Shift</span>
                       </div>
                     </label>
+
+                    <label
+                      style={{
+                        ...styles.shiftOption,
+                        ...(entry.shiftType === "off" ? styles.shiftOptionSelected : {}),
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name={`shift-${dateKey}`}
+                        checked={entry.shiftType === "off"}
+                        onChange={() => setShiftType(dateKey, "off")}
+                        style={styles.shiftOptionInput}
+                      />
+                      <div style={styles.shiftOptionLabel}>
+                        <div
+                          style={{
+                            ...styles.shiftOptionIcon,
+                            ...(entry.shiftType === "off"
+                              ? styles.shiftOptionIconSelected
+                              : {}),
+                          }}
+                        >
+                          {entry.shiftType === "off" && (
+                            <span style={styles.shiftOptionCheck}>✓</span>
+                          )}
+                        </div>
+                        <span style={styles.shiftOptionTitle}>Off / NA</span>
+                      </div>
+                    </label>
                   </div>
 
                   {(entry.shiftType === "morning" || entry.shiftType === "double") && (
@@ -504,21 +573,45 @@ export default function AvailabilitySubmit() {
                       <div style={styles.timeSlotGrid}>
                         <div style={styles.timeSlotGroup}>
                           <label style={styles.timeSlotLabel}>Morning Start Time</label>
-                          <input
-                            type="time"
-                            value={entry.morningStartTime}
-                            onChange={(e) => setTimeSlot(dateKey, "morningStartTime", e.target.value)}
-                            style={styles.timeSlotInput}
-                          />
+                          <div style={styles.timeSlotRow}>
+                            <input
+                              type="text"
+                              pattern="[0-9]{1,2}:[0-5][0-9]"
+                              placeholder="9:00"
+                              value={entry.morningStartTime}
+                              onChange={(e) => setTimeSlot(dateKey, "morningStartTime", e.target.value)}
+                              style={styles.timeSlotInput}
+                            />
+                            <select
+                              value={entry.morningStartAmPm}
+                              onChange={(e) => setTimeSlot(dateKey, "morningStartAmPm", e.target.value)}
+                              style={styles.timeSlotSelect}
+                            >
+                              <option value="AM">AM</option>
+                              <option value="PM">PM</option>
+                            </select>
+                          </div>
                         </div>
                         <div style={styles.timeSlotGroup}>
                           <label style={styles.timeSlotLabel}>Morning End Time</label>
-                          <input
-                            type="time"
-                            value={entry.morningEndTime}
-                            onChange={(e) => setTimeSlot(dateKey, "morningEndTime", e.target.value)}
-                            style={styles.timeSlotInput}
-                          />
+                          <div style={styles.timeSlotRow}>
+                            <input
+                              type="text"
+                              pattern="[0-9]{1,2}:[0-5][0-9]"
+                              placeholder="5:00"
+                              value={entry.morningEndTime}
+                              onChange={(e) => setTimeSlot(dateKey, "morningEndTime", e.target.value)}
+                              style={styles.timeSlotInput}
+                            />
+                            <select
+                              value={entry.morningEndAmPm}
+                              onChange={(e) => setTimeSlot(dateKey, "morningEndAmPm", e.target.value)}
+                              style={styles.timeSlotSelect}
+                            >
+                              <option value="AM">AM</option>
+                              <option value="PM">PM</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -529,21 +622,45 @@ export default function AvailabilitySubmit() {
                       <div style={styles.timeSlotGrid}>
                         <div style={styles.timeSlotGroup}>
                           <label style={styles.timeSlotLabel}>Evening Start Time</label>
-                          <input
-                            type="time"
-                            value={entry.eveningStartTime}
-                            onChange={(e) => setTimeSlot(dateKey, "eveningStartTime", e.target.value)}
-                            style={styles.timeSlotInput}
-                          />
+                          <div style={styles.timeSlotRow}>
+                            <input
+                              type="text"
+                              pattern="[0-9]{1,2}:[0-5][0-9]"
+                              placeholder="5:00"
+                              value={entry.eveningStartTime}
+                              onChange={(e) => setTimeSlot(dateKey, "eveningStartTime", e.target.value)}
+                              style={styles.timeSlotInput}
+                            />
+                            <select
+                              value={entry.eveningStartAmPm}
+                              onChange={(e) => setTimeSlot(dateKey, "eveningStartAmPm", e.target.value)}
+                              style={styles.timeSlotSelect}
+                            >
+                              <option value="AM">AM</option>
+                              <option value="PM">PM</option>
+                            </select>
+                          </div>
                         </div>
                         <div style={styles.timeSlotGroup}>
                           <label style={styles.timeSlotLabel}>Evening End Time</label>
-                          <input
-                            type="time"
-                            value={entry.eveningEndTime}
-                            onChange={(e) => setTimeSlot(dateKey, "eveningEndTime", e.target.value)}
-                            style={styles.timeSlotInput}
-                          />
+                          <div style={styles.timeSlotRow}>
+                            <input
+                              type="text"
+                              pattern="[0-9]{1,2}:[0-5][0-9]"
+                              placeholder="9:00"
+                              value={entry.eveningEndTime}
+                              onChange={(e) => setTimeSlot(dateKey, "eveningEndTime", e.target.value)}
+                              style={styles.timeSlotInput}
+                            />
+                            <select
+                              value={entry.eveningEndAmPm}
+                              onChange={(e) => setTimeSlot(dateKey, "eveningEndAmPm", e.target.value)}
+                              style={styles.timeSlotSelect}
+                            >
+                              <option value="AM">AM</option>
+                              <option value="PM">PM</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
                     </div>
