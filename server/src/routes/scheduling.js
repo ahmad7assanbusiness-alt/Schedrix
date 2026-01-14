@@ -74,6 +74,53 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+// GET /schedules/template (manager only - get schedule template)
+router.get("/template", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const template = await prisma.scheduleTemplate.findUnique({
+      where: { businessId: req.user.businessId },
+    });
+
+    res.json(template || null);
+  } catch (error) {
+    console.error("Get template error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /schedules/template (manager only - save schedule template)
+router.put("/template", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const { rows, columns } = req.body;
+
+    const template = await prisma.scheduleTemplate.upsert({
+      where: { businessId: req.user.businessId },
+      create: {
+        businessId: req.user.businessId,
+        rows: rows || null,
+        columns: columns || null,
+      },
+      update: {
+        rows: rows !== undefined ? rows : undefined,
+        columns: columns !== undefined ? columns : undefined,
+      },
+    });
+
+    res.json(template);
+  } catch (error) {
+    console.error("Save template error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /schedules/:id/available-employees?date=YYYY-MM-DD&shiftType=morning|evening
 router.get("/:id/available-employees", authMiddleware, async (req, res) => {
   try {

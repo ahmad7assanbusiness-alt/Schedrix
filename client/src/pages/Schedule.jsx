@@ -544,6 +544,22 @@ export default function Schedule() {
     }
   }
 
+  async function saveAsTemplate() {
+    if (!selectedSchedule) return;
+    try {
+      const rows = selectedSchedule.rows || null;
+      const columns = selectedSchedule.columns || null;
+      await api.put("/schedules/template", {
+        rows,
+        columns,
+      });
+      setError(null);
+      alert("Schedule template saved successfully! New schedules will use this template structure.");
+    } catch (err) {
+      setError(err.message || "Failed to save template");
+    }
+  }
+
   function promptAddColumn() {
     if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
     
@@ -1195,6 +1211,13 @@ export default function Schedule() {
                   </button>
                   <button onClick={promptAddColumn} style={styles.actionButton}>
                     + Add Column (Overnight Shift)
+                  </button>
+                  <button 
+                    onClick={saveAsTemplate}
+                    style={{ ...styles.actionButton, background: "var(--secondary)" }}
+                    title="Save current schedule structure (rows and columns) as template for future schedules"
+                  >
+                    Save as Template
                   </button>
                   <button 
                     onClick={async () => {
