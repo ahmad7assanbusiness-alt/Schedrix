@@ -7,25 +7,18 @@ import { authMiddleware } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Registration schema
+// Registration schema - simplified
 const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  confirmPassword: z.string().min(6),
-  phone: z.string().min(1),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  businessName: z.string().min(1),
-  businessAddress: z.string().min(1),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  businessName: z.string().min(1, "Business name is required"),
+  ownerName: z.string().min(1, "Owner name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 // Login schema
 const loginSchema = z.object({
-  emailOrPhone: z.string().min(1),
-  password: z.string().min(1),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 // Join schema (for employees)
@@ -60,15 +53,7 @@ router.get("/check-owners", async (req, res) => {
 // POST /auth/register - Register a new owner and business
 router.post("/register", async (req, res) => {
   try {
-    const {
-      email,
-      password,
-      phone,
-      firstName,
-      lastName,
-      businessName,
-      businessAddress,
-    } = registerSchema.parse(req.body);
+    const { businessName, ownerName, email, password } = registerSchema.parse(req.body);
 
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
@@ -77,15 +62,6 @@ router.post("/register", async (req, res) => {
 
     if (existingUser) {
       return res.status(400).json({ error: "Email already exists" });
-    }
-
-    // Check if phone already exists
-    const existingPhone = await prisma.user.findFirst({
-      where: { phone },
-    });
-
-    if (existingPhone) {
-      return res.status(400).json({ error: "Phone number already exists" });
     }
 
     // Hash password
@@ -99,10 +75,7 @@ router.post("/register", async (req, res) => {
       data: {
         email,
         password: hashedPassword,
-        phone,
-        firstName,
-        lastName,
-        name: `${firstName} ${lastName}`,
+        name: ownerName,
         role: "OWNER",
       },
     });
@@ -111,7 +84,6 @@ router.post("/register", async (req, res) => {
     const business = await prisma.business.create({
       data: {
         name: businessName,
-        address: businessAddress,
         joinCode,
         ownerUserId: owner.id,
         subscriptionStatus: "active",
@@ -124,25 +96,10 @@ router.post("/register", async (req, res) => {
       data: { businessId: business.id },
     });
 
-    const token = generateToken(owner.id);
-
+    // Return success (don't return token - user must login)
     res.json({
-      token,
-      user: {
-        id: owner.id,
-        firstName: owner.firstName,
-        lastName: owner.lastName,
-        name: owner.name,
-        email: owner.email,
-        phone: owner.phone,
-        role: owner.role,
-      },
-      business: {
-        id: business.id,
-        name: business.name,
-        address: business.address,
-        joinCode: business.joinCode,
-      },
+      success: true,
+      message: "Registration successful. Please login.",
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -157,19 +114,14 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// POST /auth/login - Login with email/phone + password
+// POST /auth/login - Login with email + password
 router.post("/login", async (req, res) => {
   try {
-    const { emailOrPhone, password } = loginSchema.parse(req.body);
+    const { email, password } = loginSchema.parse(req.body);
 
-    // Find user by email or phone
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: emailOrPhone },
-          { phone: emailOrPhone },
-        ],
-      },
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
       include: { business: true },
     });
 
@@ -188,24 +140,21 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    // Generate token
     const token = generateToken(user.id);
 
     res.json({
       token,
       user: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
         name: user.name,
         email: user.email,
-        phone: user.phone,
         role: user.role,
       },
       business: user.business
         ? {
             id: user.business.id,
             name: user.business.name,
-            address: user.business.address,
             joinCode: user.business.joinCode,
           }
         : null,
@@ -267,7 +216,7 @@ router.post("/join", async (req, res) => {
   }
 });
 
-// GET /auth/me
+// GET /auth/me - Get current user
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -282,11 +231,8 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.json({
       user: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
         name: user.name,
         email: user.email,
-        phone: user.phone,
         role: user.role,
         businessId: user.businessId,
       },
@@ -294,7 +240,6 @@ router.get("/me", authMiddleware, async (req, res) => {
         ? {
             id: user.business.id,
             name: user.business.name,
-            address: user.business.address,
             joinCode: user.business.joinCode,
           }
         : null,

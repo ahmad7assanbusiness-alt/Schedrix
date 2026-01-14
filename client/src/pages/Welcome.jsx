@@ -14,7 +14,7 @@ const styles = {
   },
   container: {
     width: "100%",
-    maxWidth: "600px",
+    maxWidth: "480px",
   },
   card: {
     background: "rgba(255, 255, 255, 0.98)",
@@ -40,31 +40,6 @@ const styles = {
     color: "var(--gray-500)",
     fontSize: "var(--font-size-lg)",
     fontWeight: 400,
-  },
-  tabs: {
-    display: "flex",
-    gap: "var(--spacing-sm)",
-    marginBottom: "var(--spacing-xl)",
-    background: "var(--gray-100)",
-    padding: "var(--spacing-xs)",
-    borderRadius: "var(--radius-lg)",
-  },
-  tab: {
-    flex: 1,
-    padding: "var(--spacing-md) var(--spacing-lg)",
-    borderRadius: "var(--radius-md)",
-    border: "none",
-    background: "transparent",
-    color: "var(--gray-600)",
-    fontWeight: 600,
-    fontSize: "var(--font-size-base)",
-    cursor: "pointer",
-    transition: "all var(--transition-base)",
-  },
-  tabActive: {
-    background: "white",
-    color: "var(--primary)",
-    boxShadow: "var(--shadow-sm)",
   },
   form: {
     display: "flex",
@@ -125,10 +100,32 @@ const styles = {
     fontWeight: 500,
     marginBottom: "var(--spacing-lg)",
   },
+  success: {
+    padding: "var(--spacing-md)",
+    background: "var(--success-light)",
+    color: "#065f46",
+    borderRadius: "var(--radius-md)",
+    border: "1px solid var(--success)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 500,
+    marginBottom: "var(--spacing-lg)",
+  },
   loadingText: {
     textAlign: "center",
     color: "var(--gray-500)",
     padding: "var(--spacing-xl)",
+  },
+  link: {
+    color: "var(--primary)",
+    textDecoration: "none",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  linkText: {
+    textAlign: "center",
+    marginTop: "var(--spacing-lg)",
+    color: "var(--gray-600)",
+    fontSize: "var(--font-size-sm)",
   },
 };
 
@@ -137,27 +134,20 @@ export default function Welcome() {
   const { login } = useAuth();
   const [checkingOwners, setCheckingOwners] = useState(true);
   const [hasOwners, setHasOwners] = useState(false);
-  const [mode, setMode] = useState("login"); // "login", "register", or "employee"
+  const [mode, setMode] = useState("register"); // "login" or "register"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   // Registration form state
+  const [businessName, setBusinessName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [businessAddress, setBusinessAddress] = useState("");
 
   // Login form state
-  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-
-  // Employee join state
-  const [joinCode, setJoinCode] = useState("");
-  const [employeeName, setEmployeeName] = useState("");
 
   useEffect(() => {
     checkOwners();
@@ -170,7 +160,6 @@ export default function Welcome() {
       setMode(response.hasOwners ? "login" : "register");
     } catch (err) {
       console.error("Error checking owners:", err);
-      // Default to register if check fails
       setHasOwners(false);
       setMode("register");
     } finally {
@@ -182,26 +171,26 @@ export default function Welcome() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords don't match");
-      setLoading(false);
-      return;
-    }
+    setSuccess(null);
 
     try {
-      const { token, user, business } = await api.post("/auth/register", {
+      await api.post("/auth/register", {
+        businessName,
+        ownerName,
         email,
         password,
-        confirmPassword,
-        phone,
-        firstName,
-        lastName,
-        businessName,
-        businessAddress,
       });
-      login(token, user, business);
-      navigate("/dashboard");
+      setSuccess("Registration successful! Please login.");
+      // Clear form
+      setBusinessName("");
+      setOwnerName("");
+      setEmail("");
+      setPassword("");
+      // Redirect to login after 1.5 seconds
+      setTimeout(() => {
+        setMode("login");
+        setSuccess(null);
+      }, 1500);
     } catch (err) {
       setError(err.message || "Registration failed");
     } finally {
@@ -215,31 +204,13 @@ export default function Welcome() {
     setError(null);
     try {
       const { token, user, business } = await api.post("/auth/login", {
-        emailOrPhone,
+        email: loginEmail,
         password: loginPassword,
       });
       login(token, user, business);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Invalid credentials");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleJoin(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const { token, user, business } = await api.post("/auth/join", {
-        joinCode: joinCode.toUpperCase(),
-        employeeName,
-      });
-      login(token, user, business);
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message || "Invalid join code");
     } finally {
       setLoading(false);
     }
@@ -266,208 +237,108 @@ export default function Welcome() {
             <p style={styles.subtitle}>Enterprise workforce scheduling made simple</p>
           </div>
 
-          {hasOwners && (
-            <div style={styles.tabs}>
-              <button
-                onClick={() => setMode("login")}
-                style={{
-                  ...styles.tab,
-                  ...(mode === "login" ? styles.tabActive : {}),
-                }}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => setMode("employee")}
-                style={{
-                  ...styles.tab,
-                  ...(mode === "employee" ? styles.tabActive : {}),
-                }}
-              >
-                Join Business
-              </button>
-            </div>
-          )}
-
           {error && <div style={styles.error}>{error}</div>}
+          {success && <div style={styles.success}>{success}</div>}
 
           {mode === "register" && (
-            <form onSubmit={handleRegister} style={styles.form}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="your@email.com"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  style={styles.input}
-                  placeholder="Minimum 6 characters"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Confirm Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="Confirm your password"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Phone Number</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="+1 (555) 123-4567"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>First Name</label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="John"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Last Name</label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="Doe"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Business Name</label>
-                <input
-                  type="text"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="My Business Inc."
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Business Address</label>
-                <input
-                  type="text"
-                  value={businessAddress}
-                  onChange={(e) => setBusinessAddress(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="123 Main St, City, State 12345"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  ...styles.button,
-                  ...(loading ? styles.buttonDisabled : {}),
-                }}
-              >
-                {loading ? "Creating Account..." : "Create Account"}
-              </button>
-            </form>
+            <>
+              <form onSubmit={handleRegister} style={styles.form}>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Business Name</label>
+                  <input
+                    type="text"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    required
+                    style={styles.input}
+                    placeholder="My Business Inc."
+                  />
+                </div>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Owner Name</label>
+                  <input
+                    type="text"
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                    required
+                    style={styles.input}
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={styles.input}
+                    placeholder="your@email.com"
+                  />
+                </div>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    style={styles.input}
+                    placeholder="Minimum 6 characters"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    ...styles.button,
+                    ...(loading ? styles.buttonDisabled : {}),
+                  }}
+                >
+                  {loading ? "Registering..." : "Register"}
+                </button>
+              </form>
+            </>
           )}
 
           {mode === "login" && (
-            <form onSubmit={handleLogin} style={styles.form}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Email or Phone</label>
-                <input
-                  type="text"
-                  value={emailOrPhone}
-                  onChange={(e) => setEmailOrPhone(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="your@email.com or +1 (555) 123-4567"
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Password</label>
-                <input
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="Enter your password"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  ...styles.button,
-                  ...(loading ? styles.buttonDisabled : {}),
-                }}
-              >
-                {loading ? "Logging in..." : "Login"}
-              </button>
-            </form>
-          )}
-
-          {mode === "employee" && (
-            <form onSubmit={handleJoin} style={styles.form}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Join Code</label>
-                <input
-                  type="text"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  required
-                  style={styles.input}
-                  placeholder="Enter join code"
-                  maxLength={6}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Employee Name</label>
-                <input
-                  type="text"
-                  value={employeeName}
-                  onChange={(e) => setEmployeeName(e.target.value)}
-                  required
-                  style={styles.input}
-                  placeholder="Enter your name"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  ...styles.button,
-                  ...(loading ? styles.buttonDisabled : {}),
-                }}
-              >
-                {loading ? "Joining..." : "Join Business"}
-              </button>
-            </form>
+            <>
+              <form onSubmit={handleLogin} style={styles.form}>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Email</label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                    style={styles.input}
+                    placeholder="your@email.com"
+                  />
+                </div>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Password</label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    style={styles.input}
+                    placeholder="Enter your password"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    ...styles.button,
+                    ...(loading ? styles.buttonDisabled : {}),
+                  }}
+                >
+                  {loading ? "Logging in..." : "Login"}
+                </button>
+              </form>
+            </>
           )}
         </div>
       </div>
