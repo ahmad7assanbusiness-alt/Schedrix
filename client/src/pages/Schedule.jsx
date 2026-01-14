@@ -474,6 +474,7 @@ export default function Schedule() {
   const [schedules, setSchedules] = useState([]);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [users, setUsers] = useState([]);
+  const [availableEmployees, setAvailableEmployees] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDate, setModalDate] = useState(null);
   const [modalPosition, setModalPosition] = useState("");
@@ -484,9 +485,6 @@ export default function Schedule() {
   const [modalShiftType, setModalShiftType] = useState("morning");
   const [draggedAssignment, setDraggedAssignment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
-  const [customRows, setCustomRows] = useState([""]);
-  const [customColumns, setCustomColumns] = useState([{ label: "", date: "" }]);
-  const [useCustomStructure, setUseCustomStructure] = useState(false);
   const [editingPosition, setEditingPosition] = useState(null);
   const [editingColumn, setEditingColumn] = useState(null);
   const [editingPositionValue, setEditingPositionValue] = useState("");
@@ -510,27 +508,12 @@ export default function Schedule() {
     setLoading(true);
     setError(null);
     try {
-      const rows = useCustomStructure ? customRows.filter(r => r.trim() !== "") : undefined;
-      const columns = useCustomStructure 
-        ? customColumns
-            .filter(c => c.label.trim() !== "")
-            .map(c => ({
-              label: c.label,
-              date: c.date ? new Date(c.date).toISOString() : undefined,
-            }))
-        : undefined;
-
       const schedule = await api.post("/schedules", {
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
-        rows,
-        columns,
       });
       setStartDate("");
       setEndDate("");
-      setCustomRows([""]);
-      setCustomColumns([{ label: "", date: "" }]);
-      setUseCustomStructure(false);
       loadSchedules();
       loadSchedule(schedule.id);
     } catch (err) {
@@ -540,33 +523,6 @@ export default function Schedule() {
     }
   }
 
-  function addRow() {
-    setCustomRows([...customRows, ""]);
-  }
-
-  function removeRow(index) {
-    setCustomRows(customRows.filter((_, i) => i !== index));
-  }
-
-  function updateRow(index, value) {
-    const newRows = [...customRows];
-    newRows[index] = value;
-    setCustomRows(newRows);
-  }
-
-  function addColumn() {
-    setCustomColumns([...customColumns, { label: "", date: "" }]);
-  }
-
-  function removeColumn(index) {
-    setCustomColumns(customColumns.filter((_, i) => i !== index));
-  }
-
-  function updateColumn(index, field, value) {
-    const newColumns = [...customColumns];
-    newColumns[index] = { ...newColumns[index], [field]: value };
-    setCustomColumns(newColumns);
-  }
 
   async function loadSchedule(scheduleId) {
     try {
@@ -588,18 +544,82 @@ export default function Schedule() {
     }
   }
 
-  async function addColumn() {
+  function promptAddColumn() {
+    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    
+    // Get unique days from current schedule
+    const dayGroups = {};
+    dates.forEach((dateObj) => {
+      const dayKey = dateObj.date ? dateObj.date.toISOString().split("T")[0] : dateObj.dayIndex;
+      if (!dayGroups[dayKey]) {
+        dayGroups[dayKey] = {
+          date: dateObj.date,
+          label: dateObj.label,
+        };
+      }
+    });
+    const uniqueDays = Object.values(dayGroups);
+    
+    if (uniqueDays.length === 0) {
+      setError("No days in schedule to add column to");
+      return;
+    }
+    
+    // Show prompt to select day
+    const dayOptions = uniqueDays.map((day, idx) => 
+      `${idx + 1}. ${day.label || (day.date ? new Date(day.date).toLocaleDateString() : `Day ${idx + 1}`)}`
+    ).join("\n");
+    
+    const dayChoice = prompt(
+      `Which day do you want to add a column to?\n\n${dayOptions}\n\nEnter the number (1-${uniqueDays.length}):`
+    );
+    
+    const dayIndex = parseInt(dayChoice) - 1;
+    if (isNaN(dayIndex) || dayIndex < 0 || dayIndex >= uniqueDays.length) {
+      return; // User cancelled or invalid input
+    }
+    
+    const selectedDay = uniqueDays[dayIndex];
+    addColumnToDay(selectedDay);
+  }
+
+  async function addColumnToDay(day) {
     if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
     try {
-      const currentColumns = selectedSchedule.columns && Array.isArray(selectedSchedule.columns) 
-        ? selectedSchedule.columns 
-        : dates.map(d => ({ label: d.label, date: d.date ? d.date.toISOString() : undefined }));
+      const currentColumns = selectedSchedule.columns && Array.isArray(selectedSchedule.columns)
+        ? [...selectedSchedule.columns]
+        : dates
+            .filter(d => {
+              const dayKey = d.date ? d.date.toISOString().split("T")[0] : d.dayIndex;
+              const targetKey = day.date ? day.date.toISOString().split("T")[0] : day.dayIndex;
+              return dayKey === targetKey;
+            })
+            .map(d => ({ label: d.label, date: d.date ? d.date.toISOString() : undefined }))
+            .filter((v, i, a) => a.findIndex(t => t.date === v.date) === i); // Remove duplicates
       
-      const newColumn = { label: `Column ${currentColumns.length + 1}`, date: undefined };
-      const updatedColumns = [...currentColumns, newColumn];
+      // Find where to insert the new column (after the selected day's columns)
+      const dayDateStr = day.date ? new Date(day.date).toISOString().split("T")[0] : null;
+      let insertIndex = currentColumns.length;
+      
+      if (dayDateStr) {
+        // Find the last column for this day
+        for (let i = currentColumns.length - 1; i >= 0; i--) {
+          if (currentColumns[i].date && new Date(currentColumns[i].date).toISOString().split("T")[0] === dayDateStr) {
+            insertIndex = i + 1;
+            break;
+          }
+        }
+      }
+      
+      // Add new column (for overnight shift - will create morning/evening automatically)
+      const newColumn = { 
+        label: day.label || (day.date ? new Date(day.date).toLocaleDateString() : "New Column"), 
+        date: day.date ? new Date(day.date).toISOString() : undefined 
+      };
+      currentColumns.splice(insertIndex, 0, newColumn);
       
       await api.put(`/schedules/${selectedSchedule.id}/structure`, {
-        columns: updatedColumns,
+        columns: currentColumns,
       });
       loadSchedule(selectedSchedule.id);
     } catch (err) {
@@ -611,8 +631,8 @@ export default function Schedule() {
     if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
     try {
       const currentRows = selectedSchedule.rows && Array.isArray(selectedSchedule.rows)
-        ? selectedSchedule.rows
-        : positions;
+        ? [...selectedSchedule.rows]
+        : [...positions];
       
       const newRow = `Position ${currentRows.length + 1}`;
       const updatedRows = [...currentRows, newRow];
@@ -865,7 +885,7 @@ export default function Schedule() {
     return Array.from(positions).sort();
   }
 
-  function openModal(dateObj, position, assignment = null) {
+  async function openModal(dateObj, position, assignment = null) {
     if (selectedSchedule.status === "PUBLISHED") return;
     // Extract date from date object if it exists
     const date = dateObj?.date || dateObj;
@@ -883,6 +903,8 @@ export default function Schedule() {
       setModalEmployeeId(assignment.assignedUserId || "");
       setModalStartTime(assignment.startTime || "09:00");
       setModalEndTime(assignment.endTime || "17:00");
+      // Load all users for editing existing assignment
+      setAvailableEmployees(users);
     } else {
       setModalEmployeeId("");
       // Set default times based on shift type
@@ -892,6 +914,18 @@ export default function Schedule() {
       } else {
         setModalStartTime("17:00");
         setModalEndTime("21:00");
+      }
+      // Load only available employees for this date/shift
+      try {
+        const dateStr = new Date(date).toISOString().split("T")[0];
+        const available = await api.get(
+          `/schedules/${selectedSchedule.id}/available-employees?date=${dateStr}&shiftType=${shiftType}`
+        );
+        setAvailableEmployees(available);
+      } catch (err) {
+        console.error("Failed to load available employees:", err);
+        // Fallback to all users if availability check fails
+        setAvailableEmployees(users);
       }
     }
     setModalOpen(true);
@@ -1077,97 +1111,6 @@ export default function Schedule() {
                   </div>
                 </div>
 
-                <div style={styles.formGroup}>
-                  <label style={{ ...styles.label, display: "flex", alignItems: "center", gap: "var(--spacing-sm)" }}>
-                    <input
-                      type="checkbox"
-                      checked={useCustomStructure}
-                      onChange={(e) => setUseCustomStructure(e.target.checked)}
-                      style={{ width: "auto" }}
-                    />
-                    Use Custom Rows and Columns
-                  </label>
-                  <p style={{ fontSize: "var(--font-size-sm)", color: "var(--gray-600)", marginTop: "var(--spacing-xs)" }}>
-                    Define custom row labels (positions) and column labels for your schedule
-                  </p>
-                </div>
-
-                {useCustomStructure && (
-                  <>
-                    <div style={styles.rowColumnSection}>
-                      <h3 style={styles.rowColumnTitle}>Rows (Positions)</h3>
-                      <div style={styles.rowColumnList}>
-                        {customRows.map((row, index) => (
-                          <div key={index} style={styles.rowColumnItem}>
-                            <input
-                              type="text"
-                              value={row}
-                              onChange={(e) => updateRow(index, e.target.value)}
-                              placeholder={`Row ${index + 1} (e.g., Cash, Floater, Host)`}
-                              style={styles.rowColumnInput}
-                            />
-                            {customRows.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeRow(index)}
-                                style={styles.removeButton}
-                              >
-                                ×
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addRow}
-                        style={styles.addButton}
-                      >
-                        + Add Row
-                      </button>
-                    </div>
-
-                    <div style={styles.rowColumnSection}>
-                      <h3 style={styles.rowColumnTitle}>Columns</h3>
-                      <div style={styles.rowColumnList}>
-                        {customColumns.map((column, index) => (
-                          <div key={index} style={styles.rowColumnItem}>
-                            <input
-                              type="text"
-                              value={column.label}
-                              onChange={(e) => updateColumn(index, "label", e.target.value)}
-                              placeholder={`Column ${index + 1} Label (e.g., Monday, Week 1)`}
-                              style={styles.rowColumnInput}
-                            />
-                            <input
-                              type="date"
-                              value={column.date}
-                              onChange={(e) => updateColumn(index, "date", e.target.value)}
-                              placeholder="Date (optional)"
-                              style={styles.rowColumnDateInput}
-                            />
-                            {customColumns.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeColumn(index)}
-                                style={styles.removeButton}
-                              >
-                                ×
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addColumn}
-                        style={styles.addButton}
-                      >
-                        + Add Column
-                      </button>
-                    </div>
-                  </>
-                )}
 
                 <button
                   type="submit"
@@ -1250,8 +1193,24 @@ export default function Schedule() {
                   <button onClick={addRow} style={styles.actionButton}>
                     + Add Row (Position)
                   </button>
-                  <button onClick={addColumn} style={styles.actionButton}>
-                    + Add Column
+                  <button onClick={promptAddColumn} style={styles.actionButton}>
+                    + Add Column (Overnight Shift)
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      if (confirm("Are you sure you want to delete this draft schedule? This cannot be undone.")) {
+                        try {
+                          await api.delete(`/schedules/${selectedSchedule.id}`);
+                          setSelectedSchedule(null);
+                          loadSchedules();
+                        } catch (err) {
+                          setError(err.message || "Failed to delete schedule");
+                        }
+                      }
+                    }}
+                    style={{ ...styles.actionButton, background: "var(--error)" }}
+                  >
+                    Delete Schedule
                   </button>
                 </div>
               )}
@@ -1599,12 +1558,25 @@ export default function Schedule() {
                 style={styles.select}
               >
                 <option value="">Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
+                {availableEmployees.length > 0 ? (
+                  availableEmployees.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))
+                ) : (
+                  users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))
+                )}
               </select>
+              {availableEmployees.length === 0 && modalAssignment === null && (
+                <p style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
+                  No employees available for this shift. Showing all employees.
+                </p>
+              )}
             </div>
 
             <div style={styles.formGrid}>

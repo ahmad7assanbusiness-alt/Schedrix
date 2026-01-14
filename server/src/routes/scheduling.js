@@ -74,6 +74,97 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+// GET /schedules/:id/available-employees?date=YYYY-MM-DD&shiftType=morning|evening
+router.get("/:id/available-employees", authMiddleware, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const schedule = await prisma.scheduleWeek.findFirst({
+      where: {
+        id: req.params.id,
+        businessId: req.user.businessId,
+      },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ error: "Schedule not found" });
+    }
+
+    const { date, shiftType } = req.query;
+    if (!date || !shiftType) {
+      return res.status(400).json({ error: "Date and shiftType are required" });
+    }
+
+    const targetDate = new Date(date);
+    const dateStr = targetDate.toISOString().split("T")[0];
+
+    // Find open availability requests that cover this date
+    const availabilityRequest = await prisma.availabilityRequest.findFirst({
+      where: {
+        businessId: req.user.businessId,
+        status: "OPEN",
+        startDate: { lte: targetDate },
+        endDate: { gte: targetDate },
+      },
+    });
+
+    if (!availabilityRequest) {
+      // If no availability request, return all employees
+      const allUsers = await prisma.user.findMany({
+        where: {
+          businessId: req.user.businessId,
+          role: "EMPLOYEE",
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+      return res.json(allUsers);
+    }
+
+    // Get availability entries for this date
+    const entries = await prisma.availabilityEntry.findMany({
+      where: {
+        requestId: availabilityRequest.id,
+        date: targetDate,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Filter employees based on shift type
+    const availableEmployees = entries
+      .filter((entry) => {
+        const blocks = entry.blocks;
+        if (!blocks || blocks.off === true) return false; // Exclude off/NA
+        
+        if (shiftType === "morning") {
+          return blocks.morning === true || blocks.double === true;
+        } else if (shiftType === "evening") {
+          return blocks.evening === true || blocks.double === true;
+        }
+        return false;
+      })
+      .map((entry) => entry.user);
+
+    res.json(availableEmployees);
+  } catch (error) {
+    console.error("Get available employees error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /schedules/:id (auth - get schedule with assignments)
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
@@ -371,6 +462,42 @@ router.put("/:id/structure", authMiddleware, managerOnly, async (req, res) => {
       return res.status(400).json({ error: "Validation error", details: error.errors });
     }
     console.error("Update schedule structure error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /schedules/:id (manager only - delete draft schedule)
+router.delete("/:id", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const schedule = await prisma.scheduleWeek.findFirst({
+      where: {
+        id: req.params.id,
+        businessId: req.user.businessId,
+        status: "DRAFT", // Only allow deleting draft schedules
+      },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ error: "Draft schedule not found" });
+    }
+
+    // Delete all assignments first
+    await prisma.shiftAssignment.deleteMany({
+      where: { scheduleId: req.params.id },
+    });
+
+    // Delete the schedule
+    await prisma.scheduleWeek.delete({
+      where: { id: req.params.id },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete schedule error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
