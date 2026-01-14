@@ -39,8 +39,6 @@ model Business {
 
 model User {
   id         String   @id @default(cuid())
-  firstName  String?
-  lastName   String?
   name       String
   email      String?  @unique
   phone      String?
