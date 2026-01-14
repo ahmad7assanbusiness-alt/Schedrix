@@ -26,6 +26,7 @@ enum ScheduleStatus {
 model Business {
   id                 String   @id @default(cuid())
   name               String
+  address            String?
   joinCode           String   @unique
   subscriptionStatus String   @default("inactive")
   ownerUserId        String
@@ -38,8 +39,11 @@ model Business {
 
 model User {
   id         String   @id @default(cuid())
+  firstName  String?
+  lastName   String?
   name       String
   email      String?  @unique
+  phone      String?
   password   String?
   role       Role     @default(EMPLOYEE)
   businessId String?

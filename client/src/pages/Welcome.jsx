@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client.js";
 import { useAuth } from "../auth/useAuth.js";
@@ -14,7 +14,7 @@ const styles = {
   },
   container: {
     width: "100%",
-    maxWidth: "480px",
+    maxWidth: "600px",
   },
   card: {
     background: "rgba(255, 255, 255, 0.98)",
@@ -86,11 +86,7 @@ const styles = {
     color: "var(--gray-900)",
     transition: "all var(--transition-base)",
     fontFamily: "var(--font-family)",
-  },
-  inputFocus: {
-    outline: "none",
-    borderColor: "var(--primary)",
-    boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.1)",
+    boxSizing: "border-box",
   },
   label: {
     display: "block",
@@ -114,10 +110,6 @@ const styles = {
     boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
     marginTop: "var(--spacing-md)",
   },
-  buttonHover: {
-    transform: "translateY(-2px)",
-    boxShadow: "0 6px 20px rgba(99, 102, 241, 0.4)",
-  },
   buttonDisabled: {
     opacity: 0.6,
     cursor: "not-allowed",
@@ -131,34 +123,105 @@ const styles = {
     border: "1px solid var(--error)",
     fontSize: "var(--font-size-sm)",
     fontWeight: 500,
+    marginBottom: "var(--spacing-lg)",
+  },
+  loadingText: {
+    textAlign: "center",
+    color: "var(--gray-500)",
+    padding: "var(--spacing-xl)",
   },
 };
 
 export default function Welcome() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [mode, setMode] = useState("owner");
+  const [checkingOwners, setCheckingOwners] = useState(true);
+  const [hasOwners, setHasOwners] = useState(false);
+  const [mode, setMode] = useState("login"); // "login", "register", or "employee"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Registration form state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
+  const [businessAddress, setBusinessAddress] = useState("");
+
+  // Login form state
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Employee join state
   const [joinCode, setJoinCode] = useState("");
   const [employeeName, setEmployeeName] = useState("");
 
-  async function handleBootstrap(e) {
+  useEffect(() => {
+    checkOwners();
+  }, []);
+
+  async function checkOwners() {
+    try {
+      const response = await api.get("/auth/check-owners");
+      setHasOwners(response.hasOwners);
+      setMode(response.hasOwners ? "login" : "register");
+    } catch (err) {
+      console.error("Error checking owners:", err);
+      // Default to register if check fails
+      setHasOwners(false);
+      setMode("register");
+    } finally {
+      setCheckingOwners(false);
+    }
+  }
+
+  async function handleRegister(e) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { token, user, business } = await api.post("/auth/bootstrap-owner", {
+      const { token, user, business } = await api.post("/auth/register", {
+        email,
+        password,
+        confirmPassword,
+        phone,
+        firstName,
+        lastName,
         businessName,
-        ownerName,
+        businessAddress,
       });
       login(token, user, business);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const { token, user, business } = await api.post("/auth/login", {
+        emailOrPhone,
+        password: loginPassword,
+      });
+      login(token, user, business);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -176,10 +239,22 @@ export default function Welcome() {
       login(token, user, business);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Invalid join code");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingOwners) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.container}>
+          <div style={styles.card}>
+            <div style={styles.loadingText}>Loading...</div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -191,31 +266,100 @@ export default function Welcome() {
             <p style={styles.subtitle}>Enterprise workforce scheduling made simple</p>
           </div>
 
-          <div style={styles.tabs}>
-            <button
-              onClick={() => setMode("owner")}
-              style={{
-                ...styles.tab,
-                ...(mode === "owner" ? styles.tabActive : {}),
-              }}
-            >
-              Create Business
-            </button>
-            <button
-              onClick={() => setMode("employee")}
-              style={{
-                ...styles.tab,
-                ...(mode === "employee" ? styles.tabActive : {}),
-              }}
-            >
-              Join Business
-            </button>
-          </div>
+          {hasOwners && (
+            <div style={styles.tabs}>
+              <button
+                onClick={() => setMode("login")}
+                style={{
+                  ...styles.tab,
+                  ...(mode === "login" ? styles.tabActive : {}),
+                }}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setMode("employee")}
+                style={{
+                  ...styles.tab,
+                  ...(mode === "employee" ? styles.tabActive : {}),
+                }}
+              >
+                Join Business
+              </button>
+            </div>
+          )}
 
           {error && <div style={styles.error}>{error}</div>}
 
-          {mode === "owner" ? (
-            <form onSubmit={handleBootstrap} style={styles.form}>
+          {mode === "register" && (
+            <form onSubmit={handleRegister} style={styles.form}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="your@email.com"
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  style={styles.input}
+                  placeholder="Minimum 6 characters"
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="Confirm your password"
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Phone Number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>First Name</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="John"
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Last Name</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="Doe"
+                />
+              </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Business Name</label>
                 <input
@@ -224,18 +368,18 @@ export default function Welcome() {
                   onChange={(e) => setBusinessName(e.target.value)}
                   required
                   style={styles.input}
-                  placeholder="Enter your business name"
+                  placeholder="My Business Inc."
                 />
               </div>
               <div style={styles.inputGroup}>
-                <label style={styles.label}>Owner Name</label>
+                <label style={styles.label}>Business Address</label>
                 <input
                   type="text"
-                  value={ownerName}
-                  onChange={(e) => setOwnerName(e.target.value)}
+                  value={businessAddress}
+                  onChange={(e) => setBusinessAddress(e.target.value)}
                   required
                   style={styles.input}
-                  placeholder="Enter your name"
+                  placeholder="123 Main St, City, State 12345"
                 />
               </div>
               <button
@@ -246,10 +390,49 @@ export default function Welcome() {
                   ...(loading ? styles.buttonDisabled : {}),
                 }}
               >
-                {loading ? "Creating..." : "Create Business"}
+                {loading ? "Creating Account..." : "Create Account"}
               </button>
             </form>
-          ) : (
+          )}
+
+          {mode === "login" && (
+            <form onSubmit={handleLogin} style={styles.form}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Email or Phone</label>
+                <input
+                  type="text"
+                  value={emailOrPhone}
+                  onChange={(e) => setEmailOrPhone(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="your@email.com or +1 (555) 123-4567"
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Password</label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="Enter your password"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  ...styles.button,
+                  ...(loading ? styles.buttonDisabled : {}),
+                }}
+              >
+                {loading ? "Logging in..." : "Login"}
+              </button>
+            </form>
+          )}
+
+          {mode === "employee" && (
             <form onSubmit={handleJoin} style={styles.form}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Join Code</label>
