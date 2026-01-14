@@ -100,6 +100,7 @@ model ShiftAssignment {
   startTime   String @default("09:00")
   endTime     String @default("17:00")
   position    String // Position name (e.g., "Cash", "Floater", "Host")
+  shiftType   String @default("morning") // "morning" or "evening"
   assignedUserId String?
   createdAt  DateTime @default(now())
 

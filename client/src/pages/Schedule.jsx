@@ -481,6 +481,7 @@ export default function Schedule() {
   const [modalEmployeeId, setModalEmployeeId] = useState("");
   const [modalStartTime, setModalStartTime] = useState("09:00");
   const [modalEndTime, setModalEndTime] = useState("17:00");
+  const [modalShiftType, setModalShiftType] = useState("morning");
   const [draggedAssignment, setDraggedAssignment] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
   const [customRows, setCustomRows] = useState([""]);
@@ -762,28 +763,66 @@ export default function Schedule() {
   function getDates() {
     if (!selectedSchedule) return [];
     
-    // If custom columns are defined, use them
+    // If custom columns are defined, use them but split each into morning/evening
     if (selectedSchedule.columns && Array.isArray(selectedSchedule.columns) && selectedSchedule.columns.length > 0) {
-      return selectedSchedule.columns.map((col, index) => ({
-        label: col.label,
-        date: col.date ? new Date(col.date) : null,
-        index,
-      }));
+      const result = [];
+      selectedSchedule.columns.forEach((col, index) => {
+        const date = col.date ? new Date(col.date) : null;
+        const dayLabel = col.label || (date ? date.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        }) : `Column ${index + 1}`);
+        
+        // Add morning shift column
+        result.push({
+          label: dayLabel,
+          date: date,
+          index: result.length,
+          shiftType: "morning",
+          dayIndex: index,
+        });
+        
+        // Add evening shift column
+        result.push({
+          label: dayLabel,
+          date: date,
+          index: result.length,
+          shiftType: "evening",
+          dayIndex: index,
+        });
+      });
+      return result;
     }
     
-    // Otherwise, generate dates from startDate to endDate (backward compatibility)
+    // Otherwise, generate dates from startDate to endDate, split into morning/evening
     const start = new Date(selectedSchedule.startDate);
     const end = new Date(selectedSchedule.endDate);
     const dates = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dayLabel = d.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+      const dayDate = new Date(d);
+      
+      // Add morning shift column
       dates.push({
-        label: d.toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        }),
-        date: new Date(d),
+        label: dayLabel,
+        date: dayDate,
         index: dates.length,
+        shiftType: "morning",
+        dayIndex: dates.length / 2,
+      });
+      
+      // Add evening shift column
+      dates.push({
+        label: dayLabel,
+        date: dayDate,
+        index: dates.length,
+        shiftType: "evening",
+        dayIndex: dates.length / 2,
       });
     }
     return dates;
@@ -797,10 +836,13 @@ export default function Schedule() {
     if (!date) return [];
     
     const dateStr = new Date(date).toISOString().split("T")[0];
+    const shiftType = dateObj.shiftType || "morning";
+    
     return selectedSchedule.assignments.filter(
       (a) =>
         new Date(a.date).toISOString().split("T")[0] === dateStr &&
-        a.position === position
+        a.position === position &&
+        (a.shiftType || "morning") === shiftType
     );
   }
 
@@ -827,17 +869,30 @@ export default function Schedule() {
     if (selectedSchedule.status === "PUBLISHED") return;
     // Extract date from date object if it exists
     const date = dateObj?.date || dateObj;
+    if (!date && !dateObj) {
+      setError("Cannot create assignment: column must have a date");
+      return;
+    }
     setModalDate(date);
     setModalPosition(position || "");
     setModalAssignment(assignment);
+    const shiftType = dateObj?.shiftType || assignment?.shiftType || "morning";
+    setModalShiftType(shiftType);
+    
     if (assignment) {
       setModalEmployeeId(assignment.assignedUserId || "");
       setModalStartTime(assignment.startTime || "09:00");
       setModalEndTime(assignment.endTime || "17:00");
     } else {
       setModalEmployeeId("");
-      setModalStartTime("09:00");
-      setModalEndTime("17:00");
+      // Set default times based on shift type
+      if (shiftType === "morning") {
+        setModalStartTime("09:00");
+        setModalEndTime("17:00");
+      } else {
+        setModalStartTime("17:00");
+        setModalEndTime("21:00");
+      }
     }
     setModalOpen(true);
   }
@@ -850,6 +905,7 @@ export default function Schedule() {
     setModalEmployeeId("");
     setModalStartTime("09:00");
     setModalEndTime("17:00");
+    setModalShiftType("morning");
   }
 
   async function handleSaveAssignment() {
@@ -881,6 +937,7 @@ export default function Schedule() {
             assignedUserId: modalEmployeeId || null,
             startTime: modalStartTime,
             endTime: modalEndTime,
+            shiftType: modalShiftType,
           }
         );
       } else {
@@ -891,6 +948,7 @@ export default function Schedule() {
           assignedUserId: modalEmployeeId || null,
           startTime: modalStartTime,
           endTime: modalEndTime,
+          shiftType: modalShiftType,
         });
       }
       closeModal();
@@ -1203,7 +1261,7 @@ export default function Schedule() {
                   <table style={styles.table}>
                     <thead style={styles.tableHeader}>
                       <tr>
-                        <th style={styles.tableHeaderCellFirst}>
+                        <th rowSpan={2} style={styles.tableHeaderCellFirst}>
                           Position
                           {selectedSchedule.status === "DRAFT" && positions.length === 0 && (
                             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
@@ -1211,8 +1269,43 @@ export default function Schedule() {
                             </div>
                           )}
                         </th>
+                        {(() => {
+                          // Group dates by day to show day headers
+                          const dayGroups = {};
+                          dates.forEach((dateObj) => {
+                            const dayKey = dateObj.date ? dateObj.date.toISOString().split("T")[0] : dateObj.dayIndex;
+                            if (!dayGroups[dayKey]) {
+                              dayGroups[dayKey] = {
+                                date: dateObj.date,
+                                label: dateObj.label,
+                                shifts: [],
+                              };
+                            }
+                            dayGroups[dayKey].shifts.push(dateObj);
+                          });
+                          return Object.values(dayGroups).map((dayGroup, dayIdx) => (
+                            <th
+                              key={dayGroup.date ? dayGroup.date.toISOString() : `day-${dayIdx}`}
+                              colSpan={2}
+                              style={{
+                                ...styles.tableHeaderCell,
+                                textAlign: "center",
+                                fontWeight: 700,
+                                backgroundColor: "var(--gray-100)",
+                              }}
+                            >
+                              {dayGroup.label || (dayGroup.date ? dayGroup.date.toLocaleDateString("en-US", {
+                                weekday: "long",
+                                month: "short",
+                                day: "numeric",
+                              }) : `Day ${dayIdx + 1}`)}
+                            </th>
+                          ));
+                        })()}
+                      </tr>
+                      <tr>
                         {dates.map((dateObj, idx) => (
-                          <th key={dateObj.date ? dateObj.date.toISOString() : `col-${idx}`} style={styles.tableHeaderCell}>
+                          <th key={dateObj.date ? `${dateObj.date.toISOString()}-${dateObj.shiftType}` : `col-${idx}`} style={styles.tableHeaderCell}>
                             {editingColumn === idx ? (
                               <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-xs)" }}>
                                 <input
@@ -1253,15 +1346,9 @@ export default function Schedule() {
                                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--spacing-xs)" }}
                               >
                                 <span
-                                  onClick={() => startEditingColumn(dateObj, idx)}
-                                  style={{ cursor: selectedSchedule.status === "DRAFT" ? "pointer" : "default", flex: 1 }}
-                                  title={selectedSchedule.status === "DRAFT" ? "Click to edit" : ""}
+                                  style={{ flex: 1, textAlign: "center", fontSize: "var(--font-size-xs)", fontWeight: 600 }}
                                 >
-                                  {dateObj.label || (dateObj.date ? dateObj.date.toLocaleDateString("en-US", {
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                  }) : `Column ${idx + 1}`)}
+                                  {dateObj.shiftType === "morning" ? "Morning" : "Evening"}
                                 </span>
                                 {selectedSchedule.status === "DRAFT" && dates.length > 1 && (
                                   <button
@@ -1480,6 +1567,28 @@ export default function Schedule() {
                 required
                 style={styles.input}
               />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Shift Type</label>
+              <select
+                value={modalShiftType}
+                onChange={(e) => {
+                  setModalShiftType(e.target.value);
+                  // Update default times based on shift type
+                  if (e.target.value === "morning") {
+                    setModalStartTime("09:00");
+                    setModalEndTime("17:00");
+                  } else {
+                    setModalStartTime("17:00");
+                    setModalEndTime("21:00");
+                  }
+                }}
+                style={styles.select}
+              >
+                <option value="morning">Morning</option>
+                <option value="evening">Evening</option>
+              </select>
             </div>
 
             <div style={styles.formGroup}>

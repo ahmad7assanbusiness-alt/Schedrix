@@ -20,6 +20,7 @@ const assignmentSchema = z.object({
   position: z.string().min(1, "Position is required"),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
+  shiftType: z.enum(["morning", "evening"]).optional().default("morning"),
   assignedUserId: z.string().nullable().optional(),
 });
 
@@ -141,7 +142,7 @@ router.post("/:id/assignments", authMiddleware, managerOnly, async (req, res) =>
       return res.status(404).json({ error: "Schedule not found" });
     }
 
-    const { date, position, startTime, endTime, assignedUserId } = assignmentSchema.parse(req.body);
+    const { date, position, startTime, endTime, shiftType, assignedUserId } = assignmentSchema.parse(req.body);
 
     // If assigning to a user, verify they're in the business
     if (assignedUserId) {
@@ -157,7 +158,7 @@ router.post("/:id/assignments", authMiddleware, managerOnly, async (req, res) =>
       }
     }
 
-    // Create assignment (allow multiple per day/position)
+    // Create assignment (allow multiple per day/position/shift)
     const assignment = await prisma.shiftAssignment.create({
       data: {
         scheduleId: req.params.id,
@@ -165,6 +166,7 @@ router.post("/:id/assignments", authMiddleware, managerOnly, async (req, res) =>
         position,
         startTime: startTime || "09:00",
         endTime: endTime || "17:00",
+        shiftType: shiftType || "morning",
         assignedUserId: assignedUserId || null,
       },
       include: {
@@ -220,6 +222,8 @@ router.put("/:id/assignments/:assignmentId", authMiddleware, managerOnly, async 
     if (req.body.position !== undefined) updateData.position = req.body.position;
     if (req.body.startTime !== undefined) updateData.startTime = req.body.startTime;
     if (req.body.endTime !== undefined) updateData.endTime = req.body.endTime;
+    if (req.body.shiftType !== undefined) updateData.shiftType = req.body.shiftType;
+    if (req.body.date !== undefined) updateData.date = new Date(req.body.date);
     if (req.body.assignedUserId !== undefined) {
       if (req.body.assignedUserId) {
         const user = await prisma.user.findFirst({
