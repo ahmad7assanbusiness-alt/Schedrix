@@ -561,7 +561,7 @@ export default function Schedule() {
   }
 
   function promptAddColumn() {
-    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!selectedSchedule) return;
     
     // Get unique days from current schedule
     const dayGroups = {};
@@ -600,7 +600,7 @@ export default function Schedule() {
   }
 
   async function addColumnToDay(day) {
-    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!selectedSchedule) return;
     try {
       const currentColumns = selectedSchedule.columns && Array.isArray(selectedSchedule.columns)
         ? [...selectedSchedule.columns]
@@ -644,7 +644,7 @@ export default function Schedule() {
   }
 
   async function addRow() {
-    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!selectedSchedule) return;
     try {
       const currentRows = selectedSchedule.rows && Array.isArray(selectedSchedule.rows)
         ? [...selectedSchedule.rows]
@@ -663,7 +663,7 @@ export default function Schedule() {
   }
 
   async function updateScheduleStructure(rows, columns) {
-    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!selectedSchedule) return;
     try {
       await api.put(`/schedules/${selectedSchedule.id}/structure`, {
         rows: rows !== undefined ? rows : selectedSchedule.rows,
@@ -676,7 +676,6 @@ export default function Schedule() {
   }
 
   function startEditingPosition(position, index) {
-    if (selectedSchedule.status === "PUBLISHED") return;
     setEditingPosition(index);
     setEditingPositionValue(position);
   }
@@ -703,7 +702,6 @@ export default function Schedule() {
   }
 
   function startEditingColumn(column, index) {
-    if (selectedSchedule.status === "PUBLISHED") return;
     setEditingColumn(index);
     setEditingColumnValue({
       label: column.label || "",
@@ -737,7 +735,7 @@ export default function Schedule() {
   }
 
   async function deleteRow(index) {
-    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!selectedSchedule) return;
     if (!confirm("Are you sure you want to delete this position? All assignments in this row will be deleted.")) return;
     
     try {
@@ -766,7 +764,7 @@ export default function Schedule() {
   }
 
   async function deleteColumn(index) {
-    if (!selectedSchedule || selectedSchedule.status === "PUBLISHED") return;
+    if (!selectedSchedule) return;
     if (!confirm("Are you sure you want to delete this column? All assignments in this column will be deleted.")) return;
     
     try {
@@ -902,7 +900,6 @@ export default function Schedule() {
   }
 
   async function openModal(dateObj, position, assignment = null) {
-    if (selectedSchedule.status === "PUBLISHED") return;
     // Extract date from date object if it exists
     const date = dateObj?.date || dateObj;
     if (!date && !dateObj) {
@@ -1022,14 +1019,12 @@ export default function Schedule() {
   }
 
   function handleDragStart(e, assignment) {
-    if (selectedSchedule.status === "PUBLISHED") return;
     setDraggedAssignment(assignment);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", assignment.id);
   }
 
   function handleDragOver(e, dateObj, position) {
-    if (selectedSchedule.status === "PUBLISHED") return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     const date = dateObj?.date || dateObj;
@@ -1045,7 +1040,7 @@ export default function Schedule() {
     e.preventDefault();
     setDragOverCell(null);
     
-    if (!draggedAssignment || selectedSchedule.status === "PUBLISHED") return;
+    if (!draggedAssignment) return;
     
     // Get the actual date from the date object
     const targetDate = targetDateObj?.date || targetDateObj;
@@ -1204,21 +1199,21 @@ export default function Schedule() {
                 )}
               </div>
 
-              {selectedSchedule.status === "DRAFT" && (
-                <div style={styles.actionButtonGroup}>
-                  <button onClick={addRow} style={styles.actionButton}>
-                    + Add Row (Position)
-                  </button>
-                  <button onClick={promptAddColumn} style={styles.actionButton}>
-                    + Add Column (Overnight Shift)
-                  </button>
-                  <button 
-                    onClick={saveAsTemplate}
-                    style={{ ...styles.actionButton, background: "var(--secondary)" }}
-                    title="Save current schedule structure (rows and columns) as template for future schedules"
-                  >
-                    Save as Template
-                  </button>
+              <div style={styles.actionButtonGroup}>
+                <button onClick={addRow} style={styles.actionButton}>
+                  + Add Row (Position)
+                </button>
+                <button onClick={promptAddColumn} style={styles.actionButton}>
+                  + Add Column (Overnight Shift)
+                </button>
+                <button 
+                  onClick={saveAsTemplate}
+                  style={{ ...styles.actionButton, background: "var(--secondary)" }}
+                  title="Save current schedule structure (rows and columns) as template for future schedules"
+                >
+                  Save as Template
+                </button>
+                {selectedSchedule.status === "DRAFT" && (
                   <button 
                     onClick={async () => {
                       if (confirm("Are you sure you want to delete this draft schedule? This cannot be undone.")) {
@@ -1235,8 +1230,8 @@ export default function Schedule() {
                   >
                     Delete Schedule
                   </button>
-                </div>
-              )}
+                )}
+              </div>
 
               {dates.length > 0 ? (
                 <div style={styles.tableContainer}>
@@ -1245,7 +1240,7 @@ export default function Schedule() {
                       <tr>
                         <th rowSpan={2} style={styles.tableHeaderCellFirst}>
                           Position
-                          {selectedSchedule.status === "DRAFT" && positions.length === 0 && (
+                          {positions.length === 0 && (
                             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
                               Click "+ Add Row" to start
                             </div>
@@ -1313,7 +1308,7 @@ export default function Schedule() {
                                   placeholder="Date (optional)"
                                   style={{ ...styles.editableCell, fontSize: "var(--font-size-xs)" }}
                                 />
-                                {selectedSchedule.status === "DRAFT" && dates.length > 1 && (
+                                {dates.length > 1 && (
                                   <button
                                     onClick={() => deleteColumn(idx)}
                                     style={{ ...styles.removeButton, fontSize: "var(--font-size-xs)", padding: "2px 6px" }}
@@ -1332,7 +1327,7 @@ export default function Schedule() {
                                 >
                                   {dateObj.shiftType === "morning" ? "Morning" : "Evening"}
                                 </span>
-                                {selectedSchedule.status === "DRAFT" && dates.length > 1 && (
+                                {dates.length > 1 && (
                                   <button
                                     onClick={() => deleteColumn(idx)}
                                     style={{ ...styles.removeButton, fontSize: "var(--font-size-xs)", padding: "2px 6px" }}
@@ -1351,13 +1346,9 @@ export default function Schedule() {
                       {positions.length === 0 ? (
                         <tr>
                           <td style={styles.tableCellFirst}>
-                            {selectedSchedule.status === "DRAFT" ? (
-                              <div style={{ color: "var(--gray-500)", fontSize: "var(--font-size-sm)", textAlign: "center" }}>
-                                Click "+ Add Row" above
-                              </div>
-                            ) : (
-                              "—"
-                            )}
+                            <div style={{ color: "var(--gray-500)", fontSize: "var(--font-size-sm)", textAlign: "center" }}>
+                              Click "+ Add Row" above
+                            </div>
                           </td>
                           {dates.map((dateObj, dateIdx) => {
                             const date = dateObj.date || dateObj;
@@ -1365,19 +1356,14 @@ export default function Schedule() {
                             return (
                               <td
                                 key={dateKey}
-                                style={{
-                                  ...styles.tableCell,
-                                  cursor: selectedSchedule.status === "DRAFT" ? "pointer" : "default",
-                                }}
+                                style={styles.tableCell}
                                 onClick={() => {
-                                  if (selectedSchedule.status === "DRAFT") {
-                                    // Create a temporary position name for the modal
-                                    openModal(dateObj, "");
-                                  }
+                                  // Create a temporary position name for the modal
+                                  openModal(dateObj, "");
                                 }}
                               >
                                 <div style={styles.emptyCell}>
-                                  {selectedSchedule.status === "DRAFT" ? "Click to create assignment" : "—"}
+                                  Click to create assignment
                                 </div>
                               </td>
                             );
@@ -1415,12 +1401,12 @@ export default function Schedule() {
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--spacing-xs)" }}>
                                   <span
                                     onClick={() => startEditingPosition(position, rowIndex)}
-                                    style={{ cursor: selectedSchedule.status === "DRAFT" ? "pointer" : "default", flex: 1 }}
-                                    title={selectedSchedule.status === "DRAFT" ? "Click to edit" : ""}
+                                    style={{ cursor: "pointer", flex: 1 }}
+                                    title="Click to edit"
                                   >
                                     {position}
                                   </span>
-                                  {selectedSchedule.status === "DRAFT" && positions.length > 1 && (
+                                  {positions.length > 1 && (
                                     <button
                                       onClick={() => deleteRow(rowIndex)}
                                       style={{ ...styles.removeButton, fontSize: "var(--font-size-xs)", padding: "2px 6px" }}
@@ -1451,33 +1437,29 @@ export default function Schedule() {
                                   onDragLeave={handleDragLeave}
                                   onDrop={(e) => handleDrop(e, dateObj, position)}
                                   onClick={() => {
-                                    if (selectedSchedule.status === "DRAFT") {
-                                      openModal(dateObj, position);
-                                    }
+                                    openModal(dateObj, position);
                                   }}
                                 >
                                   {assignments.length === 0 ? (
                                     <div style={styles.emptyCell}>
-                                      {selectedSchedule.status === "DRAFT" ? "Click to assign" : "—"}
+                                      Click to assign
                                     </div>
                                   ) : (
                                     assignments.map((assignment) => (
                                       <div
                                         key={assignment.id}
-                                        draggable={selectedSchedule.status === "DRAFT"}
+                                        draggable={true}
                                         onDragStart={(e) => handleDragStart(e, assignment)}
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          if (selectedSchedule.status === "DRAFT") {
-                                            openModal(dateObj, position, assignment);
-                                          }
+                                          openModal(dateObj, position, assignment);
                                         }}
                                         style={{
                                           ...styles.assignmentBadge,
                                           background: assignment.assignedUser
                                             ? "var(--primary-light)"
                                             : "var(--gray-200)",
-                                          cursor: selectedSchedule.status === "DRAFT" ? "grab" : "pointer",
+                                          cursor: "grab",
                                         }}
                                         onDragEnd={() => {
                                           setDraggedAssignment(null);
