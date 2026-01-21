@@ -232,10 +232,23 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
       },
     });
 
+    // Get ALL employees in the business first
+    const allEmployees = await prisma.user.findMany({
+      where: {
+        businessId: req.user.businessId,
+        role: "EMPLOYEE",
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    // If no availability request exists, return all employees (they didn't submit, assume available)
     if (!availabilityRequest) {
-      // If no availability request, return empty array (don't show any employees)
-      // This ensures we only show employees who have actually submitted availability
-      return res.json([]);
+      console.log(`No availability request found, returning all ${allEmployees.length} employees`);
+      return res.json(allEmployees);
     }
 
     // Get availability entries for this exact date
@@ -264,41 +277,53 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
       },
     });
 
-    // Apply strict validation algorithm to filter available employees
-    const availableEmployees = entries
-      .filter((entry) => {
-        const blocks = entry.blocks;
-        
-        // Log the blocks data for debugging (helps identify data structure issues)
-        if (process.env.NODE_ENV === "development") {
-          console.log(`Checking ${entry.user.name} for ${shiftType} on ${date}:`, JSON.stringify(blocks));
-        }
-        
-        const validation = validateEmployeeAvailability(blocks, shiftType);
-        
-        // Log excluded employees for debugging
-        if (!validation.valid) {
-          console.log(`❌ EXCLUDING ${entry.user.name}: ${validation.reason}`, {
-            off: blocks?.off,
-            morning: blocks?.morning,
-            evening: blocks?.evening,
-            double: blocks?.double,
-          });
-        } else {
-          console.log(`✅ INCLUDING ${entry.user.name}: Available for ${shiftType}`);
-        }
-        
-        return validation.valid;
-      })
-      .map((entry) => entry.user)
-      .filter((user, index, self) => 
-        // Remove duplicates (in case of multiple entries per user - shouldn't happen but safety check)
-        index === self.findIndex((u) => u.id === user.id)
-      );
+    // Create a map of employee IDs to their availability blocks
+    const availabilityMap = new Map();
+    entries.forEach((entry) => {
+      availabilityMap.set(entry.userId, entry.blocks);
+    });
 
-    console.log(`Returning ${availableEmployees.length} available employees for ${shiftType} on ${date}`);
-    
-    // Return only employees who passed strict validation
+    // Filter all employees based on availability
+    const availableEmployees = allEmployees.filter((employee) => {
+      const blocks = availabilityMap.get(employee.id);
+      
+      // If employee didn't submit availability, include them (assume they're available)
+      if (!blocks) {
+        console.log(`✅ INCLUDING ${employee.name}: No availability entry (assumed available)`);
+        return true;
+      }
+
+      // Employee submitted availability - validate it strictly
+      if (typeof blocks !== "object") {
+        console.log(`❌ EXCLUDING ${employee.name}: Invalid availability data`);
+        return false;
+      }
+
+      // Log the blocks data for debugging
+      if (process.env.NODE_ENV === "development") {
+        console.log(`Checking ${employee.name} for ${shiftType} on ${date}:`, JSON.stringify(blocks));
+      }
+
+      const validation = validateEmployeeAvailability(blocks, shiftType);
+
+      // Log excluded employees for debugging
+      if (!validation.valid) {
+        console.log(`❌ EXCLUDING ${employee.name}: ${validation.reason}`, {
+          off: blocks?.off,
+          morning: blocks?.morning,
+          evening: blocks?.evening,
+          double: blocks?.double,
+        });
+      } else {
+        console.log(`✅ INCLUDING ${employee.name}: Available for ${shiftType}`);
+      }
+
+      return validation.valid;
+    });
+
+    console.log(`Returning ${availableEmployees.length} available employees for ${shiftType} on ${date} (out of ${allEmployees.length} total)`);
+
+    // Return employees who are available
     res.json(availableEmployees);
   } catch (error) {
     console.error("Get available employees error:", error);
