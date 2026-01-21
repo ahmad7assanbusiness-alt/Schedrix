@@ -6,8 +6,9 @@ import { loadStripe } from "@stripe/stripe-js";
 import "../../index.css";
 
 // Initialize Stripe (will use env var or empty string if not set)
-const stripePromise = process.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY)
+// Note: In Vite, use import.meta.env, not process.env
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
   : null;
 
 const styles = {
