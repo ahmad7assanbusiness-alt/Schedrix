@@ -2,8 +2,6 @@
 
 Enterprise-grade schedule and workforce planning platform - MVP.
 
-Last updated: $(date)
-
 ## Tech Stack
 
 - **Client**: React + Vite (PWA)
