@@ -1499,6 +1499,9 @@ export default function Schedule() {
                                           background: assignment.assignedUser
                                             ? "var(--primary-light)"
                                             : "var(--gray-200)",
+                                          color: assignment.assignedUser
+                                            ? "var(--primary)"
+                                            : "var(--text-primary)",
                                           cursor: "grab",
                                         }}
                                         onDragEnd={() => {
@@ -1506,14 +1509,17 @@ export default function Schedule() {
                                           setDragOverCell(null);
                                         }}
                                       >
-                                        <div style={{ fontWeight: 600 }}>
+                                        <div style={{ fontWeight: 600, color: "inherit" }}>
                                           {assignment.assignedUser?.name || "Unassigned"}
                                         </div>
                                         {assignment.startTime && assignment.endTime && (
                                           <div
                                             style={{
                                               fontSize: "var(--font-size-xs)",
-                                              color: "var(--text-secondary)",
+                                              color: assignment.assignedUser
+                                                ? "var(--primary-dark)"
+                                                : "var(--text-secondary)",
+                                              opacity: 0.9,
                                             }}
                                           >
                                             {assignment.startTime} - {assignment.endTime}
