@@ -8,6 +8,7 @@ const router = express.Router();
 const createScheduleSchema = z.object({
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
+  templateId: z.string().optional(), // Template ID to use
   rows: z.array(z.string()).optional(), // Array of row labels (positions)
   columns: z.array(z.object({
     label: z.string(),
@@ -31,21 +32,39 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
       return res.status(403).json({ error: "Not part of a business" });
     }
 
-    const { startDate, endDate, rows, columns } = createScheduleSchema.parse(req.body);
+    const { startDate, endDate, templateId, rows, columns } = createScheduleSchema.parse(req.body);
 
-    // If rows/columns not provided, try to load from template
+    // If templateId provided, load from that template
     let templateRows = rows;
     let templateColumns = columns;
+    let selectedTemplateId = templateId || null;
     
-    if (!rows || !columns) {
-      const template = await prisma.scheduleTemplate.findUnique({
-        where: { businessId: req.user.businessId },
+    if (templateId) {
+      const template = await prisma.scheduleTemplate.findFirst({
+        where: {
+          id: templateId,
+          businessId: req.user.businessId,
+        },
       });
       
       if (template) {
-        // Use template if provided, otherwise use template values
         templateRows = rows !== undefined ? rows : (template.rows || null);
         templateColumns = columns !== undefined ? columns : (template.columns || null);
+        selectedTemplateId = template.id;
+      } else {
+        return res.status(404).json({ error: "Template not found" });
+      }
+    } else if (!rows || !columns) {
+      // Legacy: If no template specified and no rows/columns, try to find default template
+      const defaultTemplate = await prisma.scheduleTemplate.findFirst({
+        where: { businessId: req.user.businessId },
+        orderBy: { createdAt: "desc" },
+      });
+      
+      if (defaultTemplate) {
+        templateRows = rows !== undefined ? rows : (defaultTemplate.rows || null);
+        templateColumns = columns !== undefined ? columns : (defaultTemplate.columns || null);
+        selectedTemplateId = defaultTemplate.id;
       }
     }
 
@@ -56,6 +75,7 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
         endDate: new Date(endDate),
         status: "DRAFT",
         createdByUserId: req.user.id,
+        templateId: selectedTemplateId,
         rows: templateRows,
         columns: templateColumns,
       },
@@ -78,8 +98,33 @@ router.get("/", authMiddleware, async (req, res) => {
       return res.status(403).json({ error: "Not part of a business" });
     }
 
+    let whereClause = { businessId: req.user.businessId };
+
+    // If user is an employee, filter by template assignments
+    if (req.user.role === "EMPLOYEE") {
+      // Get templates the employee is assigned to
+      const templateAssignments = await prisma.templateEmployeeAssignment.findMany({
+        where: { userId: req.user.id },
+        select: { templateId: true },
+      });
+
+      const assignedTemplateIds = templateAssignments.map(ta => ta.templateId);
+
+      if (assignedTemplateIds.length > 0) {
+        // Only show published schedules that use templates the employee is assigned to
+        whereClause = {
+          ...whereClause,
+          status: "PUBLISHED",
+          templateId: { in: assignedTemplateIds },
+        };
+      } else {
+        // If employee has no template assignments, show no schedules
+        return res.json([]);
+      }
+    }
+
     const schedules = await prisma.scheduleWeek.findMany({
-      where: { businessId: req.user.businessId },
+      where: whereClause,
       orderBy: { createdAt: "desc" },
     });
 

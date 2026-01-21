@@ -8,6 +8,7 @@ import AvailabilityRequest from "./pages/AvailabilityRequest.jsx";
 import AvailabilitySubmit from "./pages/AvailabilitySubmit.jsx";
 import Schedule from "./pages/Schedule.jsx";
 import ScheduleMy from "./pages/ScheduleMy.jsx";
+import Templates from "./pages/Templates.jsx";
 import Employees from "./pages/Employees.jsx";
 import Settings from "./pages/Settings.jsx";
 import Profile from "./pages/settings/Profile.jsx";
@@ -115,6 +116,7 @@ function App() {
         >
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="schedule" element={<Schedule />} />
+          <Route path="templates" element={<Templates />} />
           <Route path="employees" element={<Employees />} />
           <Route path="settings" element={<Settings />}>
             <Route index element={<Navigate to="profile" replace />} />

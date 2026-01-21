@@ -192,6 +192,7 @@ export default function SideNav({ onLogout }) {
   const mainNavItems = [
     { path: "/dashboard", label: "Dashboard", icon: "📊" },
     { path: "/schedule", label: "Schedule Builder", icon: "📅" },
+    { path: "/templates", label: "Templates", icon: "📋" },
     { path: "/employees", label: "Employees", icon: "👥" },
   ];
 

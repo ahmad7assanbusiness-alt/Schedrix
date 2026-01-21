@@ -475,6 +475,8 @@ export default function Schedule() {
   const { user } = useAuth();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [schedules, setSchedules] = useState([]);
@@ -517,6 +519,7 @@ export default function Schedule() {
       const schedule = await api.post("/schedules", {
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
+        templateId: selectedTemplateId || undefined,
       });
       setStartDate("");
       setEndDate("");
@@ -1154,7 +1157,24 @@ export default function Schedule() {
                     />
                   </div>
                 </div>
-
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Template (Optional)</label>
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    style={styles.select}
+                  >
+                    <option value="">No template (blank schedule)</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: "var(--font-size-xs)", color: "var(--text-secondary)", marginTop: "var(--spacing-xs)" }}>
+                    Select a template to automatically use its structure (rows and columns)
+                  </p>
+                </div>
 
                 <button
                   type="submit"
