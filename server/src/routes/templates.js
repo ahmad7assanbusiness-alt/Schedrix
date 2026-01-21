@@ -6,7 +6,7 @@ import { authMiddleware, managerOnly } from "../middleware/auth.js";
 const router = express.Router();
 
 const createTemplateSchema = z.object({
-  name: z.string().min(1, "Template name is required"),
+  name: z.string().min(1, "Template name is required").optional().nullable(),
   rows: z.array(z.string()).optional().nullable(),
   columns: z.array(z.object({
     label: z.string(),
@@ -102,6 +102,10 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
 
     const { name, rows, columns } = createTemplateSchema.parse(req.body);
 
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: "Template name is required" });
+    }
+
     // Remove dates from columns when saving template
     const templateColumns = columns
       ? columns.map(col => ({ label: col.label }))
@@ -110,7 +114,7 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
     const template = await prisma.scheduleTemplate.create({
       data: {
         businessId: req.user.businessId,
-        name,
+        name: name.trim(),
         rows: rows || null,
         columns: templateColumns,
       },

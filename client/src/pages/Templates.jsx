@@ -336,7 +336,7 @@ export default function Templates() {
           <div key={template.id} style={styles.templateCard}>
             <div style={styles.templateCardHeader}>
               <div>
-                <div style={styles.templateName}>{template.name}</div>
+                <div style={styles.templateName}>{template.name || "Unnamed Template"}</div>
                 <div style={styles.templateInfo}>
                   {template.rows?.length || 0} positions •{" "}
                   {template.columns?.length || 0} columns
