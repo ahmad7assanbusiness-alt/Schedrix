@@ -221,8 +221,24 @@ export default function Onboarding() {
     }
   }
 
-  function handleSkip() {
-    navigate("/dashboard");
+  async function handleSkip() {
+    setLoading(true);
+    try {
+      // Mark onboarding as complete without calendar integrations
+      await api.post("/auth/complete-onboarding", {
+        calendarIntegrations: [],
+      });
+      
+      // Reload user data to get updated onboardingCompleted status
+      // This ensures the OnboardingCheck component recognizes the change
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error("Failed to skip onboarding:", err);
+      // Still navigate to dashboard even if saving fails
+      window.location.href = "/dashboard";
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -267,9 +283,10 @@ export default function Onboarding() {
               <div style={styles.buttonGroup}>
                 <button
                   onClick={handleSkip}
+                  disabled={loading}
                   style={styles.skipButton}
                 >
-                  Skip onboarding
+                  {loading ? "Skipping..." : "Skip onboarding"}
                 </button>
                 <button
                   onClick={() => setCurrentStep(2)}
@@ -324,9 +341,10 @@ export default function Onboarding() {
                 </button>
                 <button
                   onClick={handleSkip}
+                  disabled={loading}
                   style={styles.skipButton}
                 >
-                  Skip
+                  {loading ? "Skipping..." : "Skip"}
                 </button>
                 <button
                   onClick={handleComplete}
