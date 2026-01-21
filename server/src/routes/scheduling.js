@@ -192,20 +192,30 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
       },
     });
 
-    // Filter employees based on shift type - only show those who submitted availability
+    // Filter employees based on shift type - only show those who submitted availability AND are available
     const availableEmployees = entries
       .filter((entry) => {
         const blocks = entry.blocks;
-        // Exclude entries with no blocks, off, or NA
-        if (!blocks || typeof blocks !== "object") return false;
-        if (blocks.off === true || blocks.na === true) return false;
         
-        // Check shift type availability
+        // Exclude entries with no blocks or invalid structure
+        if (!blocks || typeof blocks !== "object") return false;
+        
+        // IMPORTANT: Exclude employees who are marked as "off" - they are NOT available
+        if (blocks.off === true) return false;
+        
+        // Exclude entries marked as NA
+        if (blocks.na === true) return false;
+        
+        // Check shift type availability - must explicitly be available for this shift
         if (shiftType === "morning") {
+          // Available for morning if morning=true OR double=true
           return blocks.morning === true || blocks.double === true;
         } else if (shiftType === "evening") {
+          // Available for evening if evening=true OR double=true
           return blocks.evening === true || blocks.double === true;
         }
+        
+        // If shift type doesn't match, exclude
         return false;
       })
       .map((entry) => entry.user)
@@ -214,6 +224,7 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
         index === self.findIndex((u) => u.id === user.id)
       );
 
+    // If no available employees found, return empty array (don't show anyone)
     res.json(availableEmployees);
   } catch (error) {
     console.error("Get available employees error:", error);
