@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
 
@@ -113,6 +114,39 @@ const styles = {
     color: "var(--gray-500)",
     textTransform: "capitalize",
   },
+  userSectionClickable: {
+    cursor: "pointer",
+    transition: "all var(--transition-base)",
+  },
+  userSectionClickableHover: {
+    background: "var(--gray-50)",
+  },
+  dropdown: {
+    position: "absolute",
+    bottom: "80px",
+    left: "var(--spacing-lg)",
+    right: "var(--spacing-lg)",
+    background: "white",
+    borderRadius: "var(--radius-md)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+    border: "1px solid var(--gray-200)",
+    zIndex: 1000,
+    overflow: "hidden",
+  },
+  dropdownItem: {
+    padding: "var(--spacing-md)",
+    cursor: "pointer",
+    color: "var(--gray-700)",
+    fontSize: "var(--font-size-sm)",
+    transition: "all var(--transition-base)",
+    borderBottom: "1px solid var(--gray-100)",
+  },
+  dropdownItemLast: {
+    borderBottom: "none",
+  },
+  dropdownItemHover: {
+    background: "var(--gray-50)",
+  },
   logoutButton: {
     width: "100%",
     padding: "var(--spacing-sm) var(--spacing-md)",
@@ -124,16 +158,13 @@ const styles = {
     fontWeight: 600,
     cursor: "pointer",
     transition: "all var(--transition-base)",
-    "&:hover": {
-      background: "var(--error)",
-      color: "white",
-    },
   },
 };
 
 export default function SideNav({ onLogout }) {
   const location = useLocation();
   const { user, business } = useAuth();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
 
@@ -223,7 +254,22 @@ export default function SideNav({ onLogout }) {
         ))}
       </div>
 
-      <div style={styles.userSection}>
+      <div 
+        style={{
+          ...styles.userSection,
+          ...styles.userSectionClickable,
+          position: "relative",
+        }}
+        onClick={() => setShowProfileMenu(!showProfileMenu)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "var(--gray-50)";
+        }}
+        onMouseLeave={(e) => {
+          if (!showProfileMenu) {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.98)";
+          }
+        }}
+      >
         <div style={styles.userInfo}>
           <div style={styles.userAvatar}>
             {user?.name?.charAt(0)?.toUpperCase() || "U"}
@@ -233,9 +279,47 @@ export default function SideNav({ onLogout }) {
             <div style={styles.userRole}>{user?.role?.toLowerCase()}</div>
           </div>
         </div>
-        <button onClick={onLogout} style={styles.logoutButton}>
-          Logout
-        </button>
+        
+        {showProfileMenu && (
+          <div style={styles.dropdown}>
+            <Link
+              to="/settings/profile"
+              style={styles.dropdownItem}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowProfileMenu(false);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--gray-50)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "white";
+              }}
+            >
+              View Profile
+            </Link>
+            <div
+              style={{
+                ...styles.dropdownItem,
+                ...styles.dropdownItemLast,
+                color: "var(--error)",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowProfileMenu(false);
+                onLogout();
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--error-light)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "white";
+              }}
+            >
+              Logout
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
