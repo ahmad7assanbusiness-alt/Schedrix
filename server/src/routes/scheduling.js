@@ -145,39 +145,41 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
     }
 
     const targetDate = new Date(date);
+    // Normalize date to start of day for proper comparison
+    targetDate.setHours(0, 0, 0, 0);
     const dateStr = targetDate.toISOString().split("T")[0];
 
-    // Find open availability requests that cover this date
+    // Find availability requests that cover this date (check both OPEN and CLOSED)
     const availabilityRequest = await prisma.availabilityRequest.findFirst({
       where: {
         businessId: req.user.businessId,
-        status: "OPEN",
         startDate: { lte: targetDate },
         endDate: { gte: targetDate },
+      },
+      orderBy: {
+        createdAt: "desc", // Get the most recent request
       },
     });
 
     if (!availabilityRequest) {
-      // If no availability request, return all employees
-      const allUsers = await prisma.user.findMany({
-        where: {
-          businessId: req.user.businessId,
-          role: "EMPLOYEE",
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      });
-      return res.json(allUsers);
+      // If no availability request, return empty array (don't show any employees)
+      return res.json([]);
     }
 
     // Get availability entries for this date
+    // Use start of day for both dates to ensure proper matching
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
     const entries = await prisma.availabilityEntry.findMany({
       where: {
         requestId: availabilityRequest.id,
-        date: targetDate,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
       },
       include: {
         user: {
@@ -190,12 +192,15 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
       },
     });
 
-    // Filter employees based on shift type
+    // Filter employees based on shift type - only show those who submitted availability
     const availableEmployees = entries
       .filter((entry) => {
         const blocks = entry.blocks;
-        if (!blocks || blocks.off === true) return false; // Exclude off/NA
+        // Exclude entries with no blocks, off, or NA
+        if (!blocks || typeof blocks !== "object") return false;
+        if (blocks.off === true || blocks.na === true) return false;
         
+        // Check shift type availability
         if (shiftType === "morning") {
           return blocks.morning === true || blocks.double === true;
         } else if (shiftType === "evening") {
@@ -203,7 +208,11 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
         }
         return false;
       })
-      .map((entry) => entry.user);
+      .map((entry) => entry.user)
+      .filter((user, index, self) => 
+        // Remove duplicates (in case of multiple entries per user)
+        index === self.findIndex((u) => u.id === user.id)
+      );
 
     res.json(availableEmployees);
   } catch (error) {

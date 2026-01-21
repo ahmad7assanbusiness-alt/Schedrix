@@ -912,6 +912,23 @@ export default function Schedule() {
     return Array.from(positions).sort();
   }
 
+  async function loadAvailableEmployees(date, shiftType) {
+    if (!date) return;
+    try {
+      // Ensure date is properly formatted as YYYY-MM-DD
+      const dateObj = new Date(date);
+      const dateStr = dateObj.toISOString().split("T")[0];
+      const available = await api.get(
+        `/schedules/${selectedSchedule.id}/available-employees?date=${dateStr}&shiftType=${shiftType}`
+      );
+      setAvailableEmployees(available);
+    } catch (err) {
+      console.error("Failed to load available employees:", err);
+      // Fallback to all users if availability check fails
+      setAvailableEmployees(users);
+    }
+  }
+
   async function openModal(dateObj, position, assignment = null) {
     // Extract date from date object if it exists
     const date = dateObj?.date || dateObj;
@@ -929,8 +946,8 @@ export default function Schedule() {
       setModalEmployeeId(assignment.assignedUserId || "");
       setModalStartTime(assignment.startTime || "09:00");
       setModalEndTime(assignment.endTime || "17:00");
-      // Load all users for editing existing assignment
-      setAvailableEmployees(users);
+      // Load available employees even when editing (so we filter correctly)
+      await loadAvailableEmployees(date, assignment.shiftType || shiftType);
     } else {
       setModalEmployeeId("");
       // Set default times based on shift type
@@ -942,17 +959,7 @@ export default function Schedule() {
         setModalEndTime("21:00");
       }
       // Load only available employees for this date/shift
-      try {
-        const dateStr = new Date(date).toISOString().split("T")[0];
-        const available = await api.get(
-          `/schedules/${selectedSchedule.id}/available-employees?date=${dateStr}&shiftType=${shiftType}`
-        );
-        setAvailableEmployees(available);
-      } catch (err) {
-        console.error("Failed to load available employees:", err);
-        // Fallback to all users if availability check fails
-        setAvailableEmployees(users);
-      }
+      await loadAvailableEmployees(date, shiftType);
     }
     setModalOpen(true);
   }
@@ -1564,15 +1571,22 @@ export default function Schedule() {
               <label style={styles.label}>Shift Type</label>
               <select
                 value={modalShiftType}
-                onChange={(e) => {
-                  setModalShiftType(e.target.value);
+                onChange={async (e) => {
+                  const newShiftType = e.target.value;
+                  setModalShiftType(newShiftType);
                   // Update default times based on shift type
-                  if (e.target.value === "morning") {
+                  if (newShiftType === "morning") {
                     setModalStartTime("09:00");
                     setModalEndTime("17:00");
                   } else {
                     setModalStartTime("17:00");
                     setModalEndTime("21:00");
+                  }
+                  // Reload available employees for the new shift type
+                  if (modalDate) {
+                    await loadAvailableEmployees(modalDate, newShiftType);
+                    // Clear selected employee if they're not available for new shift
+                    setModalEmployeeId("");
                   }
                 }}
                 style={styles.select}
