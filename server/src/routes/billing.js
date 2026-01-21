@@ -6,13 +6,28 @@ import { authMiddleware, managerOnly } from "../middleware/auth.js";
 const router = express.Router();
 
 // Initialize Stripe (will use env var or empty string if not set)
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY)
-  : null;
+// On Render/Railway, environment variables are available directly in process.env
+// On local development, dotenv.config() must be called first in index.js
+const getStripe = () => {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    console.warn("WARNING: STRIPE_SECRET_KEY is not set in environment variables");
+    return null;
+  }
+  try {
+    return new Stripe(key);
+  } catch (error) {
+    console.error("Error initializing Stripe:", error);
+    return null;
+  }
+};
+
+const stripe = getStripe();
 
 // Helper function to get price ID from product ID or return price ID directly
 async function getPriceId(productOrPriceId) {
-  if (!productOrPriceId || !stripe) return null;
+  const stripeInstance = stripe || getStripe();
+  if (!productOrPriceId || !stripeInstance) return null;
   
   // If it's already a price ID (starts with price_), return it
   if (productOrPriceId.startsWith("price_")) {
@@ -22,7 +37,7 @@ async function getPriceId(productOrPriceId) {
   // If it's a product ID (starts with prod_), fetch the first active price
   if (productOrPriceId.startsWith("prod_")) {
     try {
-      const prices = await stripe.prices.list({
+      const prices = await stripeInstance.prices.list({
         product: productOrPriceId,
         active: true,
         limit: 1,
@@ -86,7 +101,7 @@ router.get("/plans", authMiddleware, managerOnly, async (req, res) => {
       plansWithPrices.pro.priceId = await getPriceId(plansWithPrices.pro.productOrPriceId);
       if (plansWithPrices.pro.priceId && plansWithPrices.pro.priceId.startsWith("price_")) {
         try {
-          const price = await stripe.prices.retrieve(plansWithPrices.pro.priceId);
+          const price = await (stripe || getStripe())?.prices.retrieve(plansWithPrices.pro.priceId);
           if (price.unit_amount) {
             plansWithPrices.pro.price = price.unit_amount / 100;
           }
@@ -100,7 +115,7 @@ router.get("/plans", authMiddleware, managerOnly, async (req, res) => {
       plansWithPrices.enterprise.priceId = await getPriceId(plansWithPrices.enterprise.productOrPriceId);
       if (plansWithPrices.enterprise.priceId && plansWithPrices.enterprise.priceId.startsWith("price_")) {
         try {
-          const price = await stripe.prices.retrieve(plansWithPrices.enterprise.priceId);
+          const price = await (stripe || getStripe())?.prices.retrieve(plansWithPrices.enterprise.priceId);
           if (price.unit_amount) {
             plansWithPrices.enterprise.price = price.unit_amount / 100;
           }
@@ -139,8 +154,14 @@ router.get("/plans", authMiddleware, managerOnly, async (req, res) => {
 // POST /billing/create-checkout-session - Create Stripe checkout session
 router.post("/create-checkout-session", authMiddleware, managerOnly, async (req, res) => {
   try {
-    if (!stripe) {
-      return res.status(503).json({ error: "Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables." });
+    // Check if Stripe is configured (handle both module load time and runtime)
+    const stripeInstance = stripe || getStripe();
+    if (!stripeInstance) {
+      console.error("STRIPE_SECRET_KEY is not set. Current env keys:", Object.keys(process.env).filter(k => k.includes('STRIPE')));
+      return res.status(503).json({ 
+        error: "Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables.",
+        hint: "On Render/Railway, ensure the environment variable is set in your service settings and the service has been restarted."
+      });
     }
 
     const { planId } = req.body;
@@ -157,7 +178,7 @@ router.post("/create-checkout-session", authMiddleware, managerOnly, async (req,
       if (plan.priceId && plan.priceId.startsWith("price_")) {
         // Update display price from Stripe
         try {
-          const price = await stripe.prices.retrieve(plan.priceId);
+          const price = await stripeInstance.prices.retrieve(plan.priceId);
           if (price.unit_amount) {
             plan.price = price.unit_amount / 100;
           }
@@ -191,7 +212,7 @@ router.post("/create-checkout-session", authMiddleware, managerOnly, async (req,
 
     if (!customerId) {
       // Create Stripe customer
-      const customer = await stripe.customers.create({
+      const customer = await stripeInstance.customers.create({
         email: req.user.email || undefined,
         name: business.name,
         metadata: {
@@ -218,7 +239,7 @@ router.post("/create-checkout-session", authMiddleware, managerOnly, async (req,
     clientUrl = clientUrl.replace(/\/settings\/billing.*$/, "");
 
     // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [
@@ -256,7 +277,9 @@ router.post(
   "/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    if (!stripe) {
+      const stripeInstance = stripe || getStripe();
+      if (!stripeInstance) {
+      console.error("STRIPE_SECRET_KEY is not set in webhook handler");
       return res.status(503).json({ error: "Stripe is not configured" });
     }
 
@@ -264,7 +287,7 @@ router.post(
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(
+      event = stripeInstance.webhooks.constructEvent(
         req.body,
         sig,
         process.env.STRIPE_WEBHOOK_SECRET || ""
@@ -281,7 +304,7 @@ router.post(
           const session = event.data.object;
           
           if (session.mode === "subscription") {
-            const subscription = await stripe.subscriptions.retrieve(
+            const subscription = await stripeInstance.subscriptions.retrieve(
               session.subscription
             );
 
@@ -349,7 +372,9 @@ router.post(
 // GET /billing/portal - Create customer portal session for managing subscription
 router.post("/portal", authMiddleware, managerOnly, async (req, res) => {
   try {
-    if (!stripe) {
+      const stripeInstance = stripe || getStripe();
+      if (!stripeInstance) {
+      console.error("STRIPE_SECRET_KEY is not set in webhook handler");
       return res.status(503).json({ error: "Stripe is not configured" });
     }
 
@@ -371,7 +396,7 @@ router.post("/portal", authMiddleware, managerOnly, async (req, res) => {
     clientUrl = clientUrl.replace(/\/+$/, "");
     clientUrl = clientUrl.replace(/\/settings\/billing.*$/, "");
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await stripeInstance.billingPortal.sessions.create({
       customer: business.stripeCustomerId,
       return_url: `${clientUrl}/settings/billing`,
     });
