@@ -467,6 +467,37 @@ router.post("/:id/publish", authMiddleware, managerOnly, async (req, res) => {
   }
 });
 
+// POST /schedules/:id/unpublish (manager only - change PUBLISHED back to DRAFT for editing)
+router.post("/:id/unpublish", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(403).json({ error: "Not part of a business" });
+    }
+
+    const schedule = await prisma.scheduleWeek.updateMany({
+      where: {
+        id: req.params.id,
+        businessId: req.user.businessId,
+        status: "PUBLISHED", // Only allow unpublishing published schedules
+      },
+      data: { status: "DRAFT" },
+    });
+
+    if (schedule.count === 0) {
+      return res.status(404).json({ error: "Schedule not found or not published" });
+    }
+
+    const updated = await prisma.scheduleWeek.findUnique({
+      where: { id: req.params.id },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Unpublish schedule error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 const updateScheduleStructureSchema = z.object({
   rows: z.array(z.string()).nullable().optional(),
   columns: z.array(z.object({

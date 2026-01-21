@@ -544,6 +544,19 @@ export default function Schedule() {
     }
   }
 
+  async function unpublishSchedule() {
+    try {
+      if (confirm("Are you sure you want to edit this schedule? It will be hidden from employees until you republish it.")) {
+        await api.post(`/schedules/${selectedSchedule.id}/unpublish`);
+        loadSchedule(selectedSchedule.id);
+        loadSchedules();
+        setError(null);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to unpublish schedule");
+    }
+  }
+
   async function saveAsTemplate() {
     if (!selectedSchedule) return;
     try {
@@ -1192,11 +1205,25 @@ export default function Schedule() {
                     {selectedSchedule.status}
                   </span>
                 </div>
-                {selectedSchedule.status === "DRAFT" && (
-                  <button onClick={publishSchedule} style={styles.publishButton}>
-                    Publish Schedule
-                  </button>
-                )}
+                <div style={{ display: "flex", gap: "var(--spacing-md)" }}>
+                  {selectedSchedule.status === "DRAFT" && (
+                    <button onClick={publishSchedule} style={styles.publishButton}>
+                      Publish Schedule
+                    </button>
+                  )}
+                  {selectedSchedule.status === "PUBLISHED" && (
+                    <button 
+                      onClick={unpublishSchedule} 
+                      style={{
+                        ...styles.publishButton,
+                        background: "var(--warning)",
+                        color: "white",
+                      }}
+                    >
+                      Edit Schedule
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div style={styles.actionButtonGroup}>
