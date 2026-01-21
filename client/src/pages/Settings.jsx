@@ -18,7 +18,7 @@ const styles = {
     marginBottom: "var(--spacing-sm)",
   },
   subtitle: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-base)",
   },
   content: {
@@ -30,7 +30,7 @@ const styles = {
     flexShrink: 0,
   },
   nav: {
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-md)",
     boxShadow: "var(--shadow-sm)",
@@ -39,7 +39,7 @@ const styles = {
     display: "block",
     padding: "var(--spacing-md)",
     borderRadius: "var(--radius-md)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textDecoration: "none",
     transition: "all var(--transition-base)",
     marginBottom: "var(--spacing-xs)",
@@ -52,7 +52,7 @@ const styles = {
   },
   main: {
     flex: 1,
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-2xl)",
     boxShadow: "var(--shadow-sm)",

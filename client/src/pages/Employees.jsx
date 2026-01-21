@@ -32,7 +32,7 @@ const styles = {
   },
   table: {
     width: "100%",
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-lg)",
     overflow: "hidden",
     boxShadow: "var(--shadow-sm)",
@@ -42,13 +42,13 @@ const styles = {
     padding: "var(--spacing-md)",
     borderBottom: "2px solid var(--gray-200)",
     fontWeight: 600,
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textAlign: "left",
   },
   tableCell: {
     padding: "var(--spacing-md)",
     borderBottom: "1px solid var(--gray-200)",
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
   },
   roleBadge: {
     padding: "var(--spacing-xs) var(--spacing-md)",

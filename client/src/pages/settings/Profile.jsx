@@ -7,7 +7,7 @@ const styles = {
   title: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-xl)",
   },
   form: {
@@ -24,13 +24,15 @@ const styles = {
   label: {
     fontSize: "var(--font-size-sm)",
     fontWeight: 600,
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
   },
   input: {
     padding: "var(--spacing-md)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-md)",
     fontSize: "var(--font-size-base)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
     transition: "all var(--transition-base)",
   },
   button: {

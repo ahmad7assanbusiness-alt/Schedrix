@@ -8,7 +8,7 @@ const styles = {
     margin: "0 auto",
   },
   header: {
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-lg)",
     boxShadow: "var(--shadow-sm)",
     padding: "var(--spacing-xl)",
@@ -29,7 +29,7 @@ const styles = {
     marginBottom: "var(--spacing-sm)",
   },
   subtitle: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
     marginBottom: "var(--spacing-xs)",
   },
@@ -79,7 +79,7 @@ const styles = {
   sectionTitle: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-lg)",
   },
   grid: {
@@ -88,13 +88,13 @@ const styles = {
     gap: "var(--spacing-lg)",
   },
   card: {
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-xl)",
     boxShadow: "var(--shadow-sm)",
     border: "2px solid var(--gray-200)",
     textDecoration: "none",
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     display: "flex",
     flexDirection: "column",
     gap: "var(--spacing-md)",
@@ -111,11 +111,11 @@ const styles = {
   cardTitle: {
     fontSize: "var(--font-size-xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-xs)",
   },
   cardDescription: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-base)",
     lineHeight: 1.6,
   },

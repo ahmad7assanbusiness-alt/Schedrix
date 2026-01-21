@@ -4,24 +4,24 @@ const styles = {
   title: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-xl)",
   },
   card: {
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-xl)",
-    background: "white",
+    background: "var(--bg-primary)",
     marginBottom: "var(--spacing-lg)",
   },
   cardTitle: {
     fontSize: "var(--font-size-lg)",
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-sm)",
   },
   cardDescription: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     marginBottom: "var(--spacing-md)",
   },
   link: {

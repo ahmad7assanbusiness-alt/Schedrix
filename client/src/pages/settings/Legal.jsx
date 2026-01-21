@@ -4,7 +4,7 @@ const styles = {
   title: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-xl)",
   },
   linkList: {
@@ -16,12 +16,13 @@ const styles = {
     padding: "var(--spacing-md)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-md)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textDecoration: "none",
     transition: "all var(--transition-base)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    background: "var(--bg-primary)",
   },
   linkText: {
     fontWeight: 500,
@@ -55,7 +56,7 @@ export default function Legal() {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "var(--gray-200)";
-              e.currentTarget.style.color = "var(--gray-700)";
+              e.currentTarget.style.color = "var(--text-secondary)";
             }}
           >
             <span style={styles.linkText}>{link.label}</span>

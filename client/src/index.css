@@ -231,8 +231,8 @@ body {
   font-size: var(--font-size-base);
   border: 2px solid var(--gray-200);
   border-radius: var(--radius-md);
-  background: white;
-  color: var(--gray-900);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   transition: all var(--transition-base);
   font-family: var(--font-family);
 }
