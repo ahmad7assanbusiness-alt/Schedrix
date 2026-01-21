@@ -37,113 +37,131 @@ model Business {
   ownerUserId        String
   createdAt          DateTime @default(now())
 
-  users              User[]
+  users                User[]
   availabilityRequests AvailabilityRequest[]
-  schedules          ScheduleWeek[]
-  scheduleTemplate   ScheduleTemplate?
+  schedules            ScheduleWeek[]
+  scheduleTemplates    ScheduleTemplate[]
 }
 
 model User {
-  id         String   @id @default(cuid())
-  name       String
-  email      String?  @unique
-  password   String?
-  role       Role     @default(EMPLOYEE)
-  businessId String?
-  onboardingCompleted Boolean @default(false)
-  createdAt  DateTime @default(now())
+  id                  String   @id @default(cuid())
+  name                String
+  email               String?  @unique
+  password            String?
+  role                Role     @default(EMPLOYEE)
+  businessId          String?
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
 
-  business            Business?            @relation(fields: [businessId], references: [id])
-  availabilityEntries AvailabilityEntry[]
-  assignments         ShiftAssignment[]
+  business             Business?                    @relation(fields: [businessId], references: [id])
+  availabilityEntries  AvailabilityEntry[]
+  assignments          ShiftAssignment[]
   calendarIntegrations CalendarIntegration[]
+  templateAssignments  TemplateEmployeeAssignment[]
 }
 
 model AvailabilityRequest {
-  id          String        @id @default(cuid())
-  businessId  String
-  startDate   DateTime
-  endDate     DateTime
-  status      RequestStatus @default(OPEN)
-  frequency   ScheduleFrequency? // WEEKLY, BIWEEKLY, or MONTHLY
+  id              String             @id @default(cuid())
+  businessId      String
+  startDate       DateTime
+  endDate         DateTime
+  status          RequestStatus      @default(OPEN)
+  frequency       ScheduleFrequency? // WEEKLY, BIWEEKLY, or MONTHLY
   createdByUserId String
-  createdAt   DateTime @default(now())
+  createdAt       DateTime           @default(now())
 
-  business    Business          @relation(fields: [businessId], references: [id])
-  entries     AvailabilityEntry[]
-  schedules   ScheduleWeek[]
+  business  Business            @relation(fields: [businessId], references: [id])
+  entries   AvailabilityEntry[]
+  schedules ScheduleWeek[]
 }
 
 model AvailabilityEntry {
-  id         String @id @default(cuid())
-  requestId  String
-  userId     String
-  date       DateTime
-  blocks     Json // {morning: boolean, evening: boolean}
-  note       String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  requestId String
+  userId    String
+  date      DateTime
+  blocks    Json // {morning: boolean, evening: boolean}
+  note      String?
+  createdAt DateTime @default(now())
 
-  request    AvailabilityRequest @relation(fields: [requestId], references: [id])
-  user       User   @relation(fields: [userId], references: [id])
+  request AvailabilityRequest @relation(fields: [requestId], references: [id])
+  user    User                @relation(fields: [userId], references: [id])
 
   @@unique([requestId, userId, date])
 }
 
 model ScheduleWeek {
-  id         String @id @default(cuid())
-  businessId String
-  startDate  DateTime
-  endDate    DateTime
-  status     ScheduleStatus @default(DRAFT)
-  createdByUserId String
+  id                    String         @id @default(cuid())
+  businessId            String
+  startDate             DateTime
+  endDate               DateTime
+  status                ScheduleStatus @default(DRAFT)
+  createdByUserId       String
   availabilityRequestId String? // Link to availability request
-  createdAt  DateTime @default(now())
-  rows       Json? // Array of row labels (positions) e.g., ["Cash", "Floater", "Host"]
-  columns    Json? // Array of column definitions e.g., [{"label": "Monday", "date": "2024-01-15"}, ...]
+  templateId            String? // Link to template used
+  createdAt             DateTime       @default(now())
+  rows                  Json? // Array of row labels (positions) e.g., ["Cash", "Floater", "Host"]
+  columns               Json? // Array of column definitions e.g., [{"label": "Monday", "date": "2024-01-15"}, ...]
 
-  business   Business @relation(fields: [businessId], references: [id])
+  business            Business             @relation(fields: [businessId], references: [id])
   availabilityRequest AvailabilityRequest? @relation(fields: [availabilityRequestId], references: [id])
-  assignments ShiftAssignment[]
+  template            ScheduleTemplate?    @relation(fields: [templateId], references: [id])
+  assignments         ShiftAssignment[]
 }
 
 model ShiftAssignment {
-  id          String @id @default(cuid())
-  scheduleId  String
-  date        DateTime
-  startTime   String @default("09:00")
-  endTime     String @default("17:00")
-  position    String // Position name (e.g., "Cash", "Floater", "Host")
-  shiftType   String @default("morning") // "morning" or "evening"
+  id             String   @id @default(cuid())
+  scheduleId     String
+  date           DateTime
+  startTime      String   @default("09:00")
+  endTime        String   @default("17:00")
+  position       String // Position name (e.g., "Cash", "Floater", "Host")
+  shiftType      String   @default("morning") // "morning" or "evening"
   assignedUserId String?
-  createdAt  DateTime @default(now())
+  createdAt      DateTime @default(now())
 
-  schedule    ScheduleWeek @relation(fields: [scheduleId], references: [id])
-  assignedUser   User? @relation(fields: [assignedUserId], references: [id])
+  schedule     ScheduleWeek @relation(fields: [scheduleId], references: [id])
+  assignedUser User?        @relation(fields: [assignedUserId], references: [id])
 }
 
 model ScheduleTemplate {
-  id         String @id @default(cuid())
-  businessId String @unique
+  id         String   @id @default(cuid())
+  businessId String
+  name       String // Template name
   rows       Json? // Array of row labels (positions) e.g., ["Cash", "Floater", "Host"]
   columns    Json? // Array of column definitions e.g., [{"label": "Monday", "date": "2024-01-15"}, ...]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  business   Business @relation(fields: [businessId], references: [id])
+  business          Business                     @relation(fields: [businessId], references: [id])
+  schedules         ScheduleWeek[]
+  assignedEmployees TemplateEmployeeAssignment[]
 }
 
 model CalendarIntegration {
-  id         String @id @default(cuid())
-  userId     String
-  provider   String // "google", "outlook", "icloud"
-  accessToken String? // Encrypted access token
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String // "google", "outlook", "icloud"
+  accessToken  String? // Encrypted access token
   refreshToken String? // Encrypted refresh token
-  calendarId String? // Provider-specific calendar ID
-  enabled    Boolean @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  calendarId   String? // Provider-specific calendar ID
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, provider])
+}
+
+model TemplateEmployeeAssignment {
+  id         String   @id @default(cuid())
+  templateId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  template ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, userId])
 }

@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.js";
 import businessRoutes from "./routes/business.js";
 import availabilityRoutes from "./routes/availability.js";
 import schedulingRoutes from "./routes/scheduling.js";
+import templatesRoutes from "./routes/templates.js";
 import prisma from "./prisma.js";
 
 dotenv.config();
@@ -42,6 +43,7 @@ app.use("/auth", authRoutes);
 app.use("/business", businessRoutes);
 app.use("/availability-requests", availabilityRoutes);
 app.use("/schedules", schedulingRoutes);
+app.use("/templates", templatesRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
