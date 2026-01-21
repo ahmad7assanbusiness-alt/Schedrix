@@ -62,16 +62,16 @@ export default function ScheduleFull() {
   const dates = getDates();
 
   return (
-    <div style={{ maxWidth: 1000, margin: "40px auto", padding: 20 }}>
+    <div style={{ maxWidth: 1000, margin: "40px auto", padding: 20, color: "var(--text-primary)" }}>
       <div style={{ marginBottom: 20 }}>
-        <Link to="/dashboard" style={{ textDecoration: "none", color: "#007bff" }}>
+        <Link to="/dashboard" style={{ textDecoration: "none", color: "var(--primary)" }}>
           ← Back to Dashboard
         </Link>
       </div>
       <h1>Full Schedule</h1>
 
       {error && (
-        <div style={{ padding: 10, backgroundColor: "#fee", color: "#c00", borderRadius: 4, marginBottom: 20 }}>
+        <div style={{ padding: 10, backgroundColor: "var(--error-light)", color: "var(--error-text)", borderRadius: 4, marginBottom: 20 }}>
           {error}
         </div>
       )}
@@ -108,16 +108,16 @@ export default function ScheduleFull() {
                 style={{
                   padding: 15,
                   marginBottom: 15,
-                  backgroundColor: "#f8f9fa",
-                  border: "1px solid #dee2e6",
+                  backgroundColor: "var(--bg-secondary)",
+                  border: "1px solid var(--gray-200)",
                   borderRadius: 4,
                 }}
               >
-                <h3 style={{ marginTop: 0 }}>
+                <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>
                   {date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
                 </h3>
                 {assignments.length === 0 ? (
-                  <p style={{ color: "#6c757d" }}>No assignments</p>
+                  <p style={{ color: "var(--text-secondary)" }}>No assignments</p>
                 ) : (
                   <div>
                     {assignments.map((assignment) => (
@@ -126,9 +126,10 @@ export default function ScheduleFull() {
                         style={{
                           padding: 10,
                           marginBottom: 5,
-                          backgroundColor: "white",
-                          border: "1px solid #dee2e6",
+                          backgroundColor: "var(--bg-primary)",
+                          border: "1px solid var(--gray-200)",
                           borderRadius: 4,
+                          color: "var(--text-primary)",
                         }}
                       >
                         <strong>{assignment.label}</strong>: {assignment.assignedUser?.name} (

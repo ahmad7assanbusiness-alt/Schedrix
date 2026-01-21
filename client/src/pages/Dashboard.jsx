@@ -187,7 +187,7 @@ export default function Dashboard() {
                 <p style={styles.subtitle}>{business.name}</p>
                 {isManager && (
                   <div>
-                    <div style={{ fontSize: "var(--font-size-sm)", color: "var(--gray-500)", marginBottom: "var(--spacing-xs)" }}>
+                    <div style={{ fontSize: "var(--font-size-sm)", color: "var(--text-secondary)", marginBottom: "var(--spacing-xs)" }}>
                       Join Code:
                     </div>
                     <div style={styles.joinCode}>{business.joinCode}</div>

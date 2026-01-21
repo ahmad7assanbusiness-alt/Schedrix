@@ -16,7 +16,7 @@ const styles = {
     margin: "0 auto",
   },
   card: {
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
     backdropFilter: "blur(20px)",
     borderRadius: "var(--radius-2xl)",
     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -38,7 +38,7 @@ const styles = {
     marginBottom: "var(--spacing-sm)",
   },
   subtitle: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
   },
   backLink: {
@@ -54,13 +54,13 @@ const styles = {
   error: {
     padding: "var(--spacing-md)",
     backgroundColor: "var(--error-light)",
-    color: "#991b1b",
+    color: "var(--error-text)",
     borderRadius: "var(--radius-md)",
     marginBottom: "var(--spacing-lg)",
     border: "1px solid var(--error)",
   },
   formCard: {
-    background: "white",
+    background: "var(--bg-primary)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-xl)",
@@ -70,7 +70,7 @@ const styles = {
   formTitle: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-xl)",
     textAlign: "center",
   },
@@ -88,7 +88,7 @@ const styles = {
   label: {
     fontSize: "var(--font-size-sm)",
     fontWeight: 600,
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
@@ -98,8 +98,8 @@ const styles = {
     fontSize: "var(--font-size-base)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-md)",
-    background: "white",
-    color: "var(--gray-900)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
     transition: "all var(--transition-base)",
   },
   select: {
@@ -108,8 +108,8 @@ const styles = {
     fontSize: "var(--font-size-base)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-md)",
-    background: "white",
-    color: "var(--gray-900)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
     cursor: "pointer",
   },
   submitButton: {
@@ -132,7 +132,7 @@ const styles = {
     marginTop: "var(--spacing-xl)",
   },
   scheduleCard: {
-    background: "white",
+    background: "var(--bg-primary)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-lg)",
@@ -147,7 +147,7 @@ const styles = {
   scheduleDateRange: {
     fontSize: "var(--font-size-base)",
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-sm)",
   },
   statusBadge: {
@@ -161,18 +161,18 @@ const styles = {
   },
   statusDraft: {
     backgroundColor: "var(--warning-light)",
-    color: "#92400e",
+    color: "var(--warning-text)",
   },
   statusPublished: {
     backgroundColor: "var(--success-light)",
-    color: "#065f46",
+    color: "var(--success-text)",
   },
   tableContainer: {
     overflowX: "auto",
     marginTop: "var(--spacing-xl)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
-    background: "white",
+    background: "var(--bg-primary)",
   },
   table: {
     width: "100%",
@@ -193,7 +193,7 @@ const styles = {
     textAlign: "left",
     fontWeight: 700,
     fontSize: "var(--font-size-sm)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
@@ -204,7 +204,7 @@ const styles = {
     textAlign: "left",
     fontWeight: 700,
     fontSize: "var(--font-size-sm)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     backgroundColor: "var(--gray-100)",
     position: "sticky",
     left: 0,
@@ -241,7 +241,7 @@ const styles = {
     borderBottom: "1px solid var(--gray-200)",
     borderRight: "1px solid var(--gray-200)",
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     backgroundColor: "inherit",
     position: "sticky",
     left: 0,
@@ -249,7 +249,7 @@ const styles = {
     minWidth: "150px",
   },
   emptyCell: {
-    color: "var(--gray-400)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-sm)",
     textAlign: "center",
     padding: "var(--spacing-sm)",
@@ -301,7 +301,7 @@ const styles = {
     padding: "var(--spacing-xl)",
   },
   modal: {
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-2xl)",
     maxWidth: "500px",
@@ -318,7 +318,7 @@ const styles = {
   modalTitle: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-sm)",
   },
   modalClose: {
@@ -329,7 +329,7 @@ const styles = {
     border: "none",
     fontSize: "var(--font-size-2xl)",
     cursor: "pointer",
-    color: "var(--gray-500)",
+    color: "var(--text-secondary)",
     padding: "var(--spacing-sm)",
     lineHeight: 1,
   },
@@ -370,14 +370,14 @@ const styles = {
   rowColumnSection: {
     marginTop: "var(--spacing-xl)",
     padding: "var(--spacing-lg)",
-    background: "var(--gray-50)",
+    background: "var(--bg-secondary)",
     borderRadius: "var(--radius-md)",
     border: "1px solid var(--gray-200)",
   },
   rowColumnTitle: {
     fontSize: "var(--font-size-lg)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-md)",
   },
   rowColumnList: {
@@ -1156,7 +1156,7 @@ export default function Schedule() {
             <div>
               <h2 style={styles.formTitle}>Existing Schedules</h2>
               {schedules.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "var(--spacing-xl)", color: "var(--gray-500)" }}>
+                <div style={{ textAlign: "center", padding: "var(--spacing-xl)", color: "var(--text-secondary)" }}>
                   No schedules yet. Create one above.
                 </div>
               ) : (
@@ -1275,7 +1275,7 @@ export default function Schedule() {
                         <th rowSpan={2} style={styles.tableHeaderCellFirst}>
                           Position
                           {positions.length === 0 && (
-                            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
+                            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-secondary)", marginTop: "var(--spacing-xs)" }}>
                               Click "+ Add Row" to start
                             </div>
                           )}
@@ -1380,7 +1380,7 @@ export default function Schedule() {
                       {positions.length === 0 ? (
                         <tr>
                           <td style={styles.tableCellFirst}>
-                            <div style={{ color: "var(--gray-500)", fontSize: "var(--font-size-sm)", textAlign: "center" }}>
+                            <div style={{ color: "var(--text-secondary)", fontSize: "var(--font-size-sm)", textAlign: "center" }}>
                               Click "+ Add Row" above
                             </div>
                           </td>
@@ -1507,7 +1507,7 @@ export default function Schedule() {
                                           <div
                                             style={{
                                               fontSize: "var(--font-size-xs)",
-                                              color: "var(--gray-600)",
+                                              color: "var(--text-secondary)",
                                             }}
                                           >
                                             {assignment.startTime} - {assignment.endTime}
@@ -1545,7 +1545,7 @@ export default function Schedule() {
                 {modalAssignment ? "Edit Assignment" : "Create Assignment"}
               </h2>
               {modalDate && (
-                <div style={{ color: "var(--gray-600)", fontSize: "var(--font-size-sm)" }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: "var(--font-size-sm)" }}>
                   {new Date(modalDate).toLocaleDateString("en-US", {
                     weekday: "long",
                     month: "long",
@@ -1619,7 +1619,7 @@ export default function Schedule() {
                 )}
               </select>
               {availableEmployees.length === 0 && modalAssignment === null && (
-                <p style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
+                <p style={{ fontSize: "var(--font-size-xs)", color: "var(--text-secondary)", marginTop: "var(--spacing-xs)" }}>
                   No employees available for this shift. Showing all employees.
                 </p>
               )}

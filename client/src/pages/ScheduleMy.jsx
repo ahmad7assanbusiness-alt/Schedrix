@@ -16,7 +16,7 @@ const styles = {
     margin: "0 auto",
   },
   card: {
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
     backdropFilter: "blur(20px)",
     borderRadius: "var(--radius-2xl)",
     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -50,7 +50,7 @@ const styles = {
   error: {
     padding: "var(--spacing-md)",
     backgroundColor: "var(--error-light)",
-    color: "#991b1b",
+    color: "var(--error-text)",
     borderRadius: "var(--radius-md)",
     marginBottom: "var(--spacing-lg)",
     border: "1px solid var(--error)",
@@ -76,8 +76,8 @@ const styles = {
     borderRadius: "var(--radius-md)",
     cursor: "pointer",
     transition: "all var(--transition-base)",
-    background: "white",
-    color: "var(--gray-700)",
+    background: "var(--bg-primary)",
+    color: "var(--text-secondary)",
   },
   toggleButtonActive: {
     background: "var(--primary)",
@@ -89,7 +89,7 @@ const styles = {
     marginTop: "var(--spacing-xl)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
-    background: "white",
+    background: "var(--bg-primary)",
   },
   table: {
     width: "100%",
@@ -110,7 +110,7 @@ const styles = {
     textAlign: "left",
     fontWeight: 700,
     fontSize: "var(--font-size-sm)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
@@ -121,7 +121,7 @@ const styles = {
     textAlign: "left",
     fontWeight: 700,
     fontSize: "var(--font-size-sm)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     backgroundColor: "var(--gray-100)",
     position: "sticky",
     left: 0,
@@ -150,7 +150,7 @@ const styles = {
     borderBottom: "1px solid var(--gray-200)",
     borderRight: "1px solid var(--gray-200)",
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     backgroundColor: "inherit",
     position: "sticky",
     left: 0,
@@ -158,7 +158,7 @@ const styles = {
     minWidth: "150px",
   },
   emptyCell: {
-    color: "var(--gray-400)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-sm)",
     textAlign: "center",
     padding: "var(--spacing-sm)",
@@ -182,7 +182,7 @@ const styles = {
     marginTop: "var(--spacing-xl)",
   },
   scheduleCard: {
-    background: "white",
+    background: "var(--bg-primary)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-lg)",
@@ -197,7 +197,7 @@ const styles = {
   scheduleDateRange: {
     fontSize: "var(--font-size-base)",
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-sm)",
   },
 };
@@ -409,7 +409,7 @@ export default function ScheduleMy() {
                   </h2>
                 </div>
                 <div style={styles.viewToggle}>
-                  <label style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, color: "var(--gray-700)" }}>
+                  <label style={{ fontSize: "var(--font-size-sm)", fontWeight: 600, color: "var(--text-secondary)" }}>
                     View:
                   </label>
                   <button
@@ -531,7 +531,7 @@ export default function ScheduleMy() {
                                           <div
                                             style={{
                                               fontSize: "var(--font-size-xs)",
-                                              color: "var(--gray-600)",
+                                              color: "var(--text-secondary)",
                                             }}
                                           >
                                             {assignment.startTime} - {assignment.endTime}
@@ -550,7 +550,7 @@ export default function ScheduleMy() {
                   </table>
                 </div>
               ) : (
-                <div style={{ textAlign: "center", padding: "var(--spacing-xl)", color: "var(--gray-500)" }}>
+                <div style={{ textAlign: "center", padding: "var(--spacing-xl)", color: "var(--text-secondary)" }}>
                   No schedule data available.
                 </div>
               )}
@@ -558,7 +558,7 @@ export default function ScheduleMy() {
           )}
 
           {schedules.length === 0 && (
-            <div style={{ textAlign: "center", padding: "var(--spacing-xl)", color: "var(--gray-500)" }}>
+            <div style={{ textAlign: "center", padding: "var(--spacing-xl)", color: "var(--text-secondary)" }}>
               No published schedules available.
             </div>
           )}

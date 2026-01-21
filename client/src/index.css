@@ -31,12 +31,16 @@
   /* Semantic Colors */
   --success: #10b981;
   --success-light: #d1fae5;
+  --success-text: #065f46;
   --warning: #f59e0b;
   --warning-light: #fef3c7;
+  --warning-text: #92400e;
   --error: #ef4444;
   --error-light: #fee2e2;
+  --error-text: #991b1b;
   --info: #3b82f6;
   --info-light: #dbeafe;
+  --info-text: #1e40af;
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -104,9 +108,13 @@
   --gray-900: #ffffff;
   
   --success-light: #065f46;
+  --success-text: #10b981;
   --warning-light: #92400e;
+  --warning-text: #f59e0b;
   --error-light: #991b1b;
+  --error-text: #ef4444;
   --info-light: #1e40af;
+  --info-text: #3b82f6;
 }
 
 [data-theme="dark"] body {
@@ -123,7 +131,7 @@ body {
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   line-height: 1.6;
-  color: var(--gray-900);
+  color: var(--text-primary);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-attachment: fixed;
   min-height: 100vh;
@@ -148,8 +156,13 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+[data-theme="dark"] .glass {
+  background: rgba(31, 41, 55, 0.95);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
 .card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   padding: var(--spacing-xl);
@@ -188,8 +201,8 @@ body {
 }
 
 .btn-secondary {
-  background: white;
-  color: var(--gray-700);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   border: 2px solid var(--gray-200);
 }
 
@@ -247,7 +260,7 @@ body {
   display: block;
   font-weight: 600;
   font-size: var(--font-size-sm);
-  color: var(--gray-700);
+  color: var(--text-secondary);
   margin-bottom: var(--spacing-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -266,17 +279,17 @@ body {
 
 .badge-success {
   background: var(--success-light);
-  color: #065f46;
+  color: var(--success-text);
 }
 
 .badge-warning {
   background: var(--warning-light);
-  color: #92400e;
+  color: var(--warning-text);
 }
 
 .badge-info {
   background: var(--info-light);
-  color: #1e40af;
+  color: var(--info-text);
 }
 
 .badge-gray {

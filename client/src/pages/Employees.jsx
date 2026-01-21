@@ -68,7 +68,7 @@ const styles = {
   },
   roleEmployee: {
     background: "var(--gray-100)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
   },
 };
 
