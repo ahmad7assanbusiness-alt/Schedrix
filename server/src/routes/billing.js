@@ -111,7 +111,12 @@ router.post("/create-checkout-session", authMiddleware, managerOnly, async (req,
     }
 
     // Get client URL from environment or use default
-    const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173";
+    // Remove trailing slash and any paths to ensure we have base URL only
+    let clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173";
+    // Normalize: remove trailing slash and extract base URL if path is included
+    clientUrl = clientUrl.replace(/\/+$/, ""); // Remove trailing slashes
+    // If URL contains /settings/billing, remove it (should be base URL only)
+    clientUrl = clientUrl.replace(/\/settings\/billing.*$/, "");
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
@@ -261,7 +266,11 @@ router.post("/portal", authMiddleware, managerOnly, async (req, res) => {
       return res.status(404).json({ error: "No active subscription found" });
     }
 
-    const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173";
+    // Get client URL from environment or use default
+    let clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173";
+    // Normalize: remove trailing slash and any paths
+    clientUrl = clientUrl.replace(/\/+$/, "");
+    clientUrl = clientUrl.replace(/\/settings\/billing.*$/, "");
 
     const session = await stripe.billingPortal.sessions.create({
       customer: business.stripeCustomerId,
