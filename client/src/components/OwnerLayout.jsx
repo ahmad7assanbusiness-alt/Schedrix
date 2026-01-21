@@ -14,6 +14,7 @@ const styles = {
     flex: 1,
     padding: "var(--spacing-xl)",
     minHeight: "100vh",
+    background: "var(--bg-secondary)",
   },
 };
 

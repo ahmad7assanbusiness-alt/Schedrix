@@ -1,13 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../auth/useAuth.js";
+import { useTheme } from "../contexts/ThemeContext.jsx";
 import "../index.css";
 
 const styles = {
   sidebar: {
     width: "280px",
     height: "100vh",
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
     backdropFilter: "blur(20px)",
     borderRight: "1px solid var(--gray-200)",
     display: "flex",
@@ -53,7 +54,7 @@ const styles = {
     gap: "var(--spacing-md)",
     padding: "var(--spacing-md)",
     borderRadius: "var(--radius-md)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textDecoration: "none",
     transition: "all var(--transition-base)",
     marginBottom: "var(--spacing-xs)",
@@ -76,12 +77,29 @@ const styles = {
     justifyContent: "center",
     fontSize: "var(--font-size-lg)",
   },
+  themeToggle: {
+    padding: "var(--spacing-md)",
+    marginBottom: "var(--spacing-md)",
+    borderRadius: "var(--radius-md)",
+    border: "2px solid var(--gray-200)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "var(--spacing-sm)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 500,
+    transition: "all var(--transition-base)",
+    width: "100%",
+  },
   userSection: {
     marginTop: "auto",
     padding: "var(--spacing-lg)",
     borderTop: "1px solid var(--gray-200)",
     flexShrink: 0,
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
   },
   userInfo: {
     display: "flex",
@@ -106,12 +124,12 @@ const styles = {
   },
   userName: {
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     fontSize: "var(--font-size-sm)",
   },
   userRole: {
     fontSize: "var(--font-size-xs)",
-    color: "var(--gray-500)",
+    color: "var(--text-secondary)",
     textTransform: "capitalize",
   },
   userSectionClickable: {
@@ -164,6 +182,7 @@ const styles = {
 export default function SideNav({ onLogout }) {
   const location = useLocation();
   const { user, business } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
