@@ -258,6 +258,153 @@ router.post("/join", async (req, res) => {
   }
 });
 
+// POST /auth/complete-onboarding - Mark onboarding as complete
+router.post("/complete-onboarding", authMiddleware, async (req, res) => {
+  try {
+    const { calendarIntegrations } = req.body;
+
+    // Update user onboarding status
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { onboardingCompleted: true },
+    });
+
+    // In the future, save calendar integration preferences here
+    // For now, we just mark onboarding as complete
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Complete onboarding error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /auth/profile - Update user profile
+router.put("/profile", authMiddleware, async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    // Check if email is already taken by another user
+    if (email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email,
+          NOT: { id: req.user.id },
+        },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+      },
+    });
+
+    res.json({
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        businessId: updatedUser.businessId,
+        onboardingCompleted: updatedUser.onboardingCompleted,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /auth/change-password - Change user password
+router.put("/change-password", authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    // Get current user with password
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user || !user.password) {
+      return res.status(400).json({ error: "User not found or no password set" });
+    }
+
+    // Verify current password
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /auth/calendar-integrations - Get user's calendar integrations
+router.get("/calendar-integrations", authMiddleware, async (req, res) => {
+  try {
+    const integrations = await prisma.calendarIntegration.findMany({
+      where: { userId: req.user.id },
+      select: {
+        id: true,
+        provider: true,
+        enabled: true,
+        createdAt: true,
+      },
+    });
+
+    res.json(integrations);
+  } catch (error) {
+    console.error("Get calendar integrations error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /auth/calendar-integrations/:id - Disconnect calendar integration
+router.delete("/calendar-integrations/:id", authMiddleware, async (req, res) => {
+  try {
+    // Verify ownership
+    const integration = await prisma.calendarIntegration.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!integration || integration.userId !== req.user.id) {
+      return res.status(404).json({ error: "Integration not found" });
+    }
+
+    await prisma.calendarIntegration.delete({
+      where: { id: req.params.id },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete calendar integration error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /auth/me - Get current user
 router.get("/me", authMiddleware, async (req, res) => {
   try {
@@ -277,6 +424,7 @@ router.get("/me", authMiddleware, async (req, res) => {
         email: user.email,
         role: user.role,
         businessId: user.businessId,
+        onboardingCompleted: user.onboardingCompleted,
       },
       business: user.business
         ? {

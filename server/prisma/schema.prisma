@@ -50,11 +50,13 @@ model User {
   password   String?
   role       Role     @default(EMPLOYEE)
   businessId String?
+  onboardingCompleted Boolean @default(false)
   createdAt  DateTime @default(now())
 
   business            Business?            @relation(fields: [businessId], references: [id])
   availabilityEntries AvailabilityEntry[]
   assignments         ShiftAssignment[]
+  calendarIntegrations CalendarIntegration[]
 }
 
 model AvailabilityRequest {
@@ -128,4 +130,20 @@ model ScheduleTemplate {
   updatedAt  DateTime @updatedAt
 
   business   Business @relation(fields: [businessId], references: [id])
+}
+
+model CalendarIntegration {
+  id         String @id @default(cuid())
+  userId     String
+  provider   String // "google", "outlook", "icloud"
+  accessToken String? // Encrypted access token
+  refreshToken String? // Encrypted refresh token
+  calendarId String? // Provider-specific calendar ID
+  enabled    Boolean @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
 }

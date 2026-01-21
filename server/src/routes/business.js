@@ -31,5 +31,31 @@ router.get("/", authMiddleware, managerOnly, async (req, res) => {
   }
 });
 
+// GET /business/employees - Get all employees in the business
+router.get("/employees", authMiddleware, managerOnly, async (req, res) => {
+  try {
+    if (!req.user.businessId) {
+      return res.status(404).json({ error: "Business not found" });
+    }
+
+    const employees = await prisma.user.findMany({
+      where: { businessId: req.user.businessId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(employees);
+  } catch (error) {
+    console.error("Get employees error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
 
