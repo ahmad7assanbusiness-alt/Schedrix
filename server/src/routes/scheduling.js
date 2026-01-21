@@ -125,6 +125,8 @@ router.put("/template", authMiddleware, managerOnly, async (req, res) => {
  * Strict availability validation algorithm
  * Validates that an employee's availability entry matches exactly what they submitted
  * and is available for the requested shift type
+ * 
+ * CRITICAL: Employees marked as "off" must NEVER appear in available employees list
  */
 function validateEmployeeAvailability(blocks, shiftType) {
   // Step 1: Validate blocks structure exists and is valid
@@ -132,35 +134,56 @@ function validateEmployeeAvailability(blocks, shiftType) {
     return { valid: false, reason: "No availability data" };
   }
 
-  // Step 2: CRITICAL - If employee marked themselves as "off", they are NOT available
-  // This is the most important check - employees on time off should NEVER show up
-  if (blocks.off === true) {
+  // Step 2: CRITICAL - Multiple checks to ensure employees marked as "off" are excluded
+  // Check for off in multiple ways to catch all edge cases
+  if (blocks.off === true || blocks.off === "true" || blocks.off === 1) {
     return { valid: false, reason: "Employee marked as off/time off" };
   }
 
+  // Additional safety: If off is truthy (even if not explicitly true), exclude
+  if (blocks.off) {
+    return { valid: false, reason: "Employee marked as off/time off (truthy check)" };
+  }
+
   // Step 3: Exclude entries marked as NA (not available)
-  if (blocks.na === true) {
+  if (blocks.na === true || blocks.na === "true" || blocks.na) {
     return { valid: false, reason: "Employee marked as NA" };
   }
 
-  // Step 4: Validate shift-specific availability
+  // Step 4: CRITICAL - When employee is off, morning and evening are typically false
+  // Additional safety check: if off exists and morning/evening are both false, exclude
+  if (blocks.off !== false && blocks.morning === false && blocks.evening === false && !blocks.double) {
+    // This might be an off day, but we need to be careful not to exclude valid entries
+    // Only exclude if off is explicitly true (already handled above)
+  }
+
+  // Step 5: Validate shift-specific availability
   // Employee must have EXPLICITLY marked themselves as available for the requested shift
+  // ONLY proceed if they are NOT off and have the correct shift availability
   if (shiftType === "morning") {
     // For morning shift: must have morning=true OR double=true
     // Double means they're available for both shifts, so they qualify
+    // MUST NOT be off
+    if (blocks.off) {
+      return { valid: false, reason: "Employee is off (morning check)" };
+    }
     if (blocks.morning === true || blocks.double === true) {
       return { valid: true };
     }
     return { valid: false, reason: "Not available for morning shift" };
   } else if (shiftType === "evening") {
     // For evening shift: must have evening=true OR double=true
+    // MUST NOT be off
+    if (blocks.off) {
+      return { valid: false, reason: "Employee is off (evening check)" };
+    }
     if (blocks.evening === true || blocks.double === true) {
       return { valid: true };
     }
     return { valid: false, reason: "Not available for evening shift" };
   }
 
-  // Step 5: Invalid shift type
+  // Step 6: Invalid shift type
   return { valid: false, reason: "Invalid shift type" };
 }
 
@@ -244,11 +267,25 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
     // Apply strict validation algorithm to filter available employees
     const availableEmployees = entries
       .filter((entry) => {
-        const validation = validateEmployeeAvailability(entry.blocks, shiftType);
+        const blocks = entry.blocks;
         
-        // Log excluded employees for debugging (optional - can remove in production)
-        if (!validation.valid && process.env.NODE_ENV === "development") {
-          console.log(`Excluding ${entry.user.name}: ${validation.reason}`);
+        // Log the blocks data for debugging (helps identify data structure issues)
+        if (process.env.NODE_ENV === "development") {
+          console.log(`Checking ${entry.user.name} for ${shiftType} on ${date}:`, JSON.stringify(blocks));
+        }
+        
+        const validation = validateEmployeeAvailability(blocks, shiftType);
+        
+        // Log excluded employees for debugging
+        if (!validation.valid) {
+          console.log(`❌ EXCLUDING ${entry.user.name}: ${validation.reason}`, {
+            off: blocks?.off,
+            morning: blocks?.morning,
+            evening: blocks?.evening,
+            double: blocks?.double,
+          });
+        } else {
+          console.log(`✅ INCLUDING ${entry.user.name}: Available for ${shiftType}`);
         }
         
         return validation.valid;
@@ -259,6 +296,8 @@ router.get("/:id/available-employees", authMiddleware, async (req, res) => {
         index === self.findIndex((u) => u.id === user.id)
       );
 
+    console.log(`Returning ${availableEmployees.length} available employees for ${shiftType} on ${date}`);
+    
     // Return only employees who passed strict validation
     res.json(availableEmployees);
   } catch (error) {
