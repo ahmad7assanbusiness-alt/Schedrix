@@ -273,6 +273,22 @@ export default function SideNav({ onLogout }) {
         ))}
       </div>
 
+      <div style={{ padding: "0 var(--spacing-lg)", marginBottom: "var(--spacing-md)", flexShrink: 0 }}>
+        <button
+          onClick={toggleTheme}
+          style={styles.themeToggle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--gray-200)";
+          }}
+        >
+          <span>{theme === "dark" ? "🌙" : "☀️"}</span>
+          <span>{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
+        </button>
+      </div>
+
       <div 
         style={{
           ...styles.userSection,
@@ -285,7 +301,7 @@ export default function SideNav({ onLogout }) {
         }}
         onMouseLeave={(e) => {
           if (!showProfileMenu) {
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.98)";
+            e.currentTarget.style.background = "var(--bg-primary)";
           }
         }}
       >
