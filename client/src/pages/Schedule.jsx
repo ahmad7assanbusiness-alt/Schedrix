@@ -181,7 +181,7 @@ const styles = {
     minWidth: "800px",
   },
   tableHeader: {
-    backgroundColor: "var(--gray-100)",
+    backgroundColor: "var(--bg-secondary)",
     position: "sticky",
     top: 0,
     zIndex: 10,
@@ -205,7 +205,7 @@ const styles = {
     fontWeight: 700,
     fontSize: "var(--font-size-sm)",
     color: "var(--text-secondary)",
-    backgroundColor: "var(--gray-100)",
+    backgroundColor: "var(--bg-secondary)",
     position: "sticky",
     left: 0,
     zIndex: 11,
@@ -215,10 +215,10 @@ const styles = {
     transition: "background-color var(--transition-base)",
   },
   tableRowEven: {
-    backgroundColor: "white",
+    backgroundColor: "var(--bg-primary)",
   },
   tableRowOdd: {
-    backgroundColor: "var(--gray-50)",
+    backgroundColor: "var(--bg-secondary)",
   },
   tableCell: {
     padding: "var(--spacing-md)",
@@ -228,6 +228,8 @@ const styles = {
     minHeight: "60px",
     cursor: "pointer",
     position: "relative",
+    backgroundColor: "inherit",
+    color: "var(--text-primary)",
   },
   tableCellDragOver: {
     backgroundColor: "var(--primary-light)",
@@ -258,10 +260,12 @@ const styles = {
     padding: "var(--spacing-xs) var(--spacing-sm)",
     marginBottom: "var(--spacing-xs)",
     background: "var(--primary-light)",
+    color: "var(--primary)",
     borderRadius: "var(--radius-sm)",
     fontSize: "var(--font-size-sm)",
     cursor: "pointer",
     transition: "all var(--transition-base)",
+    fontWeight: 500,
     "&:hover": {
       background: "var(--primary)",
       color: "white",
@@ -451,6 +455,8 @@ const styles = {
     fontSize: "var(--font-size-base)",
     width: "100%",
     minWidth: "100px",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
   },
   positionCell: {
     position: "relative",
