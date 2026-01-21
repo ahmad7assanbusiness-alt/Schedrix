@@ -127,7 +127,7 @@ model ShiftAssignment {
 model ScheduleTemplate {
   id         String   @id @default(cuid())
   businessId String
-  name       String // Template name
+  name       String? // Template name (optional for backward compatibility)
   rows       Json? // Array of row labels (positions) e.g., ["Cash", "Floater", "Host"]
   columns    Json? // Array of column definitions e.g., [{"label": "Monday", "date": "2024-01-15"}, ...]
   createdAt  DateTime @default(now())
