@@ -15,7 +15,7 @@ const styles = {
     margin: "0 auto",
   },
   card: {
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
     backdropFilter: "blur(20px)",
     borderRadius: "var(--radius-2xl)",
     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -37,7 +37,7 @@ const styles = {
     marginBottom: "var(--spacing-sm)",
   },
   subtitle: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
   },
   backLink: {
@@ -57,7 +57,7 @@ const styles = {
   error: {
     padding: "var(--spacing-md)",
     backgroundColor: "var(--error-light)",
-    color: "#991b1b",
+    color: "var(--error-text)",
     borderRadius: "var(--radius-md)",
     marginBottom: "var(--spacing-lg)",
     border: "1px solid var(--error)",
@@ -65,7 +65,7 @@ const styles = {
   success: {
     padding: "var(--spacing-md)",
     backgroundColor: "var(--success-light)",
-    color: "#065f46",
+    color: "var(--success-text)",
     borderRadius: "var(--radius-md)",
     marginBottom: "var(--spacing-lg)",
     border: "1px solid var(--success)",
@@ -76,6 +76,8 @@ const styles = {
     borderRadius: "var(--radius-md)",
     fontSize: "var(--font-size-base)",
     fontFamily: "var(--font-family)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
     transition: "all var(--transition-base)",
     cursor: "pointer",
     "&:focus": {
@@ -85,7 +87,7 @@ const styles = {
     },
   },
   formCard: {
-    background: "var(--gray-50)",
+    background: "var(--bg-secondary)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-xl)",
     marginBottom: "var(--spacing-2xl)",
@@ -93,7 +95,7 @@ const styles = {
   formTitle: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-lg)",
   },
   formGrid: {
@@ -110,7 +112,7 @@ const styles = {
   label: {
     fontSize: "var(--font-size-sm)",
     fontWeight: 600,
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
@@ -120,6 +122,8 @@ const styles = {
     borderRadius: "var(--radius-md)",
     fontSize: "var(--font-size-base)",
     fontFamily: "var(--font-family)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
     transition: "all var(--transition-base)",
     "&:focus": {
       outline: "none",
@@ -151,7 +155,7 @@ const styles = {
   requestsTitle: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-lg)",
   },
   requestsList: {
@@ -160,7 +164,7 @@ const styles = {
     gap: "var(--spacing-md)",
   },
   requestCard: {
-    background: "white",
+    background: "var(--bg-primary)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-lg)",
@@ -179,7 +183,7 @@ const styles = {
   requestDates: {
     fontSize: "var(--font-size-lg)",
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
   },
   requestStatus: {
     display: "inline-flex",
@@ -193,11 +197,11 @@ const styles = {
   },
   statusOpen: {
     background: "var(--success-light)",
-    color: "#065f46",
+    color: "var(--success-text)",
   },
   statusClosed: {
     background: "var(--gray-100)",
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
   },
   viewButton: {
     padding: "var(--spacing-sm) var(--spacing-md)",
@@ -218,7 +222,7 @@ const styles = {
     width: "100%",
     borderCollapse: "collapse",
     marginTop: "var(--spacing-lg)",
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-md)",
     overflow: "hidden",
   },
@@ -229,7 +233,7 @@ const styles = {
     padding: "var(--spacing-md)",
     textAlign: "left",
     fontWeight: 600,
-    color: "var(--gray-700)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-sm)",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
@@ -238,7 +242,7 @@ const styles = {
   tableCell: {
     padding: "var(--spacing-md)",
     borderBottom: "1px solid var(--gray-200)",
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
   },
   tableRow: {
     transition: "background-color var(--transition-base)",
@@ -252,13 +256,13 @@ const styles = {
     fontSize: "var(--font-size-lg)",
   },
   crossIcon: {
-    color: "var(--gray-400)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
   },
   emptyState: {
     textAlign: "center",
     padding: "var(--spacing-2xl)",
-    color: "var(--gray-500)",
+    color: "var(--text-secondary)",
   },
 };
 
@@ -380,7 +384,7 @@ export default function AvailabilityRequest() {
                     <option value="BIWEEKLY">Bi-weekly (every 2 weeks)</option>
                     <option value="MONTHLY">Monthly (recurring)</option>
                   </select>
-                  <p style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
+                  <p style={{ fontSize: "var(--font-size-xs)", color: "var(--text-secondary)", marginTop: "var(--spacing-xs)" }}>
                     If selected, future availability requests will be automatically created based on this frequency
                   </p>
                 </div>

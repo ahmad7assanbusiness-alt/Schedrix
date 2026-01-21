@@ -56,7 +56,7 @@ const styles = {
   success: {
     padding: "var(--spacing-md)",
     background: "var(--success-light)",
-    color: "#065f46",
+    color: "var(--success-text)",
     borderRadius: "var(--radius-md)",
     marginBottom: "var(--spacing-lg)",
   },
@@ -106,7 +106,7 @@ export default function Security() {
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>Change Password</h3>
         {success && <div style={styles.success}>{success}</div>}
-        {error && <div style={{ ...styles.success, background: "var(--error-light)", color: "#991b1b" }}>{error}</div>}
+        {error && <div style={{ ...styles.success, background: "var(--error-light)", color: "var(--error-text)" }}>{error}</div>}
         <form onSubmit={handleChangePassword} style={styles.form}>
           <div style={styles.formGroup}>
             <label style={styles.label}>Current Password</label>

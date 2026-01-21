@@ -28,7 +28,7 @@ const styles = {
     fontWeight: 500,
   },
   arrow: {
-    color: "var(--gray-400)",
+    color: "var(--text-secondary)",
   },
 };
 

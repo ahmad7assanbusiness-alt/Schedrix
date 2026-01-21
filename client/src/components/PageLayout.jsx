@@ -35,13 +35,13 @@ const styles = {
     textShadow: "0 2px 4px rgba(0,0,0,0.1)",
   },
   card: {
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
     backdropFilter: "blur(20px)",
     borderRadius: "var(--radius-2xl)",
     boxShadow: "var(--shadow-xl)",
     padding: "var(--spacing-2xl)",
     animation: "fadeIn 0.6s ease-out",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
+    border: "1px solid var(--gray-200)",
   },
 };
 

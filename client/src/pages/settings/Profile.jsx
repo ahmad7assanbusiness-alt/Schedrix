@@ -49,7 +49,7 @@ const styles = {
   success: {
     padding: "var(--spacing-md)",
     background: "var(--success-light)",
-    color: "#065f46",
+    color: "var(--success-text)",
     borderRadius: "var(--radius-md)",
     marginBottom: "var(--spacing-lg)",
   },

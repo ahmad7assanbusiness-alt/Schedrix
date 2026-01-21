@@ -51,11 +51,11 @@ const styles = {
   },
   statusConnected: {
     background: "var(--success-light)",
-    color: "#065f46",
+    color: "var(--success-text)",
   },
   statusDisconnected: {
     background: "var(--gray-100)",
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
   },
   connectButton: {
     padding: "var(--spacing-sm) var(--spacing-md)",

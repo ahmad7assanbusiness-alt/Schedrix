@@ -19,7 +19,7 @@ const styles = {
     width: "100%",
   },
   card: {
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
     backdropFilter: "blur(20px)",
     borderRadius: "var(--radius-2xl)",
     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -57,7 +57,7 @@ const styles = {
     height: "40px",
     borderRadius: "50%",
     background: "var(--gray-200)",
-    color: "var(--gray-500)",
+    color: "var(--text-secondary)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -75,7 +75,7 @@ const styles = {
   },
   stepLabel: {
     fontSize: "var(--font-size-xs)",
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontWeight: 600,
     textAlign: "center",
   },
@@ -89,7 +89,7 @@ const styles = {
     textAlign: "center",
   },
   subtitle: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
     textAlign: "center",
     marginBottom: "var(--spacing-2xl)",
@@ -107,7 +107,7 @@ const styles = {
     textAlign: "center",
     cursor: "pointer",
     transition: "all var(--transition-base)",
-    background: "white",
+    background: "var(--bg-primary)",
   },
   calendarCardSelected: {
     borderColor: "var(--primary)",
@@ -120,12 +120,12 @@ const styles = {
   },
   calendarName: {
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
     marginBottom: "var(--spacing-xs)",
   },
   calendarDesc: {
     fontSize: "var(--font-size-sm)",
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
   },
   buttonGroup: {
     display: "flex",
@@ -148,13 +148,13 @@ const styles = {
     boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
   },
   buttonSecondary: {
-    background: "white",
-    color: "var(--gray-700)",
+    background: "var(--bg-primary)",
+    color: "var(--text-secondary)",
     border: "2px solid var(--gray-300)",
   },
   skipButton: {
     background: "transparent",
-    color: "var(--gray-500)",
+    color: "var(--text-secondary)",
     border: "none",
     cursor: "pointer",
     fontSize: "var(--font-size-sm)",

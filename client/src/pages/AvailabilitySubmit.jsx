@@ -15,7 +15,7 @@ const styles = {
     margin: "0 auto",
   },
   card: {
-    background: "rgba(255, 255, 255, 0.98)",
+    background: "var(--bg-primary)",
     backdropFilter: "blur(20px)",
     borderRadius: "var(--radius-2xl)",
     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -36,7 +36,7 @@ const styles = {
     marginBottom: "var(--spacing-sm)",
   },
   subtitle: {
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
   },
   backLink: {
@@ -52,13 +52,13 @@ const styles = {
   error: {
     padding: "var(--spacing-md)",
     backgroundColor: "var(--error-light)",
-    color: "#991b1b",
+    color: "var(--error-text)",
     borderRadius: "var(--radius-md)",
     marginBottom: "var(--spacing-lg)",
     border: "1px solid var(--error)",
   },
   dateCard: {
-    background: "white",
+    background: "var(--bg-primary)",
     border: "2px solid var(--gray-200)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-lg)",
@@ -76,11 +76,11 @@ const styles = {
   dateTitle: {
     fontSize: "var(--font-size-xl)",
     fontWeight: 700,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
   },
   dateSubtitle: {
     fontSize: "var(--font-size-sm)",
-    color: "var(--gray-500)",
+    color: "var(--text-secondary)",
     fontWeight: 500,
   },
   shiftOptions: {
@@ -98,7 +98,7 @@ const styles = {
     borderRadius: "var(--radius-md)",
     cursor: "pointer",
     transition: "all var(--transition-base)",
-    background: "white",
+    background: "var(--bg-primary)",
   },
   shiftOptionSelected: {
     borderColor: "var(--primary)",
@@ -138,12 +138,12 @@ const styles = {
   shiftOptionTitle: {
     fontSize: "var(--font-size-base)",
     fontWeight: 600,
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
   },
   timeSlotContainer: {
     marginTop: "var(--spacing-md)",
     padding: "var(--spacing-md)",
-    background: "var(--gray-50)",
+    background: "var(--bg-secondary)",
     borderRadius: "var(--radius-md)",
   },
   timeSlotGrid: {
@@ -159,7 +159,7 @@ const styles = {
   timeSlotLabel: {
     fontSize: "var(--font-size-xs)",
     fontWeight: 600,
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
@@ -183,7 +183,7 @@ const styles = {
     borderRadius: "var(--radius-md)",
     fontSize: "var(--font-size-base)",
     fontFamily: "monospace",
-    background: "white",
+    background: "var(--bg-primary)",
     cursor: "pointer",
     transition: "all var(--transition-base)",
   },
@@ -204,19 +204,19 @@ const styles = {
   loading: {
     textAlign: "center",
     padding: "var(--spacing-2xl)",
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
   },
   noRequest: {
     textAlign: "center",
     padding: "var(--spacing-2xl)",
-    color: "var(--gray-600)",
+    color: "var(--text-secondary)",
   },
   noRequestTitle: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
     marginBottom: "var(--spacing-md)",
-    color: "var(--gray-900)",
+    color: "var(--text-primary)",
   },
 };
 
