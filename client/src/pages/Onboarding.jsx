@@ -209,12 +209,13 @@ export default function Onboarding() {
         calendarIntegrations: selectedCalendars,
       });
       
-      // Navigate to dashboard
-      navigate("/dashboard");
+      // Reload user data to get updated onboardingCompleted status
+      // This ensures the OnboardingCheck component recognizes the change
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error("Failed to complete onboarding:", err);
       // Still navigate to dashboard even if saving fails
-      navigate("/dashboard");
+      window.location.href = "/dashboard";
     } finally {
       setLoading(false);
     }
