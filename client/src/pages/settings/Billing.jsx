@@ -187,17 +187,31 @@ export default function Billing() {
       });
 
       // Redirect to Stripe Checkout
-      const stripe = await stripePromise;
-      const { error: stripeError } = await stripe.redirectToCheckout({
-        sessionId,
-      });
+      // Use redirectToCheckout (preferred) or fallback to direct URL
+      if (sessionId) {
+        const stripe = await stripePromise;
+        const { error: stripeError } = await stripe.redirectToCheckout({
+          sessionId,
+        });
 
-      if (stripeError) {
-        console.error("Stripe error:", stripeError);
-        setError(stripeError.message || "Failed to redirect to checkout");
+        if (stripeError) {
+          console.error("Stripe error:", stripeError);
+          // Fallback to direct URL redirect
+          if (url) {
+            window.location.href = url;
+          } else {
+            setError(stripeError.message || "Failed to redirect to checkout");
+            setLoading(false);
+          }
+        }
+        // If successful, user will be redirected to Stripe Checkout page
+      } else if (url) {
+        // Direct URL redirect as fallback
+        window.location.href = url;
+      } else {
+        setError("Failed to create checkout session. Please try again.");
         setLoading(false);
       }
-      // If successful, user will be redirected to Stripe
     } catch (err) {
       console.error("Upgrade error:", err);
       setError(err.message || "Failed to start checkout. Please try again.");
