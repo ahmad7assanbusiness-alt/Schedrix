@@ -118,6 +118,43 @@ Client runs on: http://localhost:5173
 └── shared/          # Future shared types
 ```
 
+## Environment Variables
+
+### Server (`server/.env`)
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/schedule_app?schema=public"
+JWT_SECRET="your-secret-key-change-in-production"
+PORT=4000
+NODE_ENV=production
+
+# Stripe Configuration (for payment processing)
+STRIPE_SECRET_KEY=sk_test_... # Your Stripe secret key
+STRIPE_WEBHOOK_SECRET=whsec_... # Webhook secret from Stripe Dashboard
+STRIPE_PRO_PRICE_ID=price_... # Stripe price ID for Pro plan
+STRIPE_ENTERPRISE_PRICE_ID=price_... # Stripe price ID for Enterprise plan
+CLIENT_URL=https://yourdomain.com # Frontend URL for redirects
+```
+
+### Client (`client/.env`)
+```env
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_... # Your Stripe publishable key
+```
+
+## Stripe Setup
+
+1. **Create Stripe Account**: Sign up at https://stripe.com
+2. **Create Products & Prices**:
+   - Go to Stripe Dashboard → Products
+   - Create "Pro" product with monthly recurring price ($29/month)
+   - Create "Enterprise" product with monthly recurring price ($99/month)
+   - Copy the Price IDs (e.g., `price_xxxxx`)
+3. **Set Environment Variables**: Add the Price IDs to `server/.env`
+4. **Set Up Webhooks**:
+   - Go to Stripe Dashboard → Developers → Webhooks
+   - Add endpoint: `https://yourdomain.com/billing/webhook`
+   - Select events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
+   - Copy webhook secret to `STRIPE_WEBHOOK_SECRET`
+
 ## API Endpoints
 
 ### Auth
@@ -138,6 +175,12 @@ Client runs on: http://localhost:5173
 - `GET /schedules/:id` - Get schedule details
 - `POST /schedules/:id/assignments` - Assign/unassign shift
 - `POST /schedules/:id/publish` - Publish schedule
+
+### Billing
+- `GET /billing/plans` - Get available subscription plans
+- `POST /billing/create-checkout-session` - Create Stripe checkout session
+- `POST /billing/webhook` - Handle Stripe webhooks
+- `POST /billing/portal` - Create customer portal session
 
 ## Development
 

@@ -30,12 +30,17 @@ enum ScheduleStatus {
 }
 
 model Business {
-  id                 String   @id @default(cuid())
-  name               String
-  joinCode           String   @unique
-  subscriptionStatus String   @default("inactive")
-  ownerUserId        String
-  createdAt          DateTime @default(now())
+  id                   String   @id @default(cuid())
+  name                 String
+  joinCode             String   @unique
+  subscriptionStatus   String   @default("inactive")
+  ownerUserId          String
+  createdAt            DateTime @default(now())
+  
+  // Stripe subscription fields
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  subscriptionPlanId   String?  // e.g., "free", "pro", "enterprise"
 
   users                User[]
   availabilityRequests AvailabilityRequest[]
