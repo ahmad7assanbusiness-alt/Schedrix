@@ -145,3 +145,4 @@ Client runs on: http://localhost:5173
 - Manager routes require OWNER or MANAGER role
 - Employee routes require EMPLOYEE role
 - All data is scoped to the user's business
+
