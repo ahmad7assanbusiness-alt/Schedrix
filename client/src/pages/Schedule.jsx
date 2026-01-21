@@ -567,7 +567,14 @@ export default function Schedule() {
     if (!selectedSchedule) return;
     try {
       const rows = selectedSchedule.rows || null;
-      const columns = selectedSchedule.columns || null;
+      // Remove dates from columns when saving as template (dates are schedule-specific)
+      const columns = selectedSchedule.columns 
+        ? selectedSchedule.columns.map(col => ({
+            label: col.label || col,
+            // Remove date from template - dates will be set when creating new schedules
+          }))
+        : null;
+      
       await api.put("/schedules/template", {
         rows,
         columns,

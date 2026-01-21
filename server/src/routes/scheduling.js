@@ -33,6 +33,22 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
 
     const { startDate, endDate, rows, columns } = createScheduleSchema.parse(req.body);
 
+    // If rows/columns not provided, try to load from template
+    let templateRows = rows;
+    let templateColumns = columns;
+    
+    if (!rows || !columns) {
+      const template = await prisma.scheduleTemplate.findUnique({
+        where: { businessId: req.user.businessId },
+      });
+      
+      if (template) {
+        // Use template if provided, otherwise use template values
+        templateRows = rows !== undefined ? rows : (template.rows || null);
+        templateColumns = columns !== undefined ? columns : (template.columns || null);
+      }
+    }
+
     const schedule = await prisma.scheduleWeek.create({
       data: {
         businessId: req.user.businessId,
@@ -40,8 +56,8 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
         endDate: new Date(endDate),
         status: "DRAFT",
         createdByUserId: req.user.id,
-        rows: rows || null,
-        columns: columns || null,
+        rows: templateRows,
+        columns: templateColumns,
       },
     });
 
