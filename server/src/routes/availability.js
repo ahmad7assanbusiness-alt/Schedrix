@@ -5,9 +5,93 @@ import { authMiddleware, managerOnly, employeeOnly } from "../middleware/auth.js
 
 const router = express.Router();
 
+/**
+ * Calculate next dates based on frequency
+ */
+function calculateNextDates(startDate, endDate, frequency) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const duration = end.getTime() - start.getTime(); // Duration in milliseconds
+
+  let nextStart, nextEnd;
+  if (frequency === "WEEKLY") {
+    nextStart = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000); // Add 7 days
+    nextEnd = new Date(nextStart.getTime() + duration);
+  } else if (frequency === "BIWEEKLY") {
+    nextStart = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000); // Add 14 days
+    nextEnd = new Date(nextStart.getTime() + duration);
+  } else if (frequency === "MONTHLY") {
+    nextStart = new Date(start);
+    nextStart.setMonth(nextStart.getMonth() + 1); // Add 1 month
+    nextEnd = new Date(end);
+    nextEnd.setMonth(nextEnd.getMonth() + 1); // Add 1 month
+  } else {
+    return null;
+  }
+
+  return { nextStart, nextEnd };
+}
+
+/**
+ * Create recurring availability requests and schedules
+ * Creates up to 12 future requests (approximately 3 months for weekly)
+ */
+async function createRecurringRequests(originalRequest, originalSchedule, tx, maxRequests = 12) {
+  if (!originalRequest.frequency) return [];
+
+  const created = [];
+  let currentStart = new Date(originalRequest.startDate);
+  let currentEnd = new Date(originalRequest.endDate);
+  let iteration = 0;
+
+  while (iteration < maxRequests) {
+    const nextDates = calculateNextDates(currentStart, currentEnd, originalRequest.frequency);
+    if (!nextDates) break;
+
+    // Don't create requests too far in the future (stop at 6 months ahead)
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+    if (nextDates.nextStart > sixMonthsFromNow) break;
+
+    // Create next availability request
+    const nextRequest = await tx.availabilityRequest.create({
+      data: {
+        businessId: originalRequest.businessId,
+        startDate: nextDates.nextStart,
+        endDate: nextDates.nextEnd,
+        status: "CLOSED", // Future requests start as CLOSED until they're ready
+        frequency: originalRequest.frequency,
+        createdByUserId: originalRequest.createdByUserId,
+      },
+    });
+
+    // Create corresponding schedule
+    await tx.scheduleWeek.create({
+      data: {
+        businessId: originalRequest.businessId,
+        startDate: nextDates.nextStart,
+        endDate: nextDates.nextEnd,
+        status: "DRAFT",
+        createdByUserId: originalRequest.createdByUserId,
+        availabilityRequestId: nextRequest.id,
+        rows: originalSchedule.rows,
+        columns: originalSchedule.columns,
+      },
+    });
+
+    created.push(nextRequest);
+    currentStart = nextDates.nextStart;
+    currentEnd = nextDates.nextEnd;
+    iteration++;
+  }
+
+  return created;
+}
+
 const createRequestSchema = z.object({
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
+  frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]).optional(),
 });
 
 const submitEntriesSchema = z.object({
@@ -34,7 +118,7 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
       return res.status(403).json({ error: "Not part of a business" });
     }
 
-    const { startDate, endDate } = createRequestSchema.parse(req.body);
+    const { startDate, endDate, frequency } = createRequestSchema.parse(req.body);
 
     // Close any existing OPEN requests for this business
     await prisma.availabilityRequest.updateMany({
@@ -45,17 +129,54 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
       data: { status: "CLOSED" },
     });
 
-    const request = await prisma.availabilityRequest.create({
-      data: {
-        businessId: req.user.businessId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        status: "OPEN",
-        createdByUserId: req.user.id,
-      },
+    // Use transaction to create request and schedule atomically
+    const result = await prisma.$transaction(async (tx) => {
+      // Create availability request
+      const request = await tx.availabilityRequest.create({
+        data: {
+          businessId: req.user.businessId,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          status: "OPEN",
+          frequency: frequency || null,
+          createdByUserId: req.user.id,
+        },
+      });
+
+      // Load schedule template if it exists
+      const template = await tx.scheduleTemplate.findUnique({
+        where: { businessId: req.user.businessId },
+      });
+
+      // Automatically create schedule for the same dates
+      const schedule = await tx.scheduleWeek.create({
+        data: {
+          businessId: req.user.businessId,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          status: "DRAFT",
+          createdByUserId: req.user.id,
+          availabilityRequestId: request.id,
+          rows: template?.rows || null,
+          columns: template?.columns || null,
+        },
+      });
+
+      // If frequency is set, create recurring requests and schedules
+      let recurringRequests = [];
+      if (frequency) {
+        recurringRequests = await createRecurringRequests(request, schedule, tx);
+      }
+
+      return { request, schedule, recurringRequests };
     });
 
-    res.json(request);
+    // Return request with schedule info
+    res.json({
+      ...result.request,
+      scheduleId: result.schedule.id,
+      recurringRequestsCreated: result.recurringRequests.length,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: "Validation error", details: error.errors });

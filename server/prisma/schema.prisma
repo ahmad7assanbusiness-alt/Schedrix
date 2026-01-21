@@ -18,6 +18,12 @@ enum RequestStatus {
   CLOSED
 }
 
+enum ScheduleFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
 enum ScheduleStatus {
   DRAFT
   PUBLISHED
@@ -57,11 +63,13 @@ model AvailabilityRequest {
   startDate   DateTime
   endDate     DateTime
   status      RequestStatus @default(OPEN)
+  frequency   ScheduleFrequency? // WEEKLY, BIWEEKLY, or MONTHLY
   createdByUserId String
   createdAt   DateTime @default(now())
 
   business    Business          @relation(fields: [businessId], references: [id])
   entries     AvailabilityEntry[]
+  schedules   ScheduleWeek[]
 }
 
 model AvailabilityEntry {
@@ -86,11 +94,13 @@ model ScheduleWeek {
   endDate    DateTime
   status     ScheduleStatus @default(DRAFT)
   createdByUserId String
+  availabilityRequestId String? // Link to availability request
   createdAt  DateTime @default(now())
   rows       Json? // Array of row labels (positions) e.g., ["Cash", "Floater", "Host"]
   columns    Json? // Array of column definitions e.g., [{"label": "Monday", "date": "2024-01-15"}, ...]
 
   business   Business @relation(fields: [businessId], references: [id])
+  availabilityRequest AvailabilityRequest? @relation(fields: [availabilityRequestId], references: [id])
   assignments ShiftAssignment[]
 }
 

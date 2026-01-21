@@ -62,6 +62,28 @@ const styles = {
     marginBottom: "var(--spacing-lg)",
     border: "1px solid var(--error)",
   },
+  success: {
+    padding: "var(--spacing-md)",
+    backgroundColor: "var(--success-light)",
+    color: "#065f46",
+    borderRadius: "var(--radius-md)",
+    marginBottom: "var(--spacing-lg)",
+    border: "1px solid var(--success)",
+  },
+  select: {
+    padding: "var(--spacing-md)",
+    border: "2px solid var(--gray-200)",
+    borderRadius: "var(--radius-md)",
+    fontSize: "var(--font-size-base)",
+    fontFamily: "var(--font-family)",
+    transition: "all var(--transition-base)",
+    cursor: "pointer",
+    "&:focus": {
+      outline: "none",
+      borderColor: "var(--primary)",
+      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.1)",
+    },
+  },
   formCard: {
     background: "var(--gray-50)",
     borderRadius: "var(--radius-lg)",
@@ -243,8 +265,10 @@ const styles = {
 export default function AvailabilityRequest() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [frequency, setFrequency] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [requests, setRequests] = useState([]);
   const [entries, setEntries] = useState(null);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
@@ -266,14 +290,25 @@ export default function AvailabilityRequest() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
-      await api.post("/availability-requests", {
+      const response = await api.post("/availability-requests", {
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
+        frequency: frequency || undefined,
       });
       setStartDate("");
       setEndDate("");
+      setFrequency("");
+      
+      let successMsg = "Availability request created successfully! A schedule has been automatically created for the same dates.";
+      if (frequency && response.recurringRequestsCreated > 0) {
+        successMsg += ` ${response.recurringRequestsCreated} future ${frequency.toLowerCase()} request${response.recurringRequestsCreated > 1 ? 's' : ''} and schedule${response.recurringRequestsCreated > 1 ? 's' : ''} have been created automatically.`;
+      }
+      setSuccess(successMsg);
       loadRequests();
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
       setError(err.message || "Failed to create request");
     } finally {
@@ -307,6 +342,7 @@ export default function AvailabilityRequest() {
           </div>
 
           {error && <div style={styles.error}>{error}</div>}
+          {success && <div style={styles.success}>{success}</div>}
 
           <div style={styles.formCard}>
             <h2 style={styles.formTitle}>Create New Request</h2>
@@ -332,13 +368,29 @@ export default function AvailabilityRequest() {
                     style={styles.input}
                   />
                 </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Schedule Frequency (Optional)</label>
+                  <select
+                    value={frequency}
+                    onChange={(e) => setFrequency(e.target.value)}
+                    style={styles.select}
+                  >
+                    <option value="">One-time request</option>
+                    <option value="WEEKLY">Weekly (recurring)</option>
+                    <option value="BIWEEKLY">Bi-weekly (every 2 weeks)</option>
+                    <option value="MONTHLY">Monthly (recurring)</option>
+                  </select>
+                  <p style={{ fontSize: "var(--font-size-xs)", color: "var(--gray-500)", marginTop: "var(--spacing-xs)" }}>
+                    If selected, future availability requests will be automatically created based on this frequency
+                  </p>
+                </div>
               </div>
               <button
                 type="submit"
                 disabled={loading}
                 style={styles.submitButton}
               >
-                {loading ? "Creating..." : "Create Request"}
+                {loading ? "Creating..." : "Create Request & Schedule"}
               </button>
             </form>
           </div>
