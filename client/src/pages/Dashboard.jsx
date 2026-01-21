@@ -182,13 +182,7 @@ export default function Dashboard() {
       to: "/schedule/my",
       icon: "👤",
       title: "My Schedule",
-      description: "View your personal schedule",
-    },
-    {
-      to: "/schedule/full",
-      icon: "👥",
-      title: "Full Schedule",
-      description: "View the complete team schedule",
+      description: "View your personal schedule or the full team schedule",
     },
   ];
 

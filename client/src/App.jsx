@@ -6,7 +6,6 @@ import AvailabilityRequest from "./pages/AvailabilityRequest.jsx";
 import AvailabilitySubmit from "./pages/AvailabilitySubmit.jsx";
 import Schedule from "./pages/Schedule.jsx";
 import ScheduleMy from "./pages/ScheduleMy.jsx";
-import ScheduleFull from "./pages/ScheduleFull.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -92,14 +91,6 @@ function App() {
           element={
             <EmployeeRoute>
               <ScheduleMy />
-            </EmployeeRoute>
-          }
-        />
-        <Route
-          path="/schedule/full"
-          element={
-            <EmployeeRoute>
-              <ScheduleFull />
             </EmployeeRoute>
           }
         />
