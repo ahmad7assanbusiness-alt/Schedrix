@@ -1,29 +1,21 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
 
 const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    backgroundAttachment: "fixed",
-    padding: "var(--spacing-xl)",
-  },
   container: {
-    maxWidth: "1200px",
+    maxWidth: "1400px",
     margin: "0 auto",
   },
   header: {
-    background: "rgba(255, 255, 255, 0.98)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "var(--radius-2xl)",
-    boxShadow: "var(--shadow-xl)",
+    background: "white",
+    borderRadius: "var(--radius-lg)",
+    boxShadow: "var(--shadow-sm)",
     padding: "var(--spacing-xl)",
     marginBottom: "var(--spacing-xl)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    animation: "fadeIn 0.6s ease-out",
   },
   headerContent: {
     flex: 1,
@@ -87,9 +79,8 @@ const styles = {
   sectionTitle: {
     fontSize: "var(--font-size-2xl)",
     fontWeight: 700,
-    color: "white",
+    color: "var(--gray-900)",
     marginBottom: "var(--spacing-lg)",
-    textShadow: "0 2px 4px rgba(0,0,0,0.1)",
   },
   grid: {
     display: "grid",
@@ -97,19 +88,17 @@ const styles = {
     gap: "var(--spacing-lg)",
   },
   card: {
-    background: "rgba(255, 255, 255, 0.98)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "var(--radius-xl)",
+    background: "white",
+    borderRadius: "var(--radius-lg)",
     padding: "var(--spacing-xl)",
-    boxShadow: "var(--shadow-lg)",
+    boxShadow: "var(--shadow-sm)",
+    border: "2px solid var(--gray-200)",
     textDecoration: "none",
     color: "var(--gray-900)",
     display: "flex",
     flexDirection: "column",
     gap: "var(--spacing-md)",
     transition: "all var(--transition-base)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-    animation: "fadeIn 0.6s ease-out",
   },
   cardHover: {
     transform: "translateY(-4px)",
@@ -142,15 +131,10 @@ const styles = {
 };
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const { user, business, logout } = useAuth();
+  const { user, business } = useAuth();
 
   if (!user) {
-    return (
-      <div style={{ ...styles.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ color: "white", fontSize: "var(--font-size-xl)" }}>Loading...</div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   const isManager = user.role === "OWNER" || user.role === "MANAGER";
@@ -168,6 +152,12 @@ export default function Dashboard() {
       icon: "📊",
       title: "Schedule Builder",
       description: "Build and publish schedules for your team",
+    },
+    {
+      to: "/employees",
+      icon: "👥",
+      title: "Employees",
+      description: "Manage your team members",
     },
   ];
 
@@ -187,8 +177,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
+    <div style={styles.container}>
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <h1 style={styles.title}>Dashboard</h1>
@@ -215,23 +204,6 @@ export default function Dashboard() {
               {user.role}
             </span>
           </div>
-          <button
-            onClick={() => {
-              logout();
-              navigate("/welcome");
-            }}
-            style={styles.logoutBtn}
-            onMouseEnter={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 6px 20px rgba(239, 68, 68, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 4px 14px 0 rgba(239, 68, 68, 0.39)";
-            }}
-          >
-            Logout
-          </button>
         </div>
 
         <div style={styles.section}>
@@ -266,7 +238,6 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
-      </div>
     </div>
   );
 }

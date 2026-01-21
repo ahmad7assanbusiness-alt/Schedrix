@@ -71,8 +71,10 @@ function OnboardingCheck({ children }) {
   }
 
   // Redirect to onboarding if not completed (for owners/managers only)
+  // Only redirect if onboardingCompleted is explicitly false (not undefined/null for backward compatibility)
   const isManager = user.role === "OWNER" || user.role === "MANAGER";
-  if (isManager && !user.onboardingCompleted && !window.location.pathname.startsWith("/onboarding")) {
+  const pathname = window.location.pathname;
+  if (isManager && user.onboardingCompleted === false && !pathname.startsWith("/onboarding")) {
     return <Navigate to="/onboarding" replace />;
   }
 
