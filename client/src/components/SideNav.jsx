@@ -5,7 +5,7 @@ import "../index.css";
 const styles = {
   sidebar: {
     width: "280px",
-    minHeight: "100vh",
+    height: "100vh",
     background: "rgba(255, 255, 255, 0.98)",
     backdropFilter: "blur(20px)",
     borderRight: "1px solid var(--gray-200)",
@@ -16,11 +16,14 @@ const styles = {
     top: 0,
     zIndex: 100,
     boxShadow: "2px 0 8px rgba(0, 0, 0, 0.05)",
+    overflowY: "auto",
+    overflowX: "hidden",
   },
   logo: {
     padding: "var(--spacing-xl)",
     borderBottom: "1px solid var(--gray-200)",
     marginBottom: "var(--spacing-lg)",
+    flexShrink: 0,
   },
   logoText: {
     fontSize: "var(--font-size-2xl)",
@@ -32,6 +35,7 @@ const styles = {
   navSection: {
     padding: "0 var(--spacing-lg)",
     marginBottom: "var(--spacing-xl)",
+    flexShrink: 0,
   },
   navSectionTitle: {
     fontSize: "var(--font-size-xs)",
@@ -75,6 +79,8 @@ const styles = {
     marginTop: "auto",
     padding: "var(--spacing-lg)",
     borderTop: "1px solid var(--gray-200)",
+    flexShrink: 0,
+    background: "rgba(255, 255, 255, 0.98)",
   },
   userInfo: {
     display: "flex",
