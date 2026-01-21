@@ -10,8 +10,37 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
 
+// Helper function to get price ID from product ID or return price ID directly
+async function getPriceId(productOrPriceId) {
+  if (!productOrPriceId || !stripe) return null;
+  
+  // If it's already a price ID (starts with price_), return it
+  if (productOrPriceId.startsWith("price_")) {
+    return productOrPriceId;
+  }
+  
+  // If it's a product ID (starts with prod_), fetch the first active price
+  if (productOrPriceId.startsWith("prod_")) {
+    try {
+      const prices = await stripe.prices.list({
+        product: productOrPriceId,
+        active: true,
+        limit: 1,
+      });
+      if (prices.data.length > 0) {
+        return prices.data[0].id;
+      }
+    } catch (error) {
+      console.error("Error fetching price from product:", error);
+    }
+  }
+  
+  return null;
+}
+
 // Define pricing plans
-// NOTE: You need to create these products/prices in Stripe Dashboard and update the priceId values
+// NOTE: You can use either product IDs (prod_...) or price IDs (price_...) in environment variables
+// If using product IDs, the code will automatically fetch the first active price
 const PLANS = {
   free: {
     name: "Free",
@@ -22,7 +51,8 @@ const PLANS = {
   pro: {
     name: "Pro",
     price: 29,
-    priceId: process.env.STRIPE_PRO_PRICE_ID || "price_pro_monthly", // Replace with actual Stripe price ID
+    productOrPriceId: process.env.STRIPE_PRO_PRICE_ID || null,
+    priceId: null, // Will be resolved on first use
     features: [
       "Unlimited schedules",
       "Unlimited employees",
@@ -34,7 +64,8 @@ const PLANS = {
   enterprise: {
     name: "Enterprise",
     price: 99,
-    priceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || "price_enterprise_monthly", // Replace with actual Stripe price ID
+    productOrPriceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || null,
+    priceId: null, // Will be resolved on first use
     features: [
       "Everything in Pro",
       "Custom integrations",
@@ -48,7 +79,57 @@ const PLANS = {
 // GET /billing/plans - Get available plans
 router.get("/plans", authMiddleware, managerOnly, async (req, res) => {
   try {
-    res.json(PLANS);
+    // Ensure price IDs are resolved before returning plans
+    const plansWithPrices = { ...PLANS };
+    
+    if (plansWithPrices.pro.productOrPriceId && !plansWithPrices.pro.priceId) {
+      plansWithPrices.pro.priceId = await getPriceId(plansWithPrices.pro.productOrPriceId);
+      if (plansWithPrices.pro.priceId && plansWithPrices.pro.priceId.startsWith("price_")) {
+        try {
+          const price = await stripe.prices.retrieve(plansWithPrices.pro.priceId);
+          if (price.unit_amount) {
+            plansWithPrices.pro.price = price.unit_amount / 100;
+          }
+        } catch (error) {
+          console.error("Error fetching Pro price details:", error);
+        }
+      }
+    }
+    
+    if (plansWithPrices.enterprise.productOrPriceId && !plansWithPrices.enterprise.priceId) {
+      plansWithPrices.enterprise.priceId = await getPriceId(plansWithPrices.enterprise.productOrPriceId);
+      if (plansWithPrices.enterprise.priceId && plansWithPrices.enterprise.priceId.startsWith("price_")) {
+        try {
+          const price = await stripe.prices.retrieve(plansWithPrices.enterprise.priceId);
+          if (price.unit_amount) {
+            plansWithPrices.enterprise.price = price.unit_amount / 100;
+          }
+        } catch (error) {
+          console.error("Error fetching Enterprise price details:", error);
+        }
+      }
+    }
+    
+    // Remove internal fields before sending to client
+    const response = {
+      free: {
+        name: plansWithPrices.free.name,
+        price: plansWithPrices.free.price,
+        features: plansWithPrices.free.features,
+      },
+      pro: {
+        name: plansWithPrices.pro.name,
+        price: plansWithPrices.pro.price,
+        features: plansWithPrices.pro.features,
+      },
+      enterprise: {
+        name: plansWithPrices.enterprise.name,
+        price: plansWithPrices.enterprise.price,
+        features: plansWithPrices.enterprise.features,
+      },
+    };
+    
+    res.json(response);
   } catch (error) {
     console.error("Get plans error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -70,8 +151,26 @@ router.post("/create-checkout-session", authMiddleware, managerOnly, async (req,
 
     const plan = PLANS[planId];
 
+    // Ensure price ID is initialized (convert product ID to price ID if needed)
+    if (!plan.priceId && plan.productOrPriceId) {
+      plan.priceId = await getPriceId(plan.productOrPriceId);
+      if (plan.priceId && plan.priceId.startsWith("price_")) {
+        // Update display price from Stripe
+        try {
+          const price = await stripe.prices.retrieve(plan.priceId);
+          if (price.unit_amount) {
+            plan.price = price.unit_amount / 100;
+          }
+        } catch (error) {
+          console.error("Error fetching price details:", error);
+        }
+      }
+    }
+
     if (!plan.priceId) {
-      return res.status(400).json({ error: "This plan is not available for purchase" });
+      return res.status(400).json({ 
+        error: "This plan is not available for purchase. Please configure STRIPE_PRO_PRICE_ID or STRIPE_ENTERPRISE_PRICE_ID with either a product ID (prod_...) or price ID (price_...)." 
+      });
     }
 
     if (!req.user.businessId) {
