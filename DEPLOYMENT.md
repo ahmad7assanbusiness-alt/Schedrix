@@ -39,15 +39,19 @@ This guide covers deploying the ScheduleManager app to production with:
 In the "Environment" section, add:
 
 ```
-DATABASE_URL=postgresql://user:password@host:5432/database
+DATABASE_URL=postgresql://user:password@host:5432/database?connection_limit=10&pool_timeout=20
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 NODE_ENV=production
 ```
 
 **Important:**
 - `DATABASE_URL`: Use Render PostgreSQL, Supabase, or any PostgreSQL database
+  - **Connection Pooling**: For production, add `?connection_limit=10&pool_timeout=20` to optimize database connections
+  - **Supabase**: Use the "Connection Pooling" URL from your Supabase dashboard (port 6543 instead of 5432)
 - `JWT_SECRET`: Generate a strong random string (e.g., `openssl rand -base64 32`)
 - `PORT`: Render automatically sets this (no need to set manually)
+
+**Performance Tip:** Connection pooling parameters (`connection_limit` and `pool_timeout`) help prevent database connection exhaustion and improve response times, especially on Render's free tier.
 
 ### 4. Create PostgreSQL Database (Optional - Free on Render)
 
@@ -65,7 +69,11 @@ Click "Create Web Service" - Render will:
 3. Start your server
 4. Provide a public URL: `https://your-app.onrender.com`
 
-**Note:** Free tier services spin down after 15 minutes of inactivity, but wake up automatically on first request (may take 30-60 seconds).
+**⚠️ Render Free Tier Cold Starts:**
+- Services spin down after 15 minutes of inactivity
+- **First request after spin-down takes 30-60 seconds to respond** (this is why login/dashboard may appear slow or fail)
+- Subsequent requests are fast while the service is awake
+- **Solution:** Upgrade to Render's paid tier ($7/month) to avoid cold starts, OR use Railway ($5/month free credit)
 
 ### 6. Get Your Backend URL
 
@@ -256,6 +264,9 @@ The frontend automatically uses `http://localhost:4000` in development mode (whe
 - Check backend is running and accessible
 - Test backend health endpoint: `curl https://your-backend.onrender.com/api/health`
 - **Render Free Tier**: Services may take 30-60 seconds to wake up after inactivity
+  - **This is the main cause of slow login/dashboard loading**
+  - First request after 15 min inactivity triggers a cold start
+  - Consider upgrading to paid tier or using Railway for better performance
 
 **404 errors on routes:**
 - `vercel.json` is configured for SPA routing
