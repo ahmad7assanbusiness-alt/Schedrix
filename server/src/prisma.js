@@ -10,13 +10,8 @@ const prisma = new PrismaClient({
   },
 });
 
-// Handle graceful shutdown
+// Handle graceful shutdown (Prisma 5.0.0+ requires using process events directly)
 process.on("beforeExit", async () => {
-  await prisma.$disconnect();
-});
-
-// Ensure proper connection handling
-prisma.$on("beforeExit", async () => {
   await prisma.$disconnect();
 });
 
