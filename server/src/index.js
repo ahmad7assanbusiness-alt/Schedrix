@@ -19,7 +19,7 @@ app.use(express.json());
 // Health check endpoint with database connection test
 app.get("/health", async (req, res) => {
   try {
-    await prisma.$queryRaw\`SELECT 1\`;
+    await prisma.$queryRaw`SELECT 1`;
     res.json({ ok: true, database: "connected" });
   } catch (error) {
     console.error("Health check failed:", error);
@@ -29,7 +29,7 @@ app.get("/health", async (req, res) => {
 
 app.get("/api/health", async (req, res) => {
   try {
-    await prisma.$queryRaw\`SELECT 1\`;
+    await prisma.$queryRaw`SELECT 1`;
     res.json({ status: "live", database: "connected" });
   } catch (error) {
     console.error("API health check failed:", error);
@@ -63,6 +63,6 @@ process.on("SIGINT", async () => {
 });
 
 app.listen(PORT, HOST, () => {
-  console.log(\`Server listening on \${HOST}:\${PORT}\`);
-  console.log(\`Environment: \${process.env.NODE_ENV || "development"}\`);
+  console.log(`Server listening on ${HOST}:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
