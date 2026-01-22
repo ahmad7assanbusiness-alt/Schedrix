@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client.js";
 import { useAuth } from "../auth/useAuth.js";
+import { useTheme } from "../contexts/ThemeContext.jsx";
 import "../index.css";
 
 const styles = {
@@ -11,6 +12,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     padding: "var(--spacing-xl)",
+    position: "relative",
   },
   container: {
     width: "100%",
@@ -140,11 +142,31 @@ const styles = {
     fontWeight: 600,
     cursor: "pointer",
   },
+  themeToggle: {
+    position: "absolute",
+    top: "var(--spacing-lg)",
+    right: "var(--spacing-lg)",
+    padding: "var(--spacing-sm) var(--spacing-md)",
+    borderRadius: "var(--radius-md)",
+    border: "2px solid var(--gray-200)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "var(--spacing-sm)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 500,
+    transition: "all var(--transition-base)",
+    zIndex: 10,
+  },
 };
 
 export default function Welcome() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState("select"); // "select", "owner-register", "owner-login", "employee-register", "employee-login"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -356,6 +378,22 @@ export default function Welcome() {
   if (mode === "select") {
     return (
       <div style={styles.page}>
+        <button
+          onClick={toggleTheme}
+          style={styles.themeToggle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--primary)";
+            e.currentTarget.style.transform = "scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--gray-200)";
+            e.currentTarget.style.transform = "scale(1)";
+          }}
+          title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          <span>{theme === "dark" ? "☀️" : "🌙"}</span>
+          <span>{theme === "dark" ? "Light" : "Dark"}</span>
+        </button>
         <div style={styles.container}>
           <div style={styles.card}>
             <div style={styles.header}>
@@ -385,6 +423,22 @@ export default function Welcome() {
 
   return (
     <div style={styles.page}>
+      <button
+        onClick={toggleTheme}
+        style={styles.themeToggle}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = "var(--primary)";
+          e.currentTarget.style.transform = "scale(1.05)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = "var(--gray-200)";
+          e.currentTarget.style.transform = "scale(1)";
+        }}
+        title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      >
+        <span>{theme === "dark" ? "☀️" : "🌙"}</span>
+        <span>{theme === "dark" ? "Light" : "Dark"}</span>
+      </button>
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.header}>
