@@ -159,6 +159,8 @@ const styles = {
     transition: "all var(--transition-base)",
     borderBottom: "1px solid var(--gray-200)",
     background: "var(--bg-primary)",
+    display: "block",
+    textDecoration: "none",
   },
   dropdownItemLast: {
     borderBottom: "none",
@@ -286,6 +288,7 @@ export default function EmployeeSideNav({ onLogout }) {
                 ...styles.dropdownItem,
                 ...styles.dropdownItemLast,
                 color: "var(--error)",
+                fontWeight: 600,
               }}
               onClick={(e) => {
                 e.stopPropagation();
