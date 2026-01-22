@@ -41,6 +41,14 @@ app.get("/api/health", async (req, res) => {
 
 // Debug endpoint to check environment variables (remove in production if desired)
 app.get("/api/debug/env", (req, res) => {
+  const getRedirectUri = () => {
+    if (process.env.GOOGLE_REDIRECT_URI) {
+      return process.env.GOOGLE_REDIRECT_URI;
+    }
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    return `${clientUrl}/auth/google/callback`;
+  };
+
   const stripeKeys = {
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY 
       ? `${process.env.STRIPE_SECRET_KEY.substring(0, 10)}...${process.env.STRIPE_SECRET_KEY.substring(process.env.STRIPE_SECRET_KEY.length - 4)}` 
@@ -50,10 +58,20 @@ app.get("/api/debug/env", (req, res) => {
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ? "SET (hidden)" : "NOT SET",
     CLIENT_URL: process.env.CLIENT_URL || "NOT SET",
   };
+
+  const googleOAuth = {
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID 
+      ? `${process.env.GOOGLE_CLIENT_ID.substring(0, 20)}...` 
+      : "NOT SET",
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? "SET (hidden)" : "NOT SET",
+    GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || "NOT SET (using computed)",
+    computedRedirectUri: getRedirectUri(),
+  };
   
   res.json({
     message: "Environment variables check",
     stripe: stripeKeys,
+    googleOAuth: googleOAuth,
     nodeEnv: process.env.NODE_ENV || "not set",
   });
 });
