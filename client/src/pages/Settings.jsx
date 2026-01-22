@@ -1,4 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
+import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
 
 const styles = {
@@ -60,11 +61,14 @@ const styles = {
 };
 
 export default function Settings() {
+  const { user } = useAuth();
+  const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
+  
   const settingsPages = [
     { path: "profile", label: "Profile" },
     { path: "calendar", label: "Calendar" },
     { path: "security", label: "Security Center" },
-    { path: "billing", label: "Billing" },
+    ...(isManager ? [{ path: "billing", label: "Billing" }] : []),
     { path: "support", label: "Support" },
     { path: "legal", label: "Legal" },
   ];
@@ -79,19 +83,23 @@ export default function Settings() {
       <div style={styles.content}>
         <aside style={styles.sidebar}>
           <nav style={styles.nav}>
-            {settingsPages.map((page) => (
-              <NavLink
-                key={page.path}
-                to={`/settings/${page.path}`}
-                end={page.path === "profile"}
-                style={({ isActive }) => ({
-                  ...styles.navLink,
-                  ...(isActive ? styles.navLinkActive : {}),
-                })}
-              >
-                {page.label}
-              </NavLink>
-            ))}
+            {settingsPages.map((page) => {
+              // Determine the base path based on user role
+              const basePath = isManager ? "/settings" : "/employee/settings";
+              return (
+                <NavLink
+                  key={page.path}
+                  to={`${basePath}/${page.path}`}
+                  end={page.path === "profile"}
+                  style={({ isActive }) => ({
+                    ...styles.navLink,
+                    ...(isActive ? styles.navLinkActive : {}),
+                  })}
+                >
+                  {page.label}
+                </NavLink>
+              );
+            })}
           </nav>
         </aside>
 
