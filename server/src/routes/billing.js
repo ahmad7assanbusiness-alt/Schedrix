@@ -10,18 +10,38 @@ const router = express.Router();
 // On local development, dotenv.config() must be called first in index.js
 const getStripe = () => {
   const key = process.env.STRIPE_SECRET_KEY;
+  
+  // Detailed logging for debugging
   if (!key) {
-    console.warn("WARNING: STRIPE_SECRET_KEY is not set in environment variables");
+    console.error("❌ STRIPE_SECRET_KEY is not set!");
+    console.log("Environment check:");
+    console.log("  - NODE_ENV:", process.env.NODE_ENV);
+    console.log("  - All STRIPE_ vars:", Object.keys(process.env).filter(k => k.includes('STRIPE')));
+    console.log("  - STRIPE_SECRET_KEY type:", typeof process.env.STRIPE_SECRET_KEY);
+    console.log("  - STRIPE_SECRET_KEY value:", process.env.STRIPE_SECRET_KEY);
     return null;
   }
+  
+  // Validate key format
+  if (!key.startsWith('sk_test_') && !key.startsWith('sk_live_')) {
+    console.error("❌ STRIPE_SECRET_KEY format is invalid! Should start with sk_test_ or sk_live_");
+    console.log("  - Key starts with:", key.substring(0, 10));
+    return null;
+  }
+  
   try {
-    return new Stripe(key);
+    const stripeInstance = new Stripe(key);
+    console.log("✅ Stripe initialized successfully");
+    console.log("  - Key type:", key.startsWith('sk_test_') ? 'TEST' : 'LIVE');
+    console.log("  - Key prefix:", key.substring(0, 10) + '...' + key.substring(key.length - 4));
+    return stripeInstance;
   } catch (error) {
-    console.error("Error initializing Stripe:", error);
+    console.error("❌ Error initializing Stripe:", error);
     return null;
   }
 };
 
+// Initialize at module load
 const stripe = getStripe();
 
 // Helper function to get price ID from product ID or return price ID directly

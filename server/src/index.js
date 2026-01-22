@@ -39,6 +39,25 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// Debug endpoint to check environment variables (remove in production if desired)
+app.get("/api/debug/env", (req, res) => {
+  const stripeKeys = {
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY 
+      ? `${process.env.STRIPE_SECRET_KEY.substring(0, 10)}...${process.env.STRIPE_SECRET_KEY.substring(process.env.STRIPE_SECRET_KEY.length - 4)}` 
+      : "NOT SET",
+    STRIPE_PRO_PRICE_ID: process.env.STRIPE_PRO_PRICE_ID || "NOT SET",
+    STRIPE_ENTERPRISE_PRICE_ID: process.env.STRIPE_ENTERPRISE_PRICE_ID || "NOT SET",
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ? "SET (hidden)" : "NOT SET",
+    CLIENT_URL: process.env.CLIENT_URL || "NOT SET",
+  };
+  
+  res.json({
+    message: "Environment variables check",
+    stripe: stripeKeys,
+    nodeEnv: process.env.NODE_ENV || "not set",
+  });
+});
+
 // Routes
 app.use("/auth", authRoutes);
 app.use("/business", businessRoutes);
