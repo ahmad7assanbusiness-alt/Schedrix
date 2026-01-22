@@ -2,23 +2,95 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { z } from "zod";
+import dns from "dns";
+import { promisify } from "util";
+import { OAuth2Client } from "google-auth-library";
 import prisma from "../prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { initializeBusinessDatabase } from "../db/schemaManager.js";
+
+const resolveMx = promisify(dns.resolveMx);
 
 const router = express.Router();
+
+// Initialize Google OAuth client
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI || `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/callback`
+);
+
+// Password validation function
+function validatePassword(password) {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters long";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Password must contain at least one lowercase letter";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Password must contain at least one number";
+  }
+  return null;
+}
+
+// Email domain validation function
+async function validateEmailDomain(email) {
+  try {
+    // Extract domain from email
+    const domain = email.split("@")[1];
+    if (!domain) {
+      return "Invalid email format";
+    }
+
+    // Check if domain has MX records (can receive emails)
+    try {
+      const mxRecords = await resolveMx(domain);
+      if (!mxRecords || mxRecords.length === 0) {
+        // If no MX records, check for A record (some domains use A records for mail)
+        try {
+          const resolve4 = promisify(dns.resolve4);
+          await resolve4(domain);
+          return null; // Domain exists with A record
+        } catch (aError) {
+          return "Email domain does not exist or cannot receive emails. Please use a valid email address.";
+        }
+      }
+      return null; // Domain has valid MX records
+    } catch (mxError) {
+      // If MX lookup fails, try A record as fallback
+      try {
+        const resolve4 = promisify(dns.resolve4);
+        await resolve4(domain);
+        return null; // Domain exists with A record
+      } catch (aError) {
+        return "Email domain does not exist or cannot receive emails. Please use a valid email address.";
+      }
+    }
+  } catch (error) {
+    console.error("Email domain validation error:", error);
+    // Don't block registration if DNS lookup fails (could be network issue)
+    // Return null to allow registration to proceed
+    return null;
+  }
+}
 
 // Registration schema - simplified
 const registerSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   ownerName: z.string().min(1, "Owner name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
-// Login schema
+// Login schema with role check
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
+  expectedRole: z.enum(["OWNER", "EMPLOYEE"]).optional(), // Frontend can specify expected role
 });
 
 // Join schema (for employees)
@@ -26,7 +98,7 @@ const joinSchema = z.object({
   joinCode: z.string().min(1),
   employeeName: z.string().min(1),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
   phone: z.string().optional(),
 });
 
@@ -67,7 +139,19 @@ router.post("/register", async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: "Email already exists" });
+      return res.status(400).json({ error: "This email is already registered. Please use a different email or login instead." });
+    }
+
+    // Validate email domain (check if domain exists and can receive emails)
+    const domainError = await validateEmailDomain(email);
+    if (domainError) {
+      return res.status(400).json({ error: domainError });
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // Hash password
@@ -113,6 +197,16 @@ router.post("/register", async (req, res) => {
       return { owner: updatedOwner, business };
     });
 
+    // Initialize the business's dedicated database schema
+    try {
+      await initializeBusinessDatabase(result.business.id);
+      console.log(`Business database initialized for: ${result.business.id}`);
+    } catch (dbError) {
+      console.error("Error initializing business database:", dbError);
+      // Don't fail registration if schema creation fails - we can retry later
+      // But log it for monitoring
+    }
+
     // Return success (don't return token - user must login)
     res.json({
       success: true,
@@ -153,7 +247,7 @@ router.post("/register", async (req, res) => {
 // POST /auth/login - Login with email + password
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password, expectedRole } = loginSchema.parse(req.body);
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -174,6 +268,26 @@ router.post("/login", async (req, res) => {
 
     if (!isValidPassword) {
       return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Check role mismatch if expectedRole is provided
+    if (expectedRole) {
+      if (expectedRole === "OWNER" && user.role !== "OWNER" && user.role !== "MANAGER") {
+        return res.status(403).json({ 
+          error: "ROLE_MISMATCH",
+          message: "This is an employee account. Please login under the Employee tab.",
+          actualRole: user.role,
+          expectedRole: "OWNER"
+        });
+      }
+      if (expectedRole === "EMPLOYEE" && (user.role === "OWNER" || user.role === "MANAGER")) {
+        return res.status(403).json({ 
+          error: "ROLE_MISMATCH",
+          message: "This is an owner/manager account. Please login under the Owner tab.",
+          actualRole: user.role,
+          expectedRole: "EMPLOYEE"
+        });
+      }
     }
 
     // Generate token
@@ -226,7 +340,19 @@ router.post("/join", async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: "Email already exists" });
+      return res.status(400).json({ error: "This email is already registered. Please use a different email or login instead." });
+    }
+
+    // Validate email domain (check if domain exists and can receive emails)
+    const domainError = await validateEmailDomain(email);
+    if (domainError) {
+      return res.status(400).json({ error: domainError });
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // Hash password
@@ -327,8 +453,10 @@ router.put("/change-password", authMiddleware, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    // Validate password requirements
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // Get current user with password
@@ -436,6 +564,318 @@ router.get("/me", authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error("Me error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /auth/google - Initiate Google OAuth flow
+router.get("/google", (req, res) => {
+  try {
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(500).json({ error: "Google OAuth is not configured" });
+    }
+
+    const { role, businessName, ownerName } = req.query;
+    const state = JSON.stringify({ role, businessName, ownerName });
+    
+    // Store state in a secure way (in production, use encrypted session)
+    const authUrl = googleClient.generateAuthUrl({
+      access_type: "offline",
+      scope: [
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/userinfo.profile",
+      ],
+      state: Buffer.from(state).toString("base64"), // Encode state
+    });
+
+    res.json({ authUrl });
+  } catch (error) {
+    console.error("Google OAuth initiation error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /auth/google/callback - Handle Google OAuth callback
+router.get("/google/callback", async (req, res) => {
+  try {
+    const { code, state } = req.query;
+
+    if (!code) {
+      return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed`);
+    }
+
+    // Decode state
+    let stateData = {};
+    if (state) {
+      try {
+        stateData = JSON.parse(Buffer.from(state, "base64").toString());
+      } catch (e) {
+        console.error("Failed to decode state:", e);
+      }
+    }
+
+    // Exchange code for tokens
+    const { tokens } = await googleClient.getToken(code);
+    googleClient.setCredentials(tokens);
+
+    // Get user info from Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const googleEmail = payload.email;
+    const googleName = payload.name;
+    const googlePicture = payload.picture;
+
+    if (!googleEmail) {
+      return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=no_email`);
+    }
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email: googleEmail },
+      include: { business: true },
+    });
+
+    if (user) {
+      // User exists, log them in
+      const token = generateToken(user.id);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+      );
+    }
+
+    // New user - check if this is owner registration or employee join
+    if (stateData.role === "OWNER" && stateData.businessName && stateData.ownerName) {
+      // Owner registration
+      const joinCode = generateJoinCode();
+
+      const result = await prisma.$transaction(async (tx) => {
+        // Create owner user
+        const owner = await tx.user.create({
+          data: {
+            email: googleEmail,
+            name: stateData.ownerName || googleName,
+            role: "OWNER",
+            password: null, // No password for OAuth users
+          },
+        });
+
+        // Create business
+        const business = await tx.business.create({
+          data: {
+            name: stateData.businessName,
+            joinCode,
+            ownerUserId: owner.id,
+            subscriptionStatus: "active",
+          },
+        });
+
+        // Update user with businessId
+        const updatedOwner = await tx.user.update({
+          where: { id: owner.id },
+          data: { businessId: business.id },
+        });
+
+        return { owner: updatedOwner, business };
+      });
+
+      // Initialize business database
+      try {
+        await initializeBusinessDatabase(result.business.id);
+      } catch (dbError) {
+        console.error("Error initializing business database:", dbError);
+      }
+
+      const token = generateToken(result.owner.id);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+      );
+    } else if (stateData.role === "EMPLOYEE" && stateData.joinCode) {
+      // Employee join
+      const normalizedJoinCode = stateData.joinCode.trim().toUpperCase();
+      const business = await prisma.business.findUnique({
+        where: { joinCode: normalizedJoinCode },
+      });
+
+      if (!business) {
+        return res.redirect(
+          `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=invalid_join_code`
+        );
+      }
+
+      // Create employee user
+      const employee = await prisma.user.create({
+        data: {
+          email: googleEmail,
+          name: googleName,
+          role: "EMPLOYEE",
+          businessId: business.id,
+          password: null, // No password for OAuth users
+        },
+      });
+
+      const token = generateToken(employee.id);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+      );
+    } else {
+      // Just login - but user doesn't exist, redirect to registration
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=user_not_found`
+      );
+    }
+  } catch (error) {
+    console.error("Google OAuth callback error:", error);
+    return res.redirect(
+      `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed`
+    );
+  }
+});
+
+// POST /auth/google/verify - Verify Google ID token (alternative method)
+router.post("/google/verify", async (req, res) => {
+  try {
+    const { idToken, role, businessName, ownerName, joinCode } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ error: "ID token is required" });
+    }
+
+    // Verify the token
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const googleEmail = payload.email;
+    const googleName = payload.name;
+
+    if (!googleEmail) {
+      return res.status(400).json({ error: "Email not provided by Google" });
+    }
+
+    // Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email: googleEmail },
+      include: { business: true },
+    });
+
+    if (user) {
+      // User exists, log them in
+      const token = generateToken(user.id);
+      return res.json({
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+        business: user.business
+          ? {
+              id: user.business.id,
+              name: user.business.name,
+              joinCode: user.business.joinCode,
+            }
+          : null,
+      });
+    }
+
+    // New user registration
+    if (role === "OWNER" && businessName) {
+      const generatedJoinCode = generateJoinCode();
+      const result = await prisma.$transaction(async (tx) => {
+        const owner = await tx.user.create({
+          data: {
+            email: googleEmail,
+            name: ownerName || googleName,
+            role: "OWNER",
+            password: null,
+          },
+        });
+
+        const business = await tx.business.create({
+          data: {
+            name: businessName,
+            joinCode: generatedJoinCode,
+            ownerUserId: owner.id,
+            subscriptionStatus: "active",
+          },
+        });
+
+        const updatedOwner = await tx.user.update({
+          where: { id: owner.id },
+          data: { businessId: business.id },
+        });
+
+        return { owner: updatedOwner, business };
+      });
+
+      try {
+        await initializeBusinessDatabase(result.business.id);
+      } catch (dbError) {
+        console.error("Error initializing business database:", dbError);
+      }
+
+      const token = generateToken(result.owner.id);
+      return res.json({
+        token,
+        user: {
+          id: result.owner.id,
+          name: result.owner.name,
+          email: result.owner.email,
+          role: result.owner.role,
+        },
+        business: {
+          id: result.business.id,
+          name: result.business.name,
+          joinCode: result.business.joinCode,
+        },
+      });
+    } else if (role === "EMPLOYEE" && joinCode) {
+      const normalizedJoinCode = joinCode.trim().toUpperCase();
+      const business = await prisma.business.findUnique({
+        where: { joinCode: normalizedJoinCode },
+      });
+
+      if (!business) {
+        return res.status(404).json({ error: "Invalid join code" });
+      }
+
+      const employee = await prisma.user.create({
+        data: {
+          email: googleEmail,
+          name: googleName,
+          role: "EMPLOYEE",
+          businessId: business.id,
+          password: null,
+        },
+      });
+
+      const token = generateToken(employee.id);
+      return res.json({
+        token,
+        user: {
+          id: employee.id,
+          name: employee.name,
+          email: employee.email,
+          role: employee.role,
+        },
+        business: {
+          id: business.id,
+          name: business.name,
+          joinCode: business.joinCode,
+        },
+      });
+    } else {
+      return res.status(400).json({ error: "Invalid registration data" });
+    }
+  } catch (error) {
+    console.error("Google token verification error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
