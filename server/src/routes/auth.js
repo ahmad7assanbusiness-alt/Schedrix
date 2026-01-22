@@ -692,7 +692,144 @@ router.get("/google", (req, res) => {
   }
 });
 
-// GET /auth/google/callback - Handle Google OAuth callback
+// POST /auth/google/process-callback - Process OAuth callback from frontend
+router.post("/google/process-callback", async (req, res) => {
+  try {
+    const { code, state } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: "Authorization code is required" });
+    }
+
+    // Process the callback (same logic as GET /google/callback)
+    const result = await processGoogleCallback(code, state);
+    
+    if (result.redirect) {
+      return res.json({ redirectTo: result.redirect });
+    } else if (result.token) {
+      return res.json({ token: result.token, user: result.user, business: result.business });
+    } else {
+      return res.status(400).json({ error: result.error || "Failed to process OAuth callback" });
+    }
+  } catch (error) {
+    console.error("Process callback error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Helper function to process Google OAuth callback
+async function processGoogleCallback(code, state) {
+  // Decode state
+  let stateData = {};
+  if (state) {
+    try {
+      stateData = JSON.parse(Buffer.from(state, "base64").toString());
+    } catch (e) {
+      console.error("Failed to decode state:", e);
+    }
+  }
+
+  // Get Google OAuth client
+  const googleClient = getGoogleClient();
+
+  // Exchange code for tokens
+  let tokens;
+  try {
+    const tokenResponse = await googleClient.getToken(code);
+    tokens = tokenResponse.tokens;
+    googleClient.setCredentials(tokens);
+  } catch (tokenError) {
+    console.error("Error exchanging code for tokens:", tokenError);
+    return { error: tokenError.message || "token_exchange_failed" };
+  }
+
+  if (!tokens.id_token) {
+    return { error: "no_id_token" };
+  }
+
+  // Get user info from Google
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (verifyError) {
+    console.error("Error verifying ID token:", verifyError);
+    return { error: verifyError.message || "token_verification_failed" };
+  }
+
+  const googleEmail = payload.email;
+  const googleName = payload.name;
+  const googlePicture = payload.picture;
+
+  if (!googleEmail) {
+    return { error: "no_email" };
+  }
+
+  // Check if user already exists
+  let user = await prisma.user.findUnique({
+    where: { email: googleEmail },
+    include: { business: true },
+  });
+
+  if (user) {
+    // User exists, log them in
+    const token = generateToken(user.id);
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      business: user.business ? {
+        id: user.business.id,
+        name: user.business.name,
+        joinCode: user.business.joinCode,
+      } : null,
+    };
+  }
+
+  // New user - check if this is owner registration or employee join
+  if (stateData.role === "OWNER") {
+    // Owner registration - redirect to complete registration form
+    const tempToken = jwt.sign(
+      { 
+        googleEmail, 
+        googleName, 
+        googlePicture,
+        role: "OWNER",
+        type: "google_owner_registration"
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "10m" }
+    );
+    
+    return { redirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/complete-owner?token=${tempToken}` };
+  } else if (stateData.role === "EMPLOYEE") {
+    // Employee registration - redirect to complete registration form
+    const tempToken = jwt.sign(
+      { 
+        googleEmail, 
+        googleName, 
+        googlePicture,
+        role: "EMPLOYEE",
+        type: "google_employee_registration"
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "10m" }
+    );
+    
+    return { redirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/complete-employee?token=${tempToken}` };
+  } else {
+    return { error: "user_not_found" };
+  }
+}
+
+// GET /auth/google/callback - Handle Google OAuth callback (for direct server redirects)
 router.get("/google/callback", async (req, res) => {
   // #region agent log
   fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'OAuth callback received',data:{hasCode:!!req.query.code,hasState:!!req.query.state,oauthError:req.query.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
@@ -702,9 +839,6 @@ router.get("/google/callback", async (req, res) => {
 
     // Check for OAuth errors from Google
     if (oauthError) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'OAuth error from Google',data:{oauthError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       console.error("Google OAuth error:", oauthError);
       return res.redirect(
         `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(oauthError)}`
@@ -712,195 +846,22 @@ router.get("/google/callback", async (req, res) => {
     }
 
     if (!code) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No authorization code',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       console.error("No authorization code received from Google");
       return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=no_code`);
     }
 
-    // Decode state
-    let stateData = {};
-    if (state) {
-      try {
-        stateData = JSON.parse(Buffer.from(state, "base64").toString());
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'State decoded successfully',data:{stateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-        // #endregion
-      } catch (e) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'State decode failed',data:{error:e.message,state},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-        // #endregion
-        console.error("Failed to decode state:", e);
-      }
-    } else {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No state parameter',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
-    }
-
-    // Get Google OAuth client
-    const googleClient = getGoogleClient();
-
-    // Exchange code for tokens
-    let tokens;
-    try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Exchanging code for tokens',data:{codeLength:code.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
-      const tokenResponse = await googleClient.getToken(code);
-      tokens = tokenResponse.tokens;
-      googleClient.setCredentials(tokens);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Token exchange successful',data:{hasIdToken:!!tokens.id_token,hasAccessToken:!!tokens.access_token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
-    } catch (tokenError) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Token exchange failed',data:{errorMessage:tokenError.message,errorCode:tokenError.code,errorResponse:tokenError.response?.data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      console.error("[DEBUG] Token exchange failed:", tokenError.message, tokenError.code, tokenError.response?.data);
-      // #endregion
-      console.error("Error exchanging code for tokens:", tokenError);
-      console.error("Token error details:", {
-        message: tokenError.message,
-        code: tokenError.code,
-        response: tokenError.response?.data,
-      });
+    // Use the helper function to process the callback
+    const result = await processGoogleCallback(code, state);
+    
+    if (result.redirect) {
+      return res.redirect(result.redirect);
+    } else if (result.token) {
       return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(tokenError.message || "token_exchange_failed")}`
-      );
-    }
-
-    if (!tokens.id_token) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No ID token in response',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-      // #endregion
-      console.error("No ID token received from Google");
-      return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=no_id_token`
-      );
-    }
-
-    // Get user info from Google
-    let payload;
-    try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Verifying ID token',data:{audience:process.env.GOOGLE_CLIENT_ID?.substring(0,10)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-      // #endregion
-      const ticket = await googleClient.verifyIdToken({
-        idToken: tokens.id_token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'ID token verified',data:{hasEmail:!!payload.email,hasName:!!payload.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-      // #endregion
-    } catch (verifyError) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'ID token verification failed',data:{errorMessage:verifyError.message,errorCode:verifyError.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-      // #endregion
-      console.error("Error verifying ID token:", verifyError);
-      console.error("Verify error details:", {
-        message: verifyError.message,
-        code: verifyError.code,
-      });
-      return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(verifyError.message || "token_verification_failed")}`
-      );
-    }
-
-    const googleEmail = payload.email;
-    const googleName = payload.name;
-    const googlePicture = payload.picture;
-
-    if (!googleEmail) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No email in payload',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
-      console.error("No email in Google payload");
-      return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=no_email`);
-    }
-
-    // Check if user already exists
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Checking if user exists',data:{googleEmail},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-    // #endregion
-    let user = await prisma.user.findUnique({
-      where: { email: googleEmail },
-      include: { business: true },
-    });
-
-    if (user) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'User exists, logging in',data:{userId:user.id,userRole:user.role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
-      console.log("[DEBUG] User exists, generating token for user:", user.id, user.email);
-      // User exists, log them in
-      const token = generateToken(user.id);
-      console.log("[DEBUG] Token generated, redirecting to:", `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token.substring(0, 20)}...`);
-      const redirectUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`;
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Redirecting to success',data:{redirectUrl:redirectUrl.substring(0,100),tokenLength:token.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
-      return res.redirect(redirectUrl);
-    }
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'New user, checking state',data:{stateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-    // #endregion
-    // New user - check if this is owner registration or employee join
-    if (stateData.role === "OWNER") {
-      // Owner registration - redirect to complete registration form
-      // Store Google info in a temporary token that expires in 10 minutes
-      const tempToken = jwt.sign(
-        { 
-          googleEmail, 
-          googleName, 
-          googlePicture,
-          role: "OWNER",
-          type: "google_owner_registration"
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "10m" }
-      );
-      
-      return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/complete-owner?token=${tempToken}`
-      );
-    } else if (stateData.role === "EMPLOYEE" && stateData.joinCode) {
-      // Employee join
-      const normalizedJoinCode = stateData.joinCode.trim().toUpperCase();
-      const business = await prisma.business.findUnique({
-        where: { joinCode: normalizedJoinCode },
-      });
-
-      if (!business) {
-        return res.redirect(
-          `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=invalid_join_code`
-        );
-      }
-
-      // Create employee user
-      const employee = await prisma.user.create({
-        data: {
-          email: googleEmail,
-          name: googleName,
-          role: "EMPLOYEE",
-          businessId: business.id,
-          password: null, // No password for OAuth users
-        },
-      });
-
-      const token = generateToken(employee.id);
-      return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${result.token}`
       );
     } else {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No matching state role, user not found',data:{stateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
-      // Just login - but user doesn't exist, redirect to registration
       return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=user_not_found`
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(result.error || "unknown_error")}`
       );
     }
   } catch (error) {
@@ -1062,6 +1023,83 @@ router.post("/google/verify", async (req, res) => {
     }
   } catch (error) {
     console.error("Google token verification error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /auth/google/complete-employee - Complete employee registration after Google OAuth
+router.post("/google/complete-employee", async (req, res) => {
+  try {
+    const { tempToken, joinCode, phone } = req.body;
+
+    if (!tempToken || !joinCode) {
+      return res.status(400).json({ error: "Token and join code are required" });
+    }
+
+    // Verify and decode temp token
+    let googleData;
+    try {
+      googleData = jwt.verify(tempToken, process.env.JWT_SECRET);
+      if (googleData.type !== "google_employee_registration" || googleData.role !== "EMPLOYEE") {
+        return res.status(400).json({ error: "Invalid registration token" });
+      }
+    } catch (error) {
+      return res.status(400).json({ error: "Registration token expired or invalid. Please try again." });
+    }
+
+    const googleEmail = googleData.googleEmail;
+    const googleName = googleData.googleName;
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: googleEmail },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "This email is already registered. Please login instead." });
+    }
+
+    // Validate join code
+    const normalizedJoinCode = joinCode.trim().toUpperCase();
+    const business = await prisma.business.findUnique({
+      where: { joinCode: normalizedJoinCode },
+    });
+
+    if (!business) {
+      return res.status(400).json({ error: "Invalid join code. Please check and try again." });
+    }
+
+    // Create employee user
+    const employee = await prisma.user.create({
+      data: {
+        email: googleEmail,
+        name: googleName,
+        role: "EMPLOYEE",
+        businessId: business.id,
+        password: null, // No password for OAuth users
+        // Note: phone is not in current schema, but we can add it later if needed
+      },
+    });
+
+    // Generate auth token
+    const token = generateToken(employee.id);
+
+    res.json({
+      token,
+      user: {
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        role: employee.role,
+      },
+      business: {
+        id: business.id,
+        name: business.name,
+        joinCode: business.joinCode,
+      },
+    });
+  } catch (error) {
+    console.error("Complete employee registration error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
