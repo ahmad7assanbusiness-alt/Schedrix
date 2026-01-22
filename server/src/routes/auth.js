@@ -22,17 +22,26 @@ const getRedirectUri = () => {
   return `${clientUrl}/auth/google/callback`;
 };
 
-const googleClient = new OAuth2Client(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  getRedirectUri()
-);
+// Helper function to get Google OAuth client (with validation)
+const getGoogleClient = () => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    throw new Error("Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.");
+  }
+  
+  return new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    getRedirectUri()
+  );
+};
 
-// Log redirect URI for debugging (only in development)
-if (process.env.NODE_ENV === "development") {
-  console.log("Google OAuth Redirect URI:", getRedirectUri());
-  console.log("Google Client ID configured:", !!process.env.GOOGLE_CLIENT_ID);
-  console.log("Google Client Secret configured:", !!process.env.GOOGLE_CLIENT_SECRET);
+// Log redirect URI for debugging
+console.log("Google OAuth Configuration:");
+console.log("  Redirect URI:", getRedirectUri());
+console.log("  Client ID configured:", !!process.env.GOOGLE_CLIENT_ID);
+console.log("  Client Secret configured:", !!process.env.GOOGLE_CLIENT_SECRET);
+if (process.env.GOOGLE_CLIENT_ID) {
+  console.log("  Client ID (first 10 chars):", process.env.GOOGLE_CLIENT_ID.substring(0, 10) + "...");
 }
 
 // Password validation function
@@ -586,10 +595,8 @@ router.get("/me", authMiddleware, async (req, res) => {
 // GET /auth/google - Initiate Google OAuth flow
 router.get("/google", (req, res) => {
   try {
-    if (!process.env.GOOGLE_CLIENT_ID) {
-      return res.status(500).json({ error: "Google OAuth is not configured" });
-    }
-
+    const googleClient = getGoogleClient();
+    
     const { role, joinCode } = req.query;
     // For owner registration, we don't need businessName/ownerName upfront
     const state = JSON.stringify({ role, joinCode });
@@ -607,7 +614,13 @@ router.get("/google", (req, res) => {
     res.json({ authUrl });
   } catch (error) {
     console.error("Google OAuth initiation error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ 
+      error: error.message || "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET." 
+    });
   }
 });
 
@@ -639,6 +652,9 @@ router.get("/google/callback", async (req, res) => {
       }
     }
 
+    // Get Google OAuth client
+    const googleClient = getGoogleClient();
+
     // Exchange code for tokens
     let tokens;
     try {
@@ -647,8 +663,13 @@ router.get("/google/callback", async (req, res) => {
       googleClient.setCredentials(tokens);
     } catch (tokenError) {
       console.error("Error exchanging code for tokens:", tokenError);
+      console.error("Token error details:", {
+        message: tokenError.message,
+        code: tokenError.code,
+        response: tokenError.response?.data,
+      });
       return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=token_exchange_failed`
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(tokenError.message || "token_exchange_failed")}`
       );
     }
 
@@ -669,8 +690,12 @@ router.get("/google/callback", async (req, res) => {
       payload = ticket.getPayload();
     } catch (verifyError) {
       console.error("Error verifying ID token:", verifyError);
+      console.error("Verify error details:", {
+        message: verifyError.message,
+        code: verifyError.code,
+      });
       return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=token_verification_failed`
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(verifyError.message || "token_verification_failed")}`
       );
     }
 
@@ -771,6 +796,8 @@ router.post("/google/verify", async (req, res) => {
     if (!idToken) {
       return res.status(400).json({ error: "ID token is required" });
     }
+
+    const googleClient = getGoogleClient();
 
     // Verify the token
     const ticket = await googleClient.verifyIdToken({

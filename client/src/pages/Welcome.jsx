@@ -211,20 +211,40 @@ export default function Welcome() {
     const oauthError = searchParams.get("error");
     const errorDetails = searchParams.get("details");
     if (oauthError) {
-      const errorMessages = {
-        oauth_failed: errorDetails 
-          ? `Google login failed: ${decodeURIComponent(errorDetails)}` 
-          : "Google login failed. Please check your Google OAuth configuration and try again.",
-        no_email: "Google account does not have an email address.",
-        invalid_join_code: "Invalid join code. Please check and try again.",
-        user_not_found: "Account not found. Please register first.",
-        no_token: "Authentication failed. Please try again.",
-        auth_failed: "Authentication failed. Please try again.",
-      };
-      let errorMessage = errorMessages[oauthError] || "An error occurred. Please try again.";
-      if (errorDetails && !errorMessages[oauthError]) {
-        errorMessage = `${errorMessage} Details: ${decodeURIComponent(errorDetails)}`;
+      let errorMessage = "An error occurred. Please try again.";
+      
+      if (oauthError === "oauth_failed") {
+        if (errorDetails) {
+          const decoded = decodeURIComponent(errorDetails);
+          // Check for common error patterns
+          if (decoded.includes("redirect_uri_mismatch")) {
+            errorMessage = "Redirect URI mismatch. Please check your Google OAuth configuration. The redirect URI must match exactly what's configured in Google Cloud Console.";
+          } else if (decoded.includes("invalid_client")) {
+            errorMessage = "Invalid Google OAuth client. Please check your GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.";
+          } else if (decoded.includes("invalid_grant")) {
+            errorMessage = "Invalid authorization code. Please try again.";
+          } else if (decoded.includes("token_exchange_failed")) {
+            errorMessage = "Failed to exchange authorization code for tokens. Please check your Google OAuth configuration.";
+          } else if (decoded.includes("token_verification_failed")) {
+            errorMessage = "Failed to verify Google ID token. Please check your Google OAuth configuration.";
+          } else {
+            errorMessage = `Google login failed: ${decoded}`;
+          }
+        } else {
+          errorMessage = "Google login failed. Please check your Google OAuth configuration and try again.";
+        }
+      } else if (oauthError === "no_email") {
+        errorMessage = "Google account does not have an email address.";
+      } else if (oauthError === "invalid_join_code") {
+        errorMessage = "Invalid join code. Please check and try again.";
+      } else if (oauthError === "user_not_found") {
+        errorMessage = "Account not found. Please register first.";
+      } else if (oauthError === "no_token" || oauthError === "auth_failed") {
+        errorMessage = errorDetails 
+          ? `Authentication failed: ${decodeURIComponent(errorDetails)}`
+          : "Authentication failed. Please try again.";
       }
+      
       setError(errorMessage);
       // Clear the error from URL
       navigate("/welcome", { replace: true });
@@ -448,10 +468,16 @@ export default function Welcome() {
       
       const { authUrl } = await api.get(`/auth/google?${params.toString()}`);
       
+      if (!authUrl) {
+        throw new Error("No authentication URL received from server");
+      }
+      
       // Redirect to Google OAuth
       window.location.href = authUrl;
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Failed to initiate Google login");
+      console.error("Google login initiation error:", err);
+      const errorMessage = err.response?.data?.error || err.message || "Failed to initiate Google login";
+      setError(errorMessage);
       setLoading(false);
     }
   }
