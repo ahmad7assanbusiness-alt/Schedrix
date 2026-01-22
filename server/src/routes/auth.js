@@ -14,11 +14,26 @@ const resolveMx = promisify(dns.resolveMx);
 const router = express.Router();
 
 // Initialize Google OAuth client
+const getRedirectUri = () => {
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    return process.env.GOOGLE_REDIRECT_URI;
+  }
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  return `${clientUrl}/auth/google/callback`;
+};
+
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/callback`
+  getRedirectUri()
 );
+
+// Log redirect URI for debugging (only in development)
+if (process.env.NODE_ENV === "development") {
+  console.log("Google OAuth Redirect URI:", getRedirectUri());
+  console.log("Google Client ID configured:", !!process.env.GOOGLE_CLIENT_ID);
+  console.log("Google Client Secret configured:", !!process.env.GOOGLE_CLIENT_SECRET);
+}
 
 // Password validation function
 function validatePassword(password) {
@@ -599,10 +614,19 @@ router.get("/google", (req, res) => {
 // GET /auth/google/callback - Handle Google OAuth callback
 router.get("/google/callback", async (req, res) => {
   try {
-    const { code, state } = req.query;
+    const { code, state, error: oauthError } = req.query;
+
+    // Check for OAuth errors from Google
+    if (oauthError) {
+      console.error("Google OAuth error:", oauthError);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(oauthError)}`
+      );
+    }
 
     if (!code) {
-      return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed`);
+      console.error("No authorization code received from Google");
+      return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=no_code`);
     }
 
     // Decode state
@@ -616,21 +640,46 @@ router.get("/google/callback", async (req, res) => {
     }
 
     // Exchange code for tokens
-    const { tokens } = await googleClient.getToken(code);
-    googleClient.setCredentials(tokens);
+    let tokens;
+    try {
+      const tokenResponse = await googleClient.getToken(code);
+      tokens = tokenResponse.tokens;
+      googleClient.setCredentials(tokens);
+    } catch (tokenError) {
+      console.error("Error exchanging code for tokens:", tokenError);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=token_exchange_failed`
+      );
+    }
+
+    if (!tokens.id_token) {
+      console.error("No ID token received from Google");
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=no_id_token`
+      );
+    }
 
     // Get user info from Google
-    const ticket = await googleClient.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: tokens.id_token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (verifyError) {
+      console.error("Error verifying ID token:", verifyError);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=token_verification_failed`
+      );
+    }
 
-    const payload = ticket.getPayload();
     const googleEmail = payload.email;
     const googleName = payload.name;
     const googlePicture = payload.picture;
 
     if (!googleEmail) {
+      console.error("No email in Google payload");
       return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=no_email`);
     }
 
@@ -703,8 +752,13 @@ router.get("/google/callback", async (req, res) => {
     }
   } catch (error) {
     console.error("Google OAuth callback error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
     return res.redirect(
-      `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed`
+      `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(error.message || "unknown_error")}`
     );
   }
 });
