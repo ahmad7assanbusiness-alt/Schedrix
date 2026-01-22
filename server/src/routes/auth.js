@@ -159,7 +159,20 @@ function generateJoinCode() {
 
 // Generate JWT token
 function generateToken(userId) {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:generateToken',message:'Generating JWT token',data:{userId,hasJwtSecret:!!process.env.JWT_SECRET},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+  // #endregion
+  console.log("[DEBUG] generateToken - userId:", userId, "hasJwtSecret:", !!process.env.JWT_SECRET);
+  if (!process.env.JWT_SECRET) {
+    console.error("[DEBUG] generateToken - JWT_SECRET is missing!");
+    throw new Error("JWT_SECRET is not configured");
+  }
+  const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:generateToken',message:'Token generated',data:{tokenLength:token.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+  // #endregion
+  console.log("[DEBUG] generateToken - token generated, length:", token.length);
+  return token;
 }
 
 // GET /auth/check-owners - Check if any owners exist
@@ -585,6 +598,10 @@ router.delete("/calendar-integrations/:id", authMiddleware, async (req, res) => 
 
 // GET /auth/me - Get current user
 router.get("/me", authMiddleware, async (req, res) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'/auth/me endpoint called',data:{userId:req.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+  // #endregion
+  console.log("[DEBUG] /auth/me - called with userId:", req.user?.id);
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
@@ -592,9 +609,17 @@ router.get("/me", authMiddleware, async (req, res) => {
     });
 
     if (!user) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'User not found in database',data:{userId:req.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
+      console.error("[DEBUG] /auth/me - user not found for userId:", req.user.id);
       return res.status(404).json({ error: "User not found" });
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'User found, returning data',data:{userId:user.id,userEmail:user.email,hasBusiness:!!user.business},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+    // #endregion
+    console.log("[DEBUG] /auth/me - user found:", user.email, "business:", user.business?.name);
     res.json({
       user: {
         id: user.id,
@@ -613,6 +638,10 @@ router.get("/me", authMiddleware, async (req, res) => {
         : null,
     });
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'/auth/me error',data:{errorMessage:error.message,errorName:error.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+    // #endregion
+    console.error("[DEBUG] /auth/me - error:", error.message, error.stack);
     console.error("Me error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -804,11 +833,15 @@ router.get("/google/callback", async (req, res) => {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'User exists, logging in',data:{userId:user.id,userRole:user.role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
       // #endregion
+      console.log("[DEBUG] User exists, generating token for user:", user.id, user.email);
       // User exists, log them in
       const token = generateToken(user.id);
-      return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
-      );
+      console.log("[DEBUG] Token generated, redirecting to:", `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token.substring(0, 20)}...`);
+      const redirectUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`;
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Redirecting to success',data:{redirectUrl:redirectUrl.substring(0,100),tokenLength:token.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
+      return res.redirect(redirectUrl);
     }
 
     // #region agent log
