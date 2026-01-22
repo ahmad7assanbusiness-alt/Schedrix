@@ -150,6 +150,19 @@ export default function Billing() {
   useEffect(() => {
     loadPlans();
     
+    // Debug: Log Stripe configuration status
+    const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    if (!stripeKey) {
+      console.error("❌ VITE_STRIPE_PUBLISHABLE_KEY is not set!");
+      console.log("Available env vars starting with VITE_:", 
+        Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'))
+      );
+    } else {
+      console.log("✅ Stripe publishable key is set:", 
+        `${stripeKey.substring(0, 10)}...${stripeKey.substring(stripeKey.length - 4)}`
+      );
+    }
+    
     // Check for success/cancel from Stripe redirect
     if (searchParams.get("success") === "true") {
       setSuccess("Payment successful! Your subscription has been activated.");
