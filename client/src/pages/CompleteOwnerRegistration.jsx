@@ -150,8 +150,6 @@ export default function CompleteOwnerRegistration() {
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     const tempToken = searchParams.get("token");
@@ -171,41 +169,10 @@ export default function CompleteOwnerRegistration() {
     }
   }, [searchParams, navigate]);
 
-  function validatePassword(password) {
-    if (password.length < 8) {
-      return "Password must be at least 8 characters long";
-    }
-    if (!/[A-Z]/.test(password)) {
-      return "Password must contain at least one uppercase letter";
-    }
-    if (!/[a-z]/.test(password)) {
-      return "Password must contain at least one lowercase letter";
-    }
-    if (!/[0-9]/.test(password)) {
-      return "Password must contain at least one number";
-    }
-    return null;
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    // Validate password match
-    if (password !== confirmPassword) {
-      setError("Passwords don't match");
-      setLoading(false);
-      return;
-    }
-
-    // Validate password requirements
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      setLoading(false);
-      return;
-    }
 
     const tempToken = searchParams.get("token");
     if (!tempToken) {
@@ -219,8 +186,6 @@ export default function CompleteOwnerRegistration() {
         tempToken,
         businessName,
         ownerName,
-        password,
-        confirmPassword,
       });
 
       login(token, user, business);
@@ -287,33 +252,6 @@ export default function CompleteOwnerRegistration() {
                 required
                 style={styles.input}
                 placeholder="John Doe"
-              />
-            </div>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                style={styles.input}
-                placeholder="Min 8 chars, 1 uppercase, 1 lowercase, 1 number"
-              />
-              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem" }}>
-                Must be at least 8 characters with uppercase, lowercase, and a number
-              </small>
-            </div>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={8}
-                style={styles.input}
-                placeholder="Confirm your password"
               />
             </div>
             <button

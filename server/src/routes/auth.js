@@ -1030,10 +1030,10 @@ router.post("/google/verify", async (req, res) => {
 // POST /auth/google/complete-employee - Complete employee registration after Google OAuth
 router.post("/google/complete-employee", async (req, res) => {
   try {
-    const { tempToken, joinCode, phone } = req.body;
+    const { tempToken, fullName, joinCode, phone } = req.body;
 
-    if (!tempToken || !joinCode) {
-      return res.status(400).json({ error: "Token and join code are required" });
+    if (!tempToken || !fullName || !joinCode) {
+      return res.status(400).json({ error: "Token, full name, and join code are required" });
     }
 
     // Verify and decode temp token
@@ -1073,7 +1073,7 @@ router.post("/google/complete-employee", async (req, res) => {
     const employee = await prisma.user.create({
       data: {
         email: googleEmail,
-        name: googleName,
+        name: fullName || googleName, // Use provided full name or fallback to Google name
         role: "EMPLOYEE",
         businessId: business.id,
         password: null, // No password for OAuth users
@@ -1107,20 +1107,10 @@ router.post("/google/complete-employee", async (req, res) => {
 // POST /auth/google/complete-owner - Complete owner registration after Google OAuth
 router.post("/google/complete-owner", async (req, res) => {
   try {
-    const { tempToken, businessName, ownerName, password, confirmPassword } = req.body;
+    const { tempToken, businessName, ownerName } = req.body;
 
-    if (!tempToken || !businessName || !ownerName || !password) {
+    if (!tempToken || !businessName || !ownerName) {
       return res.status(400).json({ error: "All fields are required" });
-    }
-
-    if (password !== confirmPassword) {
-      return res.status(400).json({ error: "Passwords don't match" });
-    }
-
-    // Validate password requirements
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      return res.status(400).json({ error: passwordError });
     }
 
     // Verify and decode temp token
@@ -1146,9 +1136,6 @@ router.post("/google/complete-owner", async (req, res) => {
       return res.status(400).json({ error: "This email is already registered. Please login instead." });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Generate join code
     const joinCode = generateJoinCode();
 
@@ -1160,7 +1147,7 @@ router.post("/google/complete-owner", async (req, res) => {
           email: googleEmail,
           name: ownerName || googleName,
           role: "OWNER",
-          password: hashedPassword, // Store password for future email/password login
+          password: null, // No password for OAuth users
         },
       });
 
