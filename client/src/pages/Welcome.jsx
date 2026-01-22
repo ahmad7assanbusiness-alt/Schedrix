@@ -238,7 +238,9 @@ export default function Welcome() {
       } else if (oauthError === "invalid_join_code") {
         errorMessage = "Invalid join code. Please check and try again.";
       } else if (oauthError === "user_not_found") {
-        errorMessage = "Account not found. Please register first.";
+        errorMessage = errorDetails 
+          ? decodeURIComponent(errorDetails)
+          : "Account not found. Please register first.";
       } else if (oauthError === "no_token" || oauthError === "auth_failed") {
         errorMessage = errorDetails 
           ? `Authentication failed: ${decodeURIComponent(errorDetails)}`

@@ -105,7 +105,11 @@ function EmployeeRoute({ children }) {
   }
 
   if (!user || user.role !== "EMPLOYEE") {
-    return <Navigate to="/dashboard" replace />;
+    // If not employee, redirect to appropriate dashboard
+    if (user && (user.role === "OWNER" || user.role === "MANAGER")) {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <Navigate to="/welcome" replace />;
   }
 
   return children;
@@ -189,12 +193,18 @@ function GoogleCallback() {
         })
         .then((data) => {
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me success',data:{hasUser:!!data.user,hasBusiness:!!data.business},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me success',data:{hasUser:!!data.user,hasBusiness:!!data.business,userRole:data.user?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
           // #endregion
           console.log("[DEBUG] GoogleCallback - /auth/me data:", data);
           if (data.user) {
             login(token, data.user, data.business);
-            navigate("/dashboard");
+            // Redirect based on user role
+            const isManager = data.user.role === "OWNER" || data.user.role === "MANAGER";
+            if (isManager) {
+              navigate("/dashboard");
+            } else {
+              navigate("/employee/dashboard");
+            }
           } else {
             // #region agent log
             fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'No user in response',data:{data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
