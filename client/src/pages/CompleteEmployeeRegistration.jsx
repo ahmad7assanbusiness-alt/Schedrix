@@ -148,6 +148,7 @@ export default function CompleteEmployeeRegistration() {
   const [error, setError] = useState(null);
   const [googleEmail, setGoogleEmail] = useState(null);
 
+  const [fullName, setFullName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -174,6 +175,12 @@ export default function CompleteEmployeeRegistration() {
     setLoading(true);
     setError(null);
 
+    if (!fullName || fullName.trim().length === 0) {
+      setError("Full name is required");
+      setLoading(false);
+      return;
+    }
+
     if (!joinCode || joinCode.trim().length === 0) {
       setError("Join code is required");
       setLoading(false);
@@ -190,6 +197,7 @@ export default function CompleteEmployeeRegistration() {
     try {
       const { token, user, business } = await api.post("/auth/google/complete-employee", {
         tempToken,
+        fullName: fullName.trim(),
         joinCode: joinCode.trim().toUpperCase(),
         phone: phone.trim() || null,
       });
@@ -238,6 +246,17 @@ export default function CompleteEmployeeRegistration() {
           {error && <div style={styles.error}>{error}</div>}
 
           <form onSubmit={handleSubmit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Full Name *</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                style={styles.input}
+                placeholder="John Doe"
+              />
+            </div>
             <div style={styles.inputGroup}>
               <label style={styles.label}>Join Code *</label>
               <input
