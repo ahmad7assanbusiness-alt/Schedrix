@@ -461,10 +461,7 @@ export default function Welcome() {
       
       // Get Google OAuth URL from backend
       const params = new URLSearchParams({ role });
-      // For owner registration, we don't need businessName/ownerName upfront
-      if (role === "EMPLOYEE" && mode === "employee-register") {
-        params.append("joinCode", joinCode);
-      }
+      // Note: Join code for employees will be collected on the completion page
       
       const { authUrl } = await api.get(`/auth/google?${params.toString()}`);
       
@@ -766,24 +763,23 @@ export default function Welcome() {
             <>
               <button
                 onClick={() => handleGoogleLogin("EMPLOYEE")}
-                disabled={loading || !joinCode}
+                disabled={loading}
                 style={{
                   ...styles.googleButton,
-                  ...(loading || !joinCode ? styles.buttonDisabled : {}),
+                  ...(loading ? styles.buttonDisabled : {}),
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading && joinCode) {
+                  if (!loading) {
                     e.currentTarget.style.borderColor = "var(--primary)";
                     e.currentTarget.style.background = "var(--gray-50)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!loading && joinCode) {
+                  if (!loading) {
                     e.currentTarget.style.borderColor = "var(--gray-200)";
                     e.currentTarget.style.background = "var(--bg-primary)";
                   }
                 }}
-                title={!joinCode ? "Please enter a join code first" : ""}
               >
                 <span>🔵</span>
                 <span>Continue with Google</span>
