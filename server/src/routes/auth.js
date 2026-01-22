@@ -575,8 +575,9 @@ router.get("/google", (req, res) => {
       return res.status(500).json({ error: "Google OAuth is not configured" });
     }
 
-    const { role, businessName, ownerName } = req.query;
-    const state = JSON.stringify({ role, businessName, ownerName });
+    const { role, joinCode } = req.query;
+    // For owner registration, we don't need businessName/ownerName upfront
+    const state = JSON.stringify({ role, joinCode });
     
     // Store state in a secure way (in production, use encrypted session)
     const authUrl = googleClient.generateAuthUrl({
@@ -648,50 +649,23 @@ router.get("/google/callback", async (req, res) => {
     }
 
     // New user - check if this is owner registration or employee join
-    if (stateData.role === "OWNER" && stateData.businessName && stateData.ownerName) {
-      // Owner registration
-      const joinCode = generateJoinCode();
-
-      const result = await prisma.$transaction(async (tx) => {
-        // Create owner user
-        const owner = await tx.user.create({
-          data: {
-            email: googleEmail,
-            name: stateData.ownerName || googleName,
-            role: "OWNER",
-            password: null, // No password for OAuth users
-          },
-        });
-
-        // Create business
-        const business = await tx.business.create({
-          data: {
-            name: stateData.businessName,
-            joinCode,
-            ownerUserId: owner.id,
-            subscriptionStatus: "active",
-          },
-        });
-
-        // Update user with businessId
-        const updatedOwner = await tx.user.update({
-          where: { id: owner.id },
-          data: { businessId: business.id },
-        });
-
-        return { owner: updatedOwner, business };
-      });
-
-      // Initialize business database
-      try {
-        await initializeBusinessDatabase(result.business.id);
-      } catch (dbError) {
-        console.error("Error initializing business database:", dbError);
-      }
-
-      const token = generateToken(result.owner.id);
+    if (stateData.role === "OWNER") {
+      // Owner registration - redirect to complete registration form
+      // Store Google info in a temporary token that expires in 10 minutes
+      const tempToken = jwt.sign(
+        { 
+          googleEmail, 
+          googleName, 
+          googlePicture,
+          role: "OWNER",
+          type: "google_owner_registration"
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "10m" }
+      );
+      
       return res.redirect(
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/complete-owner?token=${tempToken}`
       );
     } else if (stateData.role === "EMPLOYEE" && stateData.joinCode) {
       // Employee join
@@ -876,6 +850,115 @@ router.post("/google/verify", async (req, res) => {
     }
   } catch (error) {
     console.error("Google token verification error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /auth/google/complete-owner - Complete owner registration after Google OAuth
+router.post("/google/complete-owner", async (req, res) => {
+  try {
+    const { tempToken, businessName, ownerName, password, confirmPassword } = req.body;
+
+    if (!tempToken || !businessName || !ownerName || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords don't match" });
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
+    }
+
+    // Verify and decode temp token
+    let googleData;
+    try {
+      googleData = jwt.verify(tempToken, process.env.JWT_SECRET);
+      if (googleData.type !== "google_owner_registration" || googleData.role !== "OWNER") {
+        return res.status(400).json({ error: "Invalid registration token" });
+      }
+    } catch (error) {
+      return res.status(400).json({ error: "Registration token expired or invalid. Please try again." });
+    }
+
+    const googleEmail = googleData.googleEmail;
+    const googleName = googleData.googleName;
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: googleEmail },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "This email is already registered. Please login instead." });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate join code
+    const joinCode = generateJoinCode();
+
+    // Create owner and business
+    const result = await prisma.$transaction(async (tx) => {
+      // Create owner user
+      const owner = await tx.user.create({
+        data: {
+          email: googleEmail,
+          name: ownerName || googleName,
+          role: "OWNER",
+          password: hashedPassword, // Store password for future email/password login
+        },
+      });
+
+      // Create business
+      const business = await tx.business.create({
+        data: {
+          name: businessName,
+          joinCode,
+          ownerUserId: owner.id,
+          subscriptionStatus: "active",
+        },
+      });
+
+      // Update user with businessId
+      const updatedOwner = await tx.user.update({
+        where: { id: owner.id },
+        data: { businessId: business.id },
+      });
+
+      return { owner: updatedOwner, business };
+    });
+
+    // Initialize business database
+    try {
+      await initializeBusinessDatabase(result.business.id);
+    } catch (dbError) {
+      console.error("Error initializing business database:", dbError);
+    }
+
+    // Generate auth token
+    const token = generateToken(result.owner.id);
+
+    res.json({
+      token,
+      user: {
+        id: result.owner.id,
+        name: result.owner.name,
+        email: result.owner.email,
+        role: result.owner.role,
+      },
+      business: {
+        id: result.business.id,
+        name: result.business.name,
+        joinCode: result.business.joinCode,
+      },
+    });
+  } catch (error) {
+    console.error("Complete owner registration error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

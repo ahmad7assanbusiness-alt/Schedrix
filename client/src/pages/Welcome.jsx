@@ -434,10 +434,8 @@ export default function Welcome() {
       
       // Get Google OAuth URL from backend
       const params = new URLSearchParams({ role });
-      if (role === "OWNER" && mode === "owner-register") {
-        params.append("businessName", businessName);
-        params.append("ownerName", ownerName);
-      } else if (role === "EMPLOYEE" && mode === "employee-register") {
+      // For owner registration, we don't need businessName/ownerName upfront
+      if (role === "EMPLOYEE" && mode === "employee-register") {
         params.append("joinCode", joinCode);
       }
       
@@ -533,24 +531,23 @@ export default function Welcome() {
             <>
               <button
                 onClick={() => handleGoogleLogin("OWNER")}
-                disabled={loading || !businessName || !ownerName}
+                disabled={loading}
                 style={{
                   ...styles.googleButton,
-                  ...(loading || !businessName || !ownerName ? styles.buttonDisabled : {}),
+                  ...(loading ? styles.buttonDisabled : {}),
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading && businessName && ownerName) {
+                  if (!loading) {
                     e.currentTarget.style.borderColor = "var(--primary)";
                     e.currentTarget.style.background = "var(--gray-50)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!loading && businessName && ownerName) {
+                  if (!loading) {
                     e.currentTarget.style.borderColor = "var(--gray-200)";
                     e.currentTarget.style.background = "var(--bg-primary)";
                   }
                 }}
-                title={!businessName || !ownerName ? "Please fill in Business Name and Owner Name first" : ""}
               >
                 <span>🔵</span>
                 <span>Continue with Google</span>
