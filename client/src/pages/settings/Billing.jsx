@@ -200,28 +200,16 @@ export default function Billing() {
         planId,
       });
 
-      // Redirect to Stripe Checkout
-      // Use redirectToCheckout (preferred) or fallback to direct URL
-      if (sessionId) {
-        const stripe = await stripePromise;
-        const { error: stripeError } = await stripe.redirectToCheckout({
-          sessionId,
-        });
-
-        if (stripeError) {
-          console.error("Stripe error:", stripeError);
-          // Fallback to direct URL redirect
-          if (url) {
-            window.location.href = url;
-          } else {
-            setError(stripeError.message || "Failed to redirect to checkout");
-            setLoading(false);
-          }
-        }
-        // If successful, user will be redirected to Stripe Checkout page
-      } else if (url) {
-        // Direct URL redirect as fallback
+      // Redirect to Stripe Checkout using direct URL
+      // Note: redirectToCheckout is deprecated in newer Stripe.js versions
+      // Always use the direct URL provided by the server
+      if (url) {
+        // Direct URL redirect - preferred method (no deprecated API)
         window.location.href = url;
+      } else if (sessionId) {
+        // Fallback: construct URL from sessionId if url is not provided
+        // This shouldn't normally happen, but provides a backup
+        window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
       } else {
         setError("Failed to create checkout session. Please try again.");
         setLoading(false);
