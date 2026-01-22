@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { z } from "zod";
 import dns from "dns";
 import { promisify } from "util";
+import { OAuth2Client } from "google-auth-library";
 import prisma from "../prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { initializeBusinessDatabase } from "../db/schemaManager.js";
@@ -11,6 +12,13 @@ import { initializeBusinessDatabase } from "../db/schemaManager.js";
 const resolveMx = promisify(dns.resolveMx);
 
 const router = express.Router();
+
+// Initialize Google OAuth client
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI || `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/callback`
+);
 
 // Password validation function
 function validatePassword(password) {
@@ -556,6 +564,318 @@ router.get("/me", authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error("Me error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /auth/google - Initiate Google OAuth flow
+router.get("/google", (req, res) => {
+  try {
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(500).json({ error: "Google OAuth is not configured" });
+    }
+
+    const { role, businessName, ownerName } = req.query;
+    const state = JSON.stringify({ role, businessName, ownerName });
+    
+    // Store state in a secure way (in production, use encrypted session)
+    const authUrl = googleClient.generateAuthUrl({
+      access_type: "offline",
+      scope: [
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/userinfo.profile",
+      ],
+      state: Buffer.from(state).toString("base64"), // Encode state
+    });
+
+    res.json({ authUrl });
+  } catch (error) {
+    console.error("Google OAuth initiation error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /auth/google/callback - Handle Google OAuth callback
+router.get("/google/callback", async (req, res) => {
+  try {
+    const { code, state } = req.query;
+
+    if (!code) {
+      return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed`);
+    }
+
+    // Decode state
+    let stateData = {};
+    if (state) {
+      try {
+        stateData = JSON.parse(Buffer.from(state, "base64").toString());
+      } catch (e) {
+        console.error("Failed to decode state:", e);
+      }
+    }
+
+    // Exchange code for tokens
+    const { tokens } = await googleClient.getToken(code);
+    googleClient.setCredentials(tokens);
+
+    // Get user info from Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const googleEmail = payload.email;
+    const googleName = payload.name;
+    const googlePicture = payload.picture;
+
+    if (!googleEmail) {
+      return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=no_email`);
+    }
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email: googleEmail },
+      include: { business: true },
+    });
+
+    if (user) {
+      // User exists, log them in
+      const token = generateToken(user.id);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+      );
+    }
+
+    // New user - check if this is owner registration or employee join
+    if (stateData.role === "OWNER" && stateData.businessName && stateData.ownerName) {
+      // Owner registration
+      const joinCode = generateJoinCode();
+
+      const result = await prisma.$transaction(async (tx) => {
+        // Create owner user
+        const owner = await tx.user.create({
+          data: {
+            email: googleEmail,
+            name: stateData.ownerName || googleName,
+            role: "OWNER",
+            password: null, // No password for OAuth users
+          },
+        });
+
+        // Create business
+        const business = await tx.business.create({
+          data: {
+            name: stateData.businessName,
+            joinCode,
+            ownerUserId: owner.id,
+            subscriptionStatus: "active",
+          },
+        });
+
+        // Update user with businessId
+        const updatedOwner = await tx.user.update({
+          where: { id: owner.id },
+          data: { businessId: business.id },
+        });
+
+        return { owner: updatedOwner, business };
+      });
+
+      // Initialize business database
+      try {
+        await initializeBusinessDatabase(result.business.id);
+      } catch (dbError) {
+        console.error("Error initializing business database:", dbError);
+      }
+
+      const token = generateToken(result.owner.id);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+      );
+    } else if (stateData.role === "EMPLOYEE" && stateData.joinCode) {
+      // Employee join
+      const normalizedJoinCode = stateData.joinCode.trim().toUpperCase();
+      const business = await prisma.business.findUnique({
+        where: { joinCode: normalizedJoinCode },
+      });
+
+      if (!business) {
+        return res.redirect(
+          `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=invalid_join_code`
+        );
+      }
+
+      // Create employee user
+      const employee = await prisma.user.create({
+        data: {
+          email: googleEmail,
+          name: googleName,
+          role: "EMPLOYEE",
+          businessId: business.id,
+          password: null, // No password for OAuth users
+        },
+      });
+
+      const token = generateToken(employee.id);
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
+      );
+    } else {
+      // Just login - but user doesn't exist, redirect to registration
+      return res.redirect(
+        `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=user_not_found`
+      );
+    }
+  } catch (error) {
+    console.error("Google OAuth callback error:", error);
+    return res.redirect(
+      `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed`
+    );
+  }
+});
+
+// POST /auth/google/verify - Verify Google ID token (alternative method)
+router.post("/google/verify", async (req, res) => {
+  try {
+    const { idToken, role, businessName, ownerName, joinCode } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ error: "ID token is required" });
+    }
+
+    // Verify the token
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const googleEmail = payload.email;
+    const googleName = payload.name;
+
+    if (!googleEmail) {
+      return res.status(400).json({ error: "Email not provided by Google" });
+    }
+
+    // Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email: googleEmail },
+      include: { business: true },
+    });
+
+    if (user) {
+      // User exists, log them in
+      const token = generateToken(user.id);
+      return res.json({
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+        business: user.business
+          ? {
+              id: user.business.id,
+              name: user.business.name,
+              joinCode: user.business.joinCode,
+            }
+          : null,
+      });
+    }
+
+    // New user registration
+    if (role === "OWNER" && businessName) {
+      const generatedJoinCode = generateJoinCode();
+      const result = await prisma.$transaction(async (tx) => {
+        const owner = await tx.user.create({
+          data: {
+            email: googleEmail,
+            name: ownerName || googleName,
+            role: "OWNER",
+            password: null,
+          },
+        });
+
+        const business = await tx.business.create({
+          data: {
+            name: businessName,
+            joinCode: generatedJoinCode,
+            ownerUserId: owner.id,
+            subscriptionStatus: "active",
+          },
+        });
+
+        const updatedOwner = await tx.user.update({
+          where: { id: owner.id },
+          data: { businessId: business.id },
+        });
+
+        return { owner: updatedOwner, business };
+      });
+
+      try {
+        await initializeBusinessDatabase(result.business.id);
+      } catch (dbError) {
+        console.error("Error initializing business database:", dbError);
+      }
+
+      const token = generateToken(result.owner.id);
+      return res.json({
+        token,
+        user: {
+          id: result.owner.id,
+          name: result.owner.name,
+          email: result.owner.email,
+          role: result.owner.role,
+        },
+        business: {
+          id: result.business.id,
+          name: result.business.name,
+          joinCode: result.business.joinCode,
+        },
+      });
+    } else if (role === "EMPLOYEE" && joinCode) {
+      const normalizedJoinCode = joinCode.trim().toUpperCase();
+      const business = await prisma.business.findUnique({
+        where: { joinCode: normalizedJoinCode },
+      });
+
+      if (!business) {
+        return res.status(404).json({ error: "Invalid join code" });
+      }
+
+      const employee = await prisma.user.create({
+        data: {
+          email: googleEmail,
+          name: googleName,
+          role: "EMPLOYEE",
+          businessId: business.id,
+          password: null,
+        },
+      });
+
+      const token = generateToken(employee.id);
+      return res.json({
+        token,
+        user: {
+          id: employee.id,
+          name: employee.name,
+          email: employee.email,
+          role: employee.role,
+        },
+        business: {
+          id: business.id,
+          name: business.name,
+          joinCode: business.joinCode,
+        },
+      });
+    } else {
+      return res.status(400).json({ error: "Invalid registration data" });
+    }
+  } catch (error) {
+    console.error("Google token verification error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

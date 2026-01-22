@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "./auth/useAuth.js";
 import Welcome from "./pages/Welcome.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -85,11 +86,54 @@ function OnboardingCheck({ children }) {
   return children;
 }
 
+function GoogleCallback() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  useEffect(() => {
+    const token = searchParams.get("token");
+    const error = searchParams.get("error");
+
+    if (error) {
+      navigate(`/welcome?error=${error}`);
+      return;
+    }
+
+    if (token) {
+      // Get user info with the token
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.user) {
+            login(token, data.user, data.business);
+            navigate("/dashboard");
+          } else {
+            navigate("/welcome?error=auth_failed");
+          }
+        })
+        .catch(() => {
+          navigate("/welcome?error=auth_failed");
+        });
+    } else {
+      navigate("/welcome?error=no_token");
+    }
+  }, [searchParams, navigate, login]);
+
+  return <div>Completing login...</div>;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/welcome" element={<Welcome />} />
+        <Route path="/auth/google/success" element={<GoogleCallback />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
         
         {/* Onboarding route */}
         <Route

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import { useAuth } from "../auth/useAuth.js";
 import { useTheme } from "../contexts/ThemeContext.jsx";
@@ -142,6 +142,39 @@ const styles = {
     fontWeight: 600,
     cursor: "pointer",
   },
+  googleButton: {
+    width: "100%",
+    padding: "0.875rem 1rem",
+    fontSize: "var(--font-size-base)",
+    fontWeight: 600,
+    borderRadius: "var(--radius-md)",
+    border: "2px solid var(--gray-200)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
+    cursor: "pointer",
+    transition: "all var(--transition-base)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "var(--spacing-sm)",
+    marginBottom: "var(--spacing-md)",
+  },
+  divider: {
+    display: "flex",
+    alignItems: "center",
+    textAlign: "center",
+    margin: "var(--spacing-lg) 0",
+    color: "var(--text-secondary)",
+    fontSize: "var(--font-size-sm)",
+  },
+  dividerLine: {
+    flex: 1,
+    height: "1px",
+    background: "var(--gray-200)",
+  },
+  dividerText: {
+    padding: "0 var(--spacing-md)",
+  },
   themeToggle: {
     position: "absolute",
     top: "var(--spacing-lg)",
@@ -165,12 +198,31 @@ const styles = {
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState("select"); // "select", "owner-register", "owner-login", "employee-register", "employee-login"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  // Check for OAuth errors in URL
+  useEffect(() => {
+    const oauthError = searchParams.get("error");
+    if (oauthError) {
+      const errorMessages = {
+        oauth_failed: "Google login failed. Please try again.",
+        no_email: "Google account does not have an email address.",
+        invalid_join_code: "Invalid join code. Please check and try again.",
+        user_not_found: "Account not found. Please register first.",
+        no_token: "Authentication failed. Please try again.",
+        auth_failed: "Authentication failed. Please try again.",
+      };
+      setError(errorMessages[oauthError] || "An error occurred. Please try again.");
+      // Clear the error from URL
+      navigate("/welcome", { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   // Owner registration form state
   const [businessName, setBusinessName] = useState("");
@@ -375,6 +427,30 @@ export default function Welcome() {
     }
   }
 
+  async function handleGoogleLogin(role) {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get Google OAuth URL from backend
+      const params = new URLSearchParams({ role });
+      if (role === "OWNER" && mode === "owner-register") {
+        params.append("businessName", businessName);
+        params.append("ownerName", ownerName);
+      } else if (role === "EMPLOYEE" && mode === "employee-register") {
+        params.append("joinCode", joinCode);
+      }
+      
+      const { authUrl } = await api.get(`/auth/google?${params.toString()}`);
+      
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || "Failed to initiate Google login");
+      setLoading(false);
+    }
+  }
+
   if (mode === "select") {
     return (
       <div style={styles.page}>
@@ -455,6 +531,37 @@ export default function Welcome() {
 
           {mode === "owner-register" && (
             <>
+              <button
+                onClick={() => handleGoogleLogin("OWNER")}
+                disabled={loading || !businessName || !ownerName}
+                style={{
+                  ...styles.googleButton,
+                  ...(loading || !businessName || !ownerName ? styles.buttonDisabled : {}),
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && businessName && ownerName) {
+                    e.currentTarget.style.borderColor = "var(--primary)";
+                    e.currentTarget.style.background = "var(--gray-50)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading && businessName && ownerName) {
+                    e.currentTarget.style.borderColor = "var(--gray-200)";
+                    e.currentTarget.style.background = "var(--bg-primary)";
+                  }
+                }}
+                title={!businessName || !ownerName ? "Please fill in Business Name and Owner Name first" : ""}
+              >
+                <span>🔵</span>
+                <span>Continue with Google</span>
+              </button>
+              
+              <div style={styles.divider}>
+                <div style={styles.dividerLine}></div>
+                <span style={styles.dividerText}>OR</span>
+                <div style={styles.dividerLine}></div>
+              </div>
+
               <form onSubmit={handleOwnerRegister} style={styles.form}>
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Business Name</label>
@@ -545,6 +652,36 @@ export default function Welcome() {
 
           {mode === "owner-login" && (
             <>
+              <button
+                onClick={() => handleGoogleLogin("OWNER")}
+                disabled={loading}
+                style={{
+                  ...styles.googleButton,
+                  ...(loading ? styles.buttonDisabled : {}),
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.borderColor = "var(--primary)";
+                    e.currentTarget.style.background = "var(--gray-50)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.borderColor = "var(--gray-200)";
+                    e.currentTarget.style.background = "var(--bg-primary)";
+                  }
+                }}
+              >
+                <span>🔵</span>
+                <span>Continue with Google</span>
+              </button>
+              
+              <div style={styles.divider}>
+                <div style={styles.dividerLine}></div>
+                <span style={styles.dividerText}>OR</span>
+                <div style={styles.dividerLine}></div>
+              </div>
+
               <form onSubmit={handleOwnerLogin} style={styles.form}>
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
@@ -597,6 +734,37 @@ export default function Welcome() {
 
           {mode === "employee-register" && (
             <>
+              <button
+                onClick={() => handleGoogleLogin("EMPLOYEE")}
+                disabled={loading || !joinCode}
+                style={{
+                  ...styles.googleButton,
+                  ...(loading || !joinCode ? styles.buttonDisabled : {}),
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && joinCode) {
+                    e.currentTarget.style.borderColor = "var(--primary)";
+                    e.currentTarget.style.background = "var(--gray-50)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading && joinCode) {
+                    e.currentTarget.style.borderColor = "var(--gray-200)";
+                    e.currentTarget.style.background = "var(--bg-primary)";
+                  }
+                }}
+                title={!joinCode ? "Please enter a join code first" : ""}
+              >
+                <span>🔵</span>
+                <span>Continue with Google</span>
+              </button>
+              
+              <div style={styles.divider}>
+                <div style={styles.dividerLine}></div>
+                <span style={styles.dividerText}>OR</span>
+                <div style={styles.dividerLine}></div>
+              </div>
+
               <form onSubmit={handleEmployeeRegister} style={styles.form}>
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>First Name</label>
@@ -709,6 +877,36 @@ export default function Welcome() {
 
           {mode === "employee-login" && (
             <>
+              <button
+                onClick={() => handleGoogleLogin("EMPLOYEE")}
+                disabled={loading}
+                style={{
+                  ...styles.googleButton,
+                  ...(loading ? styles.buttonDisabled : {}),
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.borderColor = "var(--primary)";
+                    e.currentTarget.style.background = "var(--gray-50)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.borderColor = "var(--gray-200)";
+                    e.currentTarget.style.background = "var(--bg-primary)";
+                  }
+                }}
+              >
+                <span>🔵</span>
+                <span>Continue with Google</span>
+              </button>
+              
+              <div style={styles.divider}>
+                <div style={styles.dividerLine}></div>
+                <span style={styles.dividerText}>OR</span>
+                <div style={styles.dividerLine}></div>
+              </div>
+
               <form onSubmit={handleEmployeeLogin} style={styles.form}>
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
