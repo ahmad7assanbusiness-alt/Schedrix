@@ -295,6 +295,14 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="availability/submit" element={<AvailabilitySubmit />} />
           <Route path="schedule/my" element={<ScheduleMy />} />
+          <Route path="settings" element={<Settings />}>
+            <Route index element={<Navigate to="profile" replace />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="calendar" element={<CalendarSettings />} />
+            <Route path="security" element={<Security />} />
+            <Route path="support" element={<Support />} />
+            <Route path="legal" element={<Legal />} />
+          </Route>
         </Route>
 
         {/* Legacy routes (for backwards compatibility) */}

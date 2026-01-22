@@ -198,9 +198,20 @@ export default function EmployeeSideNav({ onLogout }) {
     { path: "/employee/schedule/my", label: "My Schedule", icon: "👤" },
   ];
 
+  const settingsNavItems = [
+    { path: "/employee/settings/profile", label: "Profile", icon: "👤" },
+    { path: "/employee/settings/calendar", label: "Calendar", icon: "📆" },
+    { path: "/employee/settings/security", label: "Security Center", icon: "🔒" },
+    { path: "/employee/settings/support", label: "Support", icon: "💬" },
+    { path: "/employee/settings/legal", label: "Legal", icon: "⚖️" },
+  ];
+
   const isActive = (path) => {
     if (path === "/employee/dashboard") {
       return location.pathname === "/employee/dashboard" || location.pathname === "/dashboard";
+    }
+    if (path.startsWith("/employee/settings")) {
+      return location.pathname.startsWith("/employee/settings");
     }
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
@@ -213,6 +224,33 @@ export default function EmployeeSideNav({ onLogout }) {
 
       <div style={styles.navSection}>
         {mainNavItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            style={{
+              ...styles.navLink,
+              ...(isActive(item.path) ? styles.navLinkActive : {}),
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive(item.path)) {
+                e.currentTarget.style.background = "var(--gray-50)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive(item.path)) {
+                e.currentTarget.style.background = "transparent";
+              }
+            }}
+          >
+            <span style={styles.icon}>{item.icon}</span>
+            <span>{item.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      <div style={styles.navSection}>
+        <div style={styles.navSectionTitle}>SETTINGS</div>
+        {settingsNavItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
