@@ -41,15 +41,26 @@ export default function GoogleOAuthCallback() {
           const url = new URL(response.redirectTo);
           navigate(url.pathname + url.search);
         } else if (response.token) {
-          // User exists, redirect to success
+          // User exists, redirect to success (which will handle role-based redirect)
           navigate(`/auth/google/success?token=${response.token}`);
+        } else if (response.error === "user_not_found") {
+          // User doesn't exist - show error message
+          const errorMsg = response.message || "Account not found. Please register first.";
+          navigate(`/welcome?error=user_not_found&details=${encodeURIComponent(errorMsg)}`);
         } else {
           navigate("/welcome?error=oauth_failed");
         }
       } catch (err) {
         console.error("[DEBUG] GoogleOAuthCallback - error:", err);
-        const errorMsg = err.response?.data?.error || err.message || "processing_failed";
-        navigate(`/welcome?error=oauth_failed&details=${encodeURIComponent(errorMsg)}`);
+        const errorData = err.response?.data;
+        if (errorData?.error === "user_not_found") {
+          // User doesn't exist - show specific error message
+          const errorMsg = errorData.message || "Account not found. Please register first.";
+          navigate(`/welcome?error=user_not_found&details=${encodeURIComponent(errorMsg)}`);
+        } else {
+          const errorMsg = errorData?.error || errorData?.message || err.message || "processing_failed";
+          navigate(`/welcome?error=oauth_failed&details=${encodeURIComponent(errorMsg)}`);
+        }
       }
     };
 

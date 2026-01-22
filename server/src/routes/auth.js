@@ -707,9 +707,17 @@ router.post("/google/process-callback", async (req, res) => {
     if (result.redirect) {
       return res.json({ redirectTo: result.redirect });
     } else if (result.token) {
-      return res.json({ token: result.token, user: result.user, business: result.business });
+      return res.json({ 
+        token: result.token, 
+        user: result.user, 
+        business: result.business 
+      });
     } else {
-      return res.status(400).json({ error: result.error || "Failed to process OAuth callback" });
+      // Return error with message
+      return res.status(400).json({ 
+        error: result.error || "Failed to process OAuth callback",
+        message: result.message || "Authentication failed"
+      });
     }
   } catch (error) {
     console.error("Process callback error:", error);
@@ -810,22 +818,11 @@ async function processGoogleCallback(code, state) {
     
     return { redirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/complete-owner?token=${tempToken}` };
   } else if (stateData.role === "EMPLOYEE") {
-    // Employee registration - redirect to complete registration form
-    const tempToken = jwt.sign(
-      { 
-        googleEmail, 
-        googleName, 
-        googlePicture,
-        role: "EMPLOYEE",
-        type: "google_employee_registration"
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "10m" }
-    );
-    
-    return { redirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/complete-employee?token=${tempToken}` };
+    // Employee trying to login but doesn't exist - show error
+    return { error: "user_not_found", message: "Employee account not found. Please register first." };
   } else {
-    return { error: "user_not_found" };
+    // No role specified or unknown role - show error
+    return { error: "user_not_found", message: "Account not found. Please register first." };
   }
 }
 
