@@ -15,24 +15,50 @@ const router = express.Router();
 
 // Initialize Google OAuth client
 const getRedirectUri = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getRedirectUri',message:'Computing redirect URI',data:{hasGoogleRedirectUri:!!process.env.GOOGLE_REDIRECT_URI,clientUrl:process.env.CLIENT_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+    console.log("[DEBUG] getRedirectUri - hasGoogleRedirectUri:", !!process.env.GOOGLE_REDIRECT_URI, "clientUrl:", process.env.CLIENT_URL);
+    // #endregion
   if (process.env.GOOGLE_REDIRECT_URI) {
-    return process.env.GOOGLE_REDIRECT_URI;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getRedirectUri',message:'Using GOOGLE_REDIRECT_URI',data:{redirectUri},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
+    return redirectUri;
   }
   const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-  return `${clientUrl}/auth/google/callback`;
+  const computedUri = `${clientUrl}/auth/google/callback`;
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getRedirectUri',message:'Computed redirect URI',data:{clientUrl,computedUri},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+  // #endregion
+  return computedUri;
 };
 
 // Helper function to get Google OAuth client (with validation)
 const getGoogleClient = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'Initializing Google OAuth client',data:{hasClientId:!!process.env.GOOGLE_CLIENT_ID,hasClientSecret:!!process.env.GOOGLE_CLIENT_SECRET,clientIdPrefix:process.env.GOOGLE_CLIENT_ID?.substring(0,10)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    console.log("[DEBUG] getGoogleClient - hasClientId:", !!process.env.GOOGLE_CLIENT_ID, "hasClientSecret:", !!process.env.GOOGLE_CLIENT_SECRET);
+    // #endregion
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'Missing Google OAuth credentials',data:{hasClientId:!!process.env.GOOGLE_CLIENT_ID,hasClientSecret:!!process.env.GOOGLE_CLIENT_SECRET},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     throw new Error("Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.");
   }
-  
-  return new OAuth2Client(
+  const redirectUri = getRedirectUri();
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'Creating OAuth2Client',data:{redirectUri},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
+  const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    getRedirectUri()
+    redirectUri
   );
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'OAuth2Client created successfully',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
+  return client;
 };
 
 // Log redirect URI for debugging
@@ -594,12 +620,19 @@ router.get("/me", authMiddleware, async (req, res) => {
 
 // GET /auth/google - Initiate Google OAuth flow
 router.get("/google", (req, res) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'OAuth initiation started',data:{role:req.query.role,joinCode:req.query.joinCode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+  // #endregion
   try {
     const googleClient = getGoogleClient();
     
     const { role, joinCode } = req.query;
     // For owner registration, we don't need businessName/ownerName upfront
     const state = JSON.stringify({ role, joinCode });
+    const encodedState = Buffer.from(state).toString("base64");
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'State prepared',data:{role,joinCode,state,encodedState},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
     
     // Store state in a secure way (in production, use encrypted session)
     const authUrl = googleClient.generateAuthUrl({
@@ -608,11 +641,17 @@ router.get("/google", (req, res) => {
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
       ],
-      state: Buffer.from(state).toString("base64"), // Encode state
+      state: encodedState, // Encode state
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'Auth URL generated',data:{authUrlLength:authUrl.length,authUrlPrefix:authUrl.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
 
     res.json({ authUrl });
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'OAuth initiation error',data:{errorMessage:error.message,errorName:error.name,errorCode:error.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     console.error("Google OAuth initiation error:", error);
     console.error("Error details:", {
       message: error.message,
@@ -626,11 +665,17 @@ router.get("/google", (req, res) => {
 
 // GET /auth/google/callback - Handle Google OAuth callback
 router.get("/google/callback", async (req, res) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'OAuth callback received',data:{hasCode:!!req.query.code,hasState:!!req.query.state,oauthError:req.query.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+  // #endregion
   try {
     const { code, state, error: oauthError } = req.query;
 
     // Check for OAuth errors from Google
     if (oauthError) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'OAuth error from Google',data:{oauthError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
       console.error("Google OAuth error:", oauthError);
       return res.redirect(
         `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=${encodeURIComponent(oauthError)}`
@@ -638,6 +683,9 @@ router.get("/google/callback", async (req, res) => {
     }
 
     if (!code) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No authorization code',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
       console.error("No authorization code received from Google");
       return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=no_code`);
     }
@@ -647,9 +695,19 @@ router.get("/google/callback", async (req, res) => {
     if (state) {
       try {
         stateData = JSON.parse(Buffer.from(state, "base64").toString());
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'State decoded successfully',data:{stateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
       } catch (e) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'State decode failed',data:{error:e.message,state},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         console.error("Failed to decode state:", e);
       }
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No state parameter',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
     }
 
     // Get Google OAuth client
@@ -658,10 +716,20 @@ router.get("/google/callback", async (req, res) => {
     // Exchange code for tokens
     let tokens;
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Exchanging code for tokens',data:{codeLength:code.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
       const tokenResponse = await googleClient.getToken(code);
       tokens = tokenResponse.tokens;
       googleClient.setCredentials(tokens);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Token exchange successful',data:{hasIdToken:!!tokens.id_token,hasAccessToken:!!tokens.access_token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
     } catch (tokenError) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Token exchange failed',data:{errorMessage:tokenError.message,errorCode:tokenError.code,errorResponse:tokenError.response?.data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      console.error("[DEBUG] Token exchange failed:", tokenError.message, tokenError.code, tokenError.response?.data);
+      // #endregion
       console.error("Error exchanging code for tokens:", tokenError);
       console.error("Token error details:", {
         message: tokenError.message,
@@ -674,6 +742,9 @@ router.get("/google/callback", async (req, res) => {
     }
 
     if (!tokens.id_token) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No ID token in response',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       console.error("No ID token received from Google");
       return res.redirect(
         `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=oauth_failed&details=no_id_token`
@@ -683,12 +754,21 @@ router.get("/google/callback", async (req, res) => {
     // Get user info from Google
     let payload;
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Verifying ID token',data:{audience:process.env.GOOGLE_CLIENT_ID?.substring(0,10)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       const ticket = await googleClient.verifyIdToken({
         idToken: tokens.id_token,
         audience: process.env.GOOGLE_CLIENT_ID,
       });
       payload = ticket.getPayload();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'ID token verified',data:{hasEmail:!!payload.email,hasName:!!payload.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
     } catch (verifyError) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'ID token verification failed',data:{errorMessage:verifyError.message,errorCode:verifyError.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       console.error("Error verifying ID token:", verifyError);
       console.error("Verify error details:", {
         message: verifyError.message,
@@ -704,17 +784,26 @@ router.get("/google/callback", async (req, res) => {
     const googlePicture = payload.picture;
 
     if (!googleEmail) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No email in payload',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
       console.error("No email in Google payload");
       return res.redirect(`${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=no_email`);
     }
 
     // Check if user already exists
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Checking if user exists',data:{googleEmail},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+    // #endregion
     let user = await prisma.user.findUnique({
       where: { email: googleEmail },
       include: { business: true },
     });
 
     if (user) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'User exists, logging in',data:{userId:user.id,userRole:user.role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
       // User exists, log them in
       const token = generateToken(user.id);
       return res.redirect(
@@ -722,6 +811,9 @@ router.get("/google/callback", async (req, res) => {
       );
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'New user, checking state',data:{stateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
     // New user - check if this is owner registration or employee join
     if (stateData.role === "OWNER") {
       // Owner registration - redirect to complete registration form
@@ -770,12 +862,18 @@ router.get("/google/callback", async (req, res) => {
         `${process.env.CLIENT_URL || "http://localhost:5173"}/auth/google/success?token=${token}`
       );
     } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'No matching state role, user not found',data:{stateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       // Just login - but user doesn't exist, redirect to registration
       return res.redirect(
         `${process.env.CLIENT_URL || "http://localhost:5173"}/welcome?error=user_not_found`
       );
     }
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Unhandled callback error',data:{errorMessage:error.message,errorName:error.name,errorCode:error.code,errorStack:error.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+    // #endregion
     console.error("Google OAuth callback error:", error);
     console.error("Error details:", {
       message: error.message,

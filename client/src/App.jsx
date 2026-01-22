@@ -95,32 +95,77 @@ function GoogleCallback() {
   useEffect(() => {
     const token = searchParams.get("token");
     const error = searchParams.get("error");
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'GoogleCallback started',data:{hasToken:!!token,hasError:!!error,apiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+    // #endregion
+    console.log("[DEBUG] GoogleCallback - token:", token ? "present" : "missing", "error:", error);
 
     if (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'Error in URL params',data:{error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
+      console.log("[DEBUG] GoogleCallback - redirecting with error:", error);
       navigate(`/welcome?error=${error}`);
       return;
     }
 
     if (token) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'Fetching /auth/me with token',data:{tokenLength:token.length,apiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
+      console.log("[DEBUG] GoogleCallback - fetching /auth/me with token");
       // Get user info with the token
-      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/auth/me`, {
+      fetch(`${apiUrl}/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
-        .then((res) => res.json())
+        .then((res) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me response received',data:{status:res.status,statusText:res.statusText,ok:res.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+          // #endregion
+          console.log("[DEBUG] GoogleCallback - /auth/me response:", res.status, res.statusText);
+          if (!res.ok) {
+            return res.json().then(err => {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me error response',data:{error:err},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+              // #endregion
+              console.error("[DEBUG] GoogleCallback - /auth/me error:", err);
+              throw new Error(err.error || "Failed to authenticate");
+            });
+          }
+          return res.json();
+        })
         .then((data) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me success',data:{hasUser:!!data.user,hasBusiness:!!data.business},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+          // #endregion
+          console.log("[DEBUG] GoogleCallback - /auth/me data:", data);
           if (data.user) {
             login(token, data.user, data.business);
             navigate("/dashboard");
           } else {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'No user in response',data:{data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+            // #endregion
+            console.error("[DEBUG] GoogleCallback - no user in response:", data);
             navigate("/welcome?error=auth_failed");
           }
         })
-        .catch(() => {
+        .catch((err) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me fetch failed',data:{errorMessage:err.message,errorName:err.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+          // #endregion
+          console.error("[DEBUG] GoogleCallback - fetch error:", err);
           navigate("/welcome?error=auth_failed");
         });
     } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'No token in URL',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+      // #endregion
+      console.error("[DEBUG] GoogleCallback - no token in URL");
       navigate("/welcome?error=no_token");
     }
   }, [searchParams, navigate, login]);
