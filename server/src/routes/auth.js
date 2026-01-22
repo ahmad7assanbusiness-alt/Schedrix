@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { z } from "zod";
 import prisma from "../prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { initializeBusinessDatabase } from "../db/schemaManager.js";
 
 const router = express.Router();
 
@@ -112,6 +113,16 @@ router.post("/register", async (req, res) => {
 
       return { owner: updatedOwner, business };
     });
+
+    // Initialize the business's dedicated database schema
+    try {
+      await initializeBusinessDatabase(result.business.id);
+      console.log(`Business database initialized for: ${result.business.id}`);
+    } catch (dbError) {
+      console.error("Error initializing business database:", dbError);
+      // Don't fail registration if schema creation fails - we can retry later
+      // But log it for monitoring
+    }
 
     // Return success (don't return token - user must login)
     res.json({
