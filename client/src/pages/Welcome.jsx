@@ -209,16 +209,23 @@ export default function Welcome() {
   // Check for OAuth errors in URL
   useEffect(() => {
     const oauthError = searchParams.get("error");
+    const errorDetails = searchParams.get("details");
     if (oauthError) {
       const errorMessages = {
-        oauth_failed: "Google login failed. Please try again.",
+        oauth_failed: errorDetails 
+          ? `Google login failed: ${decodeURIComponent(errorDetails)}` 
+          : "Google login failed. Please check your Google OAuth configuration and try again.",
         no_email: "Google account does not have an email address.",
         invalid_join_code: "Invalid join code. Please check and try again.",
         user_not_found: "Account not found. Please register first.",
         no_token: "Authentication failed. Please try again.",
         auth_failed: "Authentication failed. Please try again.",
       };
-      setError(errorMessages[oauthError] || "An error occurred. Please try again.");
+      let errorMessage = errorMessages[oauthError] || "An error occurred. Please try again.";
+      if (errorDetails && !errorMessages[oauthError]) {
+        errorMessage = `${errorMessage} Details: ${decodeURIComponent(errorDetails)}`;
+      }
+      setError(errorMessage);
       // Clear the error from URL
       navigate("/welcome", { replace: true });
     }
