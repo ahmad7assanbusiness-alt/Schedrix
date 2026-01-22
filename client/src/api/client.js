@@ -14,6 +14,10 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
+// Log API URL for debugging (helps identify server URL)
+console.log("🔗 API Server URL:", API_URL);
+console.log("💡 To check server config, visit:", `${API_URL}/api/debug/env`);
+
 function getToken() {
   return localStorage.getItem("token");
 }
