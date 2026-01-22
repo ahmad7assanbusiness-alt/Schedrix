@@ -1,0 +1,334 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { api } from "../api/client.js";
+import { useAuth } from "../auth/useAuth.js";
+import { useTheme } from "../contexts/ThemeContext.jsx";
+import "../index.css";
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "var(--spacing-xl)",
+    position: "relative",
+  },
+  container: {
+    width: "100%",
+    maxWidth: "480px",
+  },
+  card: {
+    background: "var(--bg-primary)",
+    backdropFilter: "blur(20px)",
+    borderRadius: "var(--radius-2xl)",
+    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    padding: "var(--spacing-2xl)",
+    animation: "fadeIn 0.6s ease-out",
+  },
+  header: {
+    textAlign: "center",
+    marginBottom: "var(--spacing-2xl)",
+  },
+  logo: {
+    fontSize: "var(--font-size-4xl)",
+    fontWeight: 800,
+    background: "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    marginBottom: "var(--spacing-sm)",
+  },
+  subtitle: {
+    color: "var(--text-secondary)",
+    fontSize: "var(--font-size-lg)",
+    fontWeight: 400,
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--spacing-lg)",
+  },
+  inputGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--spacing-sm)",
+  },
+  input: {
+    width: "100%",
+    padding: "0.875rem 1rem",
+    fontSize: "var(--font-size-base)",
+    border: "2px solid var(--gray-200)",
+    borderRadius: "var(--radius-md)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
+    transition: "all var(--transition-base)",
+    fontFamily: "var(--font-family)",
+    boxSizing: "border-box",
+  },
+  label: {
+    display: "block",
+    fontWeight: 600,
+    fontSize: "var(--font-size-sm)",
+    color: "var(--text-secondary)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  },
+  button: {
+    width: "100%",
+    padding: "1rem",
+    fontSize: "var(--font-size-base)",
+    fontWeight: 600,
+    borderRadius: "var(--radius-md)",
+    border: "none",
+    cursor: "pointer",
+    transition: "all var(--transition-base)",
+    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
+    color: "white",
+    boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+    marginTop: "var(--spacing-md)",
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+    cursor: "not-allowed",
+    transform: "none",
+  },
+  error: {
+    padding: "var(--spacing-md)",
+    background: "var(--error-light)",
+    color: "var(--error-text)",
+    borderRadius: "var(--radius-md)",
+    border: "1px solid var(--error)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 500,
+    marginBottom: "var(--spacing-lg)",
+  },
+  themeToggle: {
+    position: "absolute",
+    top: "var(--spacing-lg)",
+    right: "var(--spacing-lg)",
+    padding: "var(--spacing-sm) var(--spacing-md)",
+    borderRadius: "var(--radius-md)",
+    border: "2px solid var(--gray-200)",
+    background: "var(--bg-primary)",
+    color: "var(--text-primary)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "var(--spacing-sm)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 500,
+    transition: "all var(--transition-base)",
+    zIndex: 10,
+  },
+  googleInfo: {
+    padding: "var(--spacing-md)",
+    background: "var(--gray-50)",
+    borderRadius: "var(--radius-md)",
+    marginBottom: "var(--spacing-lg)",
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--spacing-md)",
+  },
+  googleIcon: {
+    fontSize: "var(--font-size-2xl)",
+  },
+  googleText: {
+    color: "var(--text-secondary)",
+    fontSize: "var(--font-size-sm)",
+  },
+};
+
+export default function CompleteOwnerRegistration() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [googleEmail, setGoogleEmail] = useState(null);
+
+  const [businessName, setBusinessName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    const tempToken = searchParams.get("token");
+    if (!tempToken) {
+      navigate("/welcome?error=invalid_token");
+      return;
+    }
+
+    // Decode token to get email (client-side decode, not verification)
+    try {
+      const payload = JSON.parse(atob(tempToken.split(".")[1]));
+      if (payload.googleEmail) {
+        setGoogleEmail(payload.googleEmail);
+      }
+    } catch (e) {
+      console.error("Failed to decode token:", e);
+    }
+  }, [searchParams, navigate]);
+
+  function validatePassword(password) {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Password must contain at least one number";
+    }
+    return null;
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      setLoading(false);
+      return;
+    }
+
+    const tempToken = searchParams.get("token");
+    if (!tempToken) {
+      setError("Invalid registration token. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { token, user, business } = await api.post("/auth/google/complete-owner", {
+        tempToken,
+        businessName,
+        ownerName,
+        password,
+        confirmPassword,
+      });
+
+      login(token, user, business);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={styles.page}>
+      <button
+        onClick={toggleTheme}
+        style={styles.themeToggle}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = "var(--primary)";
+          e.currentTarget.style.transform = "scale(1.05)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = "var(--gray-200)";
+          e.currentTarget.style.transform = "scale(1)";
+        }}
+        title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      >
+        <span>{theme === "dark" ? "☀️" : "🌙"}</span>
+        <span>{theme === "dark" ? "Light" : "Dark"}</span>
+      </button>
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <h1 style={styles.logo}>Complete Registration</h1>
+            <p style={styles.subtitle}>Finish setting up your business account</p>
+          </div>
+
+          {googleEmail && (
+            <div style={styles.googleInfo}>
+              <span style={styles.googleIcon}>🔵</span>
+              <span style={styles.googleText}>Signed in as {googleEmail}</span>
+            </div>
+          )}
+
+          {error && <div style={styles.error}>{error}</div>}
+
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Business Name</label>
+              <input
+                type="text"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                required
+                style={styles.input}
+                placeholder="My Business Inc."
+              />
+            </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Owner Name</label>
+              <input
+                type="text"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                required
+                style={styles.input}
+                placeholder="John Doe"
+              />
+            </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                style={styles.input}
+                placeholder="Min 8 chars, 1 uppercase, 1 lowercase, 1 number"
+              />
+              <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                Must be at least 8 characters with uppercase, lowercase, and a number
+              </small>
+            </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                style={styles.input}
+                placeholder="Confirm your password"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                ...styles.button,
+                ...(loading ? styles.buttonDisabled : {}),
+              }}
+            >
+              {loading ? "Completing Registration..." : "Complete Registration"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
