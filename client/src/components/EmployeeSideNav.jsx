@@ -144,9 +144,9 @@ const styles = {
     bottom: "80px",
     left: "var(--spacing-lg)",
     right: "var(--spacing-lg)",
-    background: "white",
+    background: "var(--bg-primary)",
     borderRadius: "var(--radius-md)",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
     border: "1px solid var(--gray-200)",
     zIndex: 1000,
     overflow: "hidden",
@@ -154,10 +154,11 @@ const styles = {
   dropdownItem: {
     padding: "var(--spacing-md)",
     cursor: "pointer",
-    color: "var(--gray-700)",
+    color: "var(--text-primary)",
     fontSize: "var(--font-size-sm)",
     transition: "all var(--transition-base)",
-    borderBottom: "1px solid var(--gray-100)",
+    borderBottom: "1px solid var(--gray-200)",
+    background: "var(--bg-primary)",
   },
   dropdownItemLast: {
     borderBottom: "none",
@@ -258,10 +259,12 @@ export default function EmployeeSideNav({ onLogout }) {
         }}
         onClick={() => setShowProfileMenu(!showProfileMenu)}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "var(--gray-50)";
+          e.currentTarget.style.background = "var(--gray-100)";
         }}
         onMouseLeave={(e) => {
           if (!showProfileMenu) {
+            e.currentTarget.style.background = "var(--bg-primary)";
+          } else {
             e.currentTarget.style.background = "var(--bg-primary)";
           }
         }}
@@ -291,9 +294,11 @@ export default function EmployeeSideNav({ onLogout }) {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "var(--error-light)";
+                e.currentTarget.style.color = "var(--error-text)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "white";
+                e.currentTarget.style.background = "var(--bg-primary)";
+                e.currentTarget.style.color = "var(--error)";
               }}
             >
               Logout
