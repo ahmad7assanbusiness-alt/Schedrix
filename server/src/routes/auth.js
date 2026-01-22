@@ -2,9 +2,13 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { z } from "zod";
+import dns from "dns";
+import { promisify } from "util";
 import prisma from "../prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { initializeBusinessDatabase } from "../db/schemaManager.js";
+
+const resolveMx = promisify(dns.resolveMx);
 
 const router = express.Router();
 
@@ -23,6 +27,47 @@ function validatePassword(password) {
     return "Password must contain at least one number";
   }
   return null;
+}
+
+// Email domain validation function
+async function validateEmailDomain(email) {
+  try {
+    // Extract domain from email
+    const domain = email.split("@")[1];
+    if (!domain) {
+      return "Invalid email format";
+    }
+
+    // Check if domain has MX records (can receive emails)
+    try {
+      const mxRecords = await resolveMx(domain);
+      if (!mxRecords || mxRecords.length === 0) {
+        // If no MX records, check for A record (some domains use A records for mail)
+        try {
+          const resolve4 = promisify(dns.resolve4);
+          await resolve4(domain);
+          return null; // Domain exists with A record
+        } catch (aError) {
+          return "Email domain does not exist or cannot receive emails. Please use a valid email address.";
+        }
+      }
+      return null; // Domain has valid MX records
+    } catch (mxError) {
+      // If MX lookup fails, try A record as fallback
+      try {
+        const resolve4 = promisify(dns.resolve4);
+        await resolve4(domain);
+        return null; // Domain exists with A record
+      } catch (aError) {
+        return "Email domain does not exist or cannot receive emails. Please use a valid email address.";
+      }
+    }
+  } catch (error) {
+    console.error("Email domain validation error:", error);
+    // Don't block registration if DNS lookup fails (could be network issue)
+    // Return null to allow registration to proceed
+    return null;
+  }
 }
 
 // Registration schema - simplified
@@ -87,6 +132,12 @@ router.post("/register", async (req, res) => {
 
     if (existingUser) {
       return res.status(400).json({ error: "This email is already registered. Please use a different email or login instead." });
+    }
+
+    // Validate email domain (check if domain exists and can receive emails)
+    const domainError = await validateEmailDomain(email);
+    if (domainError) {
+      return res.status(400).json({ error: domainError });
     }
 
     // Validate password requirements
@@ -282,6 +333,12 @@ router.post("/join", async (req, res) => {
 
     if (existingUser) {
       return res.status(400).json({ error: "This email is already registered. Please use a different email or login instead." });
+    }
+
+    // Validate email domain (check if domain exists and can receive emails)
+    const domainError = await validateEmailDomain(email);
+    if (domainError) {
+      return res.status(400).json({ error: domainError });
     }
 
     // Validate password requirements
