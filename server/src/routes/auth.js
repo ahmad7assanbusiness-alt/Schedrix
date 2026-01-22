@@ -8,18 +8,36 @@ import { initializeBusinessDatabase } from "../db/schemaManager.js";
 
 const router = express.Router();
 
+// Password validation function
+function validatePassword(password) {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters long";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Password must contain at least one lowercase letter";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Password must contain at least one number";
+  }
+  return null;
+}
+
 // Registration schema - simplified
 const registerSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   ownerName: z.string().min(1, "Owner name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
-// Login schema
+// Login schema with role check
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
+  expectedRole: z.enum(["OWNER", "EMPLOYEE"]).optional(), // Frontend can specify expected role
 });
 
 // Join schema (for employees)
@@ -27,7 +45,7 @@ const joinSchema = z.object({
   joinCode: z.string().min(1),
   employeeName: z.string().min(1),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
   phone: z.string().optional(),
 });
 
@@ -68,7 +86,13 @@ router.post("/register", async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: "Email already exists" });
+      return res.status(400).json({ error: "This email is already registered. Please use a different email or login instead." });
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // Hash password
@@ -164,7 +188,7 @@ router.post("/register", async (req, res) => {
 // POST /auth/login - Login with email + password
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password, expectedRole } = loginSchema.parse(req.body);
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -185,6 +209,26 @@ router.post("/login", async (req, res) => {
 
     if (!isValidPassword) {
       return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Check role mismatch if expectedRole is provided
+    if (expectedRole) {
+      if (expectedRole === "OWNER" && user.role !== "OWNER" && user.role !== "MANAGER") {
+        return res.status(403).json({ 
+          error: "ROLE_MISMATCH",
+          message: "This is an employee account. Please login under the Employee tab.",
+          actualRole: user.role,
+          expectedRole: "OWNER"
+        });
+      }
+      if (expectedRole === "EMPLOYEE" && (user.role === "OWNER" || user.role === "MANAGER")) {
+        return res.status(403).json({ 
+          error: "ROLE_MISMATCH",
+          message: "This is an owner/manager account. Please login under the Owner tab.",
+          actualRole: user.role,
+          expectedRole: "EMPLOYEE"
+        });
+      }
     }
 
     // Generate token
@@ -237,7 +281,13 @@ router.post("/join", async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: "Email already exists" });
+      return res.status(400).json({ error: "This email is already registered. Please use a different email or login instead." });
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // Hash password
@@ -338,8 +388,10 @@ router.put("/change-password", authMiddleware, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    // Validate password requirements
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // Get current user with password

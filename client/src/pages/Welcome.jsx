@@ -174,14 +174,40 @@ export default function Welcome() {
   const [employeeLoginEmail, setEmployeeLoginEmail] = useState("");
   const [employeeLoginPassword, setEmployeeLoginPassword] = useState("");
 
+  // Password validation function
+  function validatePassword(password) {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Password must contain at least one number";
+    }
+    return null;
+  }
+
   async function handleOwnerRegister(e) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
 
+    // Validate password match
     if (password !== confirmPassword) {
       setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       setLoading(false);
       return;
     }
@@ -206,7 +232,7 @@ export default function Welcome() {
         setSuccess(null);
       }, 1500);
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(err.response?.data?.error || err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -220,11 +246,24 @@ export default function Welcome() {
       const { token, user, business } = await api.post("/auth/login", {
         email: loginEmail,
         password: loginPassword,
+        expectedRole: "OWNER",
       });
       login(token, user, business);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Invalid credentials");
+      const errorData = err.response?.data;
+      if (errorData?.error === "ROLE_MISMATCH") {
+        // Show popup alert
+        alert(errorData.message);
+        // Redirect to employee login
+        setMode("employee-login");
+        setEmployeeLoginEmail(loginEmail);
+        setEmployeeLoginPassword("");
+        setLoginEmail("");
+        setLoginPassword("");
+      } else {
+        setError(errorData?.error || err.message || "Invalid credentials");
+      }
     } finally {
       setLoading(false);
     }
@@ -236,8 +275,17 @@ export default function Welcome() {
     setError(null);
     setSuccess(null);
 
+    // Validate password match
     if (employeePassword !== employeeConfirmPassword) {
       setError("Passwords don't match");
+      setLoading(false);
+      return;
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(employeePassword);
+    if (passwordError) {
+      setError(passwordError);
       setLoading(false);
       return;
     }
@@ -268,7 +316,7 @@ export default function Welcome() {
         setSuccess(null);
       }, 1500);
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(err.response?.data?.error || err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -282,11 +330,24 @@ export default function Welcome() {
       const { token, user, business } = await api.post("/auth/login", {
         email: employeeLoginEmail,
         password: employeeLoginPassword,
+        expectedRole: "EMPLOYEE",
       });
       login(token, user, business);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Invalid credentials");
+      const errorData = err.response?.data;
+      if (errorData?.error === "ROLE_MISMATCH") {
+        // Show popup alert
+        alert(errorData.message);
+        // Redirect to owner login
+        setMode("owner-login");
+        setLoginEmail(employeeLoginEmail);
+        setLoginPassword("");
+        setEmployeeLoginEmail("");
+        setEmployeeLoginPassword("");
+      } else {
+        setError(errorData?.error || err.message || "Invalid credentials");
+      }
     } finally {
       setLoading(false);
     }
@@ -381,10 +442,13 @@ export default function Welcome() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                     style={styles.input}
-                    placeholder="Minimum 6 characters"
+                    placeholder="Min 8 chars, 1 uppercase, 1 lowercase, 1 number"
                   />
+                  <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                    Must be at least 8 characters with uppercase, lowercase, and a number
+                  </small>
                 </div>
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Confirm Password</label>
@@ -542,10 +606,13 @@ export default function Welcome() {
                     value={employeePassword}
                     onChange={(e) => setEmployeePassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                     style={styles.input}
-                    placeholder="Minimum 6 characters"
+                    placeholder="Min 8 chars, 1 uppercase, 1 lowercase, 1 number"
                   />
+                  <small style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                    Must be at least 8 characters with uppercase, lowercase, and a number
+                  </small>
                 </div>
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Confirm Password</label>

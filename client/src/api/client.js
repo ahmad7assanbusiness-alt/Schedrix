@@ -50,25 +50,32 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      let error;
+      let errorData;
       try {
-        error = await response.json();
+        errorData = await response.json();
       } catch (e) {
         // If response is not JSON, get text instead
         const text = await response.text();
-        throw new Error(`Request failed (${response.status} ${response.statusText}): ${text || "Unknown error"}`);
+        const error = new Error(`Request failed (${response.status} ${response.statusText}): ${text || "Unknown error"}`);
+        error.response = { status: response.status, data: { error: text || "Unknown error" } };
+        throw error;
       }
       
       // Format validation errors with details
-      if (error.error === "Validation error" && error.details && Array.isArray(error.details)) {
-        const messages = error.details.map((detail) => {
+      if (errorData.error === "Validation error" && errorData.details && Array.isArray(errorData.details)) {
+        const messages = errorData.details.map((detail) => {
           const field = detail.path?.join(".") || "field";
           return `${field}: ${detail.message}`;
         });
-        throw new Error(messages.join(", "));
+        const error = new Error(messages.join(", "));
+        error.response = { status: response.status, data: errorData };
+        throw error;
       }
       
-      throw new Error(error.error || `Request failed (${response.status})`);
+      // Create error with response data attached for role mismatch detection
+      const error = new Error(errorData.error || `Request failed (${response.status})`);
+      error.response = { status: response.status, data: errorData };
+      throw error;
     }
 
     return response.json();
