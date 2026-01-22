@@ -180,7 +180,7 @@ function App() {
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/auth/google/complete-owner" element={<CompleteOwnerRegistration />} />
         <Route path="/auth/google/success" element={<GoogleCallback />} />
-        <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        {/* Note: /auth/google/callback is handled by the server, not the frontend */}
         
         {/* Onboarding route */}
         <Route
