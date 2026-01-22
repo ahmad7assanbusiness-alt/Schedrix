@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { useAuth } from "./auth/useAuth.js";
 import Welcome from "./pages/Welcome.jsx";
 import CompleteOwnerRegistration from "./pages/CompleteOwnerRegistration.jsx";
+import CompleteEmployeeRegistration from "./pages/CompleteEmployeeRegistration.jsx";
+import GoogleOAuthCallback from "./pages/GoogleOAuthCallback.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
 import OwnerLayout from "./components/OwnerLayout.jsx";
@@ -178,9 +180,10 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/welcome" element={<Welcome />} />
+        <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
         <Route path="/auth/google/complete-owner" element={<CompleteOwnerRegistration />} />
+        <Route path="/auth/google/complete-employee" element={<CompleteEmployeeRegistration />} />
         <Route path="/auth/google/success" element={<GoogleCallback />} />
-        {/* Note: /auth/google/callback is handled by the server, not the frontend */}
         
         {/* Onboarding route */}
         <Route
