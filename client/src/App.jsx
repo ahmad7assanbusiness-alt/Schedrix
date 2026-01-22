@@ -195,6 +195,16 @@ function App() {
           }
         />
 
+        {/* Dashboard - accessible to all authenticated users */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Owner/Manager routes with layout */}
         <Route
           path="/"
@@ -208,7 +218,6 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="dashboard" element={<Dashboard />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="templates" element={<Templates />} />
           <Route path="employees" element={<Employees />} />
