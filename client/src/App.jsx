@@ -8,7 +8,54 @@ import GoogleOAuthCallback from "./pages/GoogleOAuthCallback.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
 import OwnerLayout from "./components/OwnerLayout.jsx";
+import EmployeeLayout from "./components/EmployeeLayout.jsx";
 import AvailabilityRequest from "./pages/AvailabilityRequest.jsx";
+
+// Component to redirect dashboard based on user role
+function DashboardRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/welcome" replace />;
+  }
+
+  const isManager = user.role === "OWNER" || user.role === "MANAGER";
+  
+  if (isManager) {
+    return <Navigate to="/dashboard" replace />;
+  } else {
+    return <Navigate to="/employee/dashboard" replace />;
+  }
+}
+
+// Component to render dashboard with appropriate layout based on user role
+function DashboardWithLayout() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
+  const isManager = user.role === "OWNER" || user.role === "MANAGER";
+  
+  if (isManager) {
+    return (
+      <OwnerLayout>
+        <Dashboard />
+      </OwnerLayout>
+    );
+  } else {
+    return (
+      <EmployeeLayout>
+        <Dashboard />
+      </EmployeeLayout>
+    );
+  }
+}
 import AvailabilitySubmit from "./pages/AvailabilitySubmit.jsx";
 import Schedule from "./pages/Schedule.jsx";
 import ScheduleMy from "./pages/ScheduleMy.jsx";
@@ -195,16 +242,6 @@ function App() {
           }
         />
 
-        {/* Dashboard - accessible to all authenticated users */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-
         {/* Owner/Manager routes with layout */}
         <Route
           path="/"
@@ -218,6 +255,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="templates" element={<Templates />} />
           <Route path="employees" element={<Employees />} />
@@ -232,6 +270,23 @@ function App() {
           </Route>
         </Route>
 
+        {/* Employee routes with layout */}
+        <Route
+          path="/employee"
+          element={
+            <ProtectedRoute>
+              <EmployeeRoute>
+                <EmployeeLayout />
+              </EmployeeRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="availability/submit" element={<AvailabilitySubmit />} />
+          <Route path="schedule/my" element={<ScheduleMy />} />
+        </Route>
+
         {/* Legacy routes (for backwards compatibility) */}
         <Route
           path="/availability/request"
@@ -244,17 +299,31 @@ function App() {
         <Route
           path="/availability/submit"
           element={
-            <EmployeeRoute>
-              <AvailabilitySubmit />
-            </EmployeeRoute>
+            <ProtectedRoute>
+              <EmployeeRoute>
+                <Navigate to="/employee/availability/submit" replace />
+              </EmployeeRoute>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/schedule/my"
           element={
-            <EmployeeRoute>
-              <ScheduleMy />
-            </EmployeeRoute>
+            <ProtectedRoute>
+              <EmployeeRoute>
+                <Navigate to="/employee/schedule/my" replace />
+              </EmployeeRoute>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Dashboard redirect - route employees to employee layout, managers to manager layout */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardRedirect />
+            </ProtectedRoute>
           }
         />
         <Route path="/" element={<Navigate to="/welcome" replace />} />
