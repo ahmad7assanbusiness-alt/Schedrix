@@ -188,8 +188,11 @@ export default function CompleteOwnerRegistration() {
         ownerName,
       });
 
-      login(token, user, business);
-      navigate("/dashboard");
+          login(token, user, business);
+          // Use window.location for mobile browser compatibility
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 100);
     } catch (err) {
       setError(err.response?.data?.error || err.message || "Registration failed");
     } finally {

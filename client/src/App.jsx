@@ -199,13 +199,13 @@ function GoogleCallback() {
           console.log("[DEBUG] GoogleCallback - /auth/me data:", data);
           if (data.user) {
             login(token, data.user, data.business);
-            // Redirect based on user role
+            // Redirect based on user role - use window.location for mobile compatibility
             const isManager = data.user.role === "OWNER" || data.user.role === "MANAGER";
-            if (isManager) {
-              navigate("/dashboard");
-            } else {
-              navigate("/employee/dashboard");
-            }
+            const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
+            // Small delay to ensure state is persisted, then full page reload for mobile
+            setTimeout(() => {
+              window.location.href = redirectPath;
+            }, 100);
           } else {
             // #region agent log
             fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'No user in response',data:{data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
