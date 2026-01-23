@@ -123,12 +123,30 @@ router.get("/", authMiddleware, async (req, res) => {
       }
     }
 
-    const schedules = await prisma.scheduleWeek.findMany({
-      where: whereClause,
-      orderBy: { createdAt: "desc" },
-    });
+    // Add pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 per page
+    const skip = (page - 1) * limit;
 
-    res.json(schedules);
+    const [schedules, total] = await Promise.all([
+      prisma.scheduleWeek.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.scheduleWeek.count({ where: whereClause }),
+    ]);
+
+    res.json({
+      data: schedules,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("List schedules error:", error);
     res.status(500).json({ error: "Internal server error" });
