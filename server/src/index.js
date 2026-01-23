@@ -55,7 +55,8 @@ const PORT = process.env.PORT || 4000;
 const HOST = process.env.HOST || "0.0.0.0";
 
 // Add compression middleware (should be early in the middleware chain)
-app.use(compression());
+// Temporarily disabled to debug blank screen issue
+// app.use(compression());
 
 // Add request timeout middleware
 app.use((req, res, next) => {
