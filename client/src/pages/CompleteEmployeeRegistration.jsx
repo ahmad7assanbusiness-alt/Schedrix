@@ -203,7 +203,10 @@ export default function CompleteEmployeeRegistration() {
       });
 
       login(token, user, business);
-      navigate("/employee/dashboard");
+      // Use window.location for mobile browser compatibility
+      setTimeout(() => {
+        window.location.href = "/employee/dashboard";
+      }, 100);
     } catch (err) {
       setError(err.response?.data?.error || err.message || "Registration failed");
     } finally {
