@@ -15,50 +15,35 @@ const router = express.Router();
 
 // Initialize Google OAuth client
 const getRedirectUri = () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getRedirectUri',message:'Computing redirect URI',data:{hasGoogleRedirectUri:!!process.env.GOOGLE_REDIRECT_URI,clientUrl:process.env.CLIENT_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-    console.log("[DEBUG] getRedirectUri - hasGoogleRedirectUri:", !!process.env.GOOGLE_REDIRECT_URI, "clientUrl:", process.env.CLIENT_URL);
-    // #endregion
   if (process.env.GOOGLE_REDIRECT_URI) {
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getRedirectUri',message:'Using GOOGLE_REDIRECT_URI',data:{redirectUri},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
-    return redirectUri;
+    return process.env.GOOGLE_REDIRECT_URI;
   }
   const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-  const computedUri = `${clientUrl}/auth/google/callback`;
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getRedirectUri',message:'Computed redirect URI',data:{clientUrl,computedUri},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-  // #endregion
-  return computedUri;
+  return `${clientUrl}/auth/google/callback`;
 };
 
 // Helper function to get Google OAuth client (with validation)
+// Cache Google OAuth client to avoid recreation
+let googleClientCache = null;
+
 const getGoogleClient = () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'Initializing Google OAuth client',data:{hasClientId:!!process.env.GOOGLE_CLIENT_ID,hasClientSecret:!!process.env.GOOGLE_CLIENT_SECRET,clientIdPrefix:process.env.GOOGLE_CLIENT_ID?.substring(0,10)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-    console.log("[DEBUG] getGoogleClient - hasClientId:", !!process.env.GOOGLE_CLIENT_ID, "hasClientSecret:", !!process.env.GOOGLE_CLIENT_SECRET);
-    // #endregion
+  // Return cached client if available
+  if (googleClientCache) {
+    return googleClientCache;
+  }
+
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'Missing Google OAuth credentials',data:{hasClientId:!!process.env.GOOGLE_CLIENT_ID,hasClientSecret:!!process.env.GOOGLE_CLIENT_SECRET},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
     throw new Error("Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.");
   }
+  
   const redirectUri = getRedirectUri();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'Creating OAuth2Client',data:{redirectUri},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
-  const client = new OAuth2Client(
+  googleClientCache = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     redirectUri
   );
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:getGoogleClient',message:'OAuth2Client created successfully',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
-  return client;
+  
+  return googleClientCache;
 };
 
 // Log redirect URI for debugging
@@ -87,7 +72,26 @@ function validatePassword(password) {
   return null;
 }
 
-// Email domain validation function
+// DNS cache for email domain validation
+const dnsCache = new Map();
+const DNS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+// Cleanup DNS cache periodically
+setInterval(() => {
+  const now = Date.now();
+  let cleaned = 0;
+  for (const [domain, cacheEntry] of dnsCache.entries()) {
+    if (now - cacheEntry.timestamp > DNS_CACHE_TTL) {
+      dnsCache.delete(domain);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0 && process.env.NODE_ENV === "development") {
+    console.log(`[DNS Cache] Cleared ${cleaned} stale entries`);
+  }
+}, 60 * 60 * 1000); // Run cleanup every hour
+
+// Email domain validation function with caching
 async function validateEmailDomain(email) {
   try {
     // Extract domain from email
@@ -95,6 +99,14 @@ async function validateEmailDomain(email) {
     if (!domain) {
       return "Invalid email format";
     }
+
+    // Check cache first
+    const cached = dnsCache.get(domain);
+    if (cached && Date.now() - cached.timestamp < DNS_CACHE_TTL) {
+      return cached.result;
+    }
+
+    let result = null;
 
     // Check if domain has MX records (can receive emails)
     try {
@@ -104,22 +116,36 @@ async function validateEmailDomain(email) {
         try {
           const resolve4 = promisify(dns.resolve4);
           await resolve4(domain);
-          return null; // Domain exists with A record
+          result = null; // Domain exists with A record
         } catch (aError) {
-          return "Email domain does not exist or cannot receive emails. Please use a valid email address.";
+          result = "Email domain does not exist or cannot receive emails. Please use a valid email address.";
         }
+      } else {
+        result = null; // Domain has valid MX records
       }
-      return null; // Domain has valid MX records
     } catch (mxError) {
       // If MX lookup fails, try A record as fallback
       try {
         const resolve4 = promisify(dns.resolve4);
         await resolve4(domain);
-        return null; // Domain exists with A record
+        result = null; // Domain exists with A record
       } catch (aError) {
-        return "Email domain does not exist or cannot receive emails. Please use a valid email address.";
+        result = "Email domain does not exist or cannot receive emails. Please use a valid email address.";
       }
     }
+
+    // Cache result (limit cache size to prevent memory issues)
+    if (dnsCache.size > 1000) {
+      // Remove oldest entries
+      const entries = Array.from(dnsCache.entries());
+      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      for (let i = 0; i < 100; i++) {
+        dnsCache.delete(entries[i][0]);
+      }
+    }
+    dnsCache.set(domain, { result, timestamp: Date.now() });
+
+    return result;
   } catch (error) {
     console.error("Email domain validation error:", error);
     // Don't block registration if DNS lookup fails (could be network issue)
@@ -159,20 +185,10 @@ function generateJoinCode() {
 
 // Generate JWT token
 function generateToken(userId) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:generateToken',message:'Generating JWT token',data:{userId,hasJwtSecret:!!process.env.JWT_SECRET},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-  // #endregion
-  console.log("[DEBUG] generateToken - userId:", userId, "hasJwtSecret:", !!process.env.JWT_SECRET);
   if (!process.env.JWT_SECRET) {
-    console.error("[DEBUG] generateToken - JWT_SECRET is missing!");
     throw new Error("JWT_SECRET is not configured");
   }
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:generateToken',message:'Token generated',data:{tokenLength:token.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-  // #endregion
-  console.log("[DEBUG] generateToken - token generated, length:", token.length);
-  return token;
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 }
 
 // GET /auth/check-owners - Check if any owners exist
@@ -598,10 +614,6 @@ router.delete("/calendar-integrations/:id", authMiddleware, async (req, res) => 
 
 // GET /auth/me - Get current user
 router.get("/me", authMiddleware, async (req, res) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'/auth/me endpoint called',data:{userId:req.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-  // #endregion
-  console.log("[DEBUG] /auth/me - called with userId:", req.user?.id);
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
@@ -609,17 +621,8 @@ router.get("/me", authMiddleware, async (req, res) => {
     });
 
     if (!user) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'User not found in database',data:{userId:req.user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
-      console.error("[DEBUG] /auth/me - user not found for userId:", req.user.id);
       return res.status(404).json({ error: "User not found" });
     }
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'User found, returning data',data:{userId:user.id,userEmail:user.email,hasBusiness:!!user.business},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-    // #endregion
-    console.log("[DEBUG] /auth/me - user found:", user.email, "business:", user.business?.name);
     res.json({
       user: {
         id: user.id,
@@ -638,10 +641,6 @@ router.get("/me", authMiddleware, async (req, res) => {
         : null,
     });
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/me',message:'/auth/me error',data:{errorMessage:error.message,errorName:error.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-    // #endregion
-    console.error("[DEBUG] /auth/me - error:", error.message, error.stack);
     console.error("Me error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -649,38 +648,24 @@ router.get("/me", authMiddleware, async (req, res) => {
 
 // GET /auth/google - Initiate Google OAuth flow
 router.get("/google", (req, res) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'OAuth initiation started',data:{role:req.query.role,joinCode:req.query.joinCode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-  // #endregion
   try {
     const googleClient = getGoogleClient();
     
     const { role, joinCode } = req.query;
-    // For owner registration, we don't need businessName/ownerName upfront
     const state = JSON.stringify({ role, joinCode });
     const encodedState = Buffer.from(state).toString("base64");
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'State prepared',data:{role,joinCode,state,encodedState},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-    // #endregion
     
-    // Store state in a secure way (in production, use encrypted session)
     const authUrl = googleClient.generateAuthUrl({
       access_type: "offline",
       scope: [
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
       ],
-      state: encodedState, // Encode state
+      state: encodedState,
     });
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'Auth URL generated',data:{authUrlLength:authUrl.length,authUrlPrefix:authUrl.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
 
     res.json({ authUrl });
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google',message:'OAuth initiation error',data:{errorMessage:error.message,errorName:error.name,errorCode:error.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
     console.error("Google OAuth initiation error:", error);
     console.error("Error details:", {
       message: error.message,
@@ -828,9 +813,6 @@ async function processGoogleCallback(code, state) {
 
 // GET /auth/google/callback - Handle Google OAuth callback (for direct server redirects)
 router.get("/google/callback", async (req, res) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'OAuth callback received',data:{hasCode:!!req.query.code,hasState:!!req.query.state,oauthError:req.query.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-  // #endregion
   try {
     const { code, state, error: oauthError } = req.query;
 
@@ -862,9 +844,6 @@ router.get("/google/callback", async (req, res) => {
       );
     }
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:/google/callback',message:'Unhandled callback error',data:{errorMessage:error.message,errorName:error.name,errorCode:error.code,errorStack:error.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-    // #endregion
     console.error("Google OAuth callback error:", error);
     console.error("Error details:", {
       message: error.message,

@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
@@ -53,14 +54,27 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const HOST = process.env.HOST || "0.0.0.0";
 
-app.use(cors());
-app.use(express.json());
+// Add compression middleware (should be early in the middleware chain)
+app.use(compression());
 
-// Health check endpoint with database connection test
+// Add request timeout middleware
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 seconds
+  res.setTimeout(30000);
+  next();
+});
+
+app.use(cors());
+
+// Limit request body size to prevent large payloads
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Health check endpoint with database connection test (optimized)
 app.get("/health", async (req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ ok: true, database: "connected" });
+    await prisma.$queryRaw`SELECT 1 as health`;
+    res.json({ ok: true, database: "connected", timestamp: Date.now() });
   } catch (error) {
     console.error("Health check failed:", error);
     res.status(503).json({ ok: false, database: "disconnected", error: error.message });
@@ -151,3 +165,16 @@ const server = app.listen(PORT, HOST, () => {
 // Set server timeout to match Cloud Run requirements
 server.keepAliveTimeout = 61000; // 61 seconds
 server.headersTimeout = 62000; // 62 seconds
+
+// Memory monitoring (log every 5 minutes in production)
+if (process.env.NODE_ENV === "production") {
+  setInterval(() => {
+    const usage = process.memoryUsage();
+    console.log("[Memory Usage]", {
+      rss: `${Math.round(usage.rss / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(usage.heapTotal / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(usage.heapUsed / 1024 / 1024)}MB`,
+      external: `${Math.round(usage.external / 1024 / 1024)}MB`,
+    });
+  }, 5 * 60 * 1000); // Every 5 minutes
+}

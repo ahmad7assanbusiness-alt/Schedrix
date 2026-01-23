@@ -8,9 +8,12 @@ const prisma = new PrismaClient({
       url: process.env.DATABASE_URL,
     },
   },
+  // Connection pool configuration (if using connection pooling service like PgBouncer)
+  // The connection_limit and pool_timeout should be set in DATABASE_URL query params
+  // Example: postgresql://user:pass@host:5432/db?connection_limit=10&pool_timeout=20
 });
 
-// Handle graceful shutdown (Prisma 5.0.0+ requires using process events directly)
+// Handle graceful shutdown
 process.on("beforeExit", async () => {
   await prisma.$disconnect();
 });
