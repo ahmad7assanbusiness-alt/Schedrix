@@ -352,13 +352,19 @@ export default function Welcome() {
         expectedRole: "OWNER",
       });
       login(token, user, business);
+      // Ensure token is saved to localStorage before redirect
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      if (business) {
+        localStorage.setItem("business", JSON.stringify(business));
+      }
       // Use window.location for mobile browser compatibility
       const isManager = user.role === "OWNER" || user.role === "MANAGER";
       const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
-      // Small delay to ensure state is persisted, then full page reload for mobile
+      // Longer delay for mobile browsers to ensure persistence
       setTimeout(() => {
         window.location.href = redirectPath;
-      }, 100);
+      }, 300);
     } catch (err) {
       const errorData = err.response?.data;
       if (errorData?.error === "ROLE_MISMATCH") {
@@ -442,13 +448,19 @@ export default function Welcome() {
         expectedRole: "EMPLOYEE",
       });
       login(token, user, business);
+      // Ensure token is saved to localStorage before redirect
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      if (business) {
+        localStorage.setItem("business", JSON.stringify(business));
+      }
       // Use window.location for mobile browser compatibility
       const isManager = user.role === "OWNER" || user.role === "MANAGER";
       const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
-      // Small delay to ensure state is persisted, then full page reload for mobile
+      // Longer delay for mobile browsers to ensure persistence
       setTimeout(() => {
         window.location.href = redirectPath;
-      }, 100);
+      }, 300);
     } catch (err) {
       const errorData = err.response?.data;
       if (errorData?.error === "ROLE_MISMATCH") {
