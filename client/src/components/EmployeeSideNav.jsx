@@ -20,6 +20,15 @@ const styles = {
     boxShadow: "2px 0 8px rgba(0, 0, 0, 0.05)",
     overflowY: "auto",
     overflowX: "hidden",
+    transform: "translateX(0)",
+    transition: "transform var(--transition-base)",
+  },
+  sidebarMobile: {
+    width: "280px",
+    transform: "translateX(-100%)",
+  },
+  sidebarMobileOpen: {
+    transform: "translateX(0)",
   },
   logo: {
     padding: "var(--spacing-xl)",
@@ -182,7 +191,7 @@ const styles = {
   },
 };
 
-export default function EmployeeSideNav({ onLogout }) {
+export default function EmployeeSideNav({ onLogout, isMobile = false, isOpen = false, onClose }) {
   const location = useLocation();
   const { user, business } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -191,6 +200,13 @@ export default function EmployeeSideNav({ onLogout }) {
   const isEmployee = user?.role === "EMPLOYEE";
 
   if (!isEmployee) return null;
+
+  // Close menu when clicking a link on mobile
+  const handleLinkClick = () => {
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
 
   const mainNavItems = [
     { path: "/employee/dashboard", label: "Dashboard", icon: "📊" },
@@ -228,6 +244,7 @@ export default function EmployeeSideNav({ onLogout }) {
           <Link
             key={item.path}
             to={item.path}
+            onClick={handleLinkClick}
             style={{
               ...styles.navLink,
               ...(isActive(item.path) ? styles.navLinkActive : {}),

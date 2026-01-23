@@ -182,7 +182,7 @@ const styles = {
   },
 };
 
-export default function SideNav({ onLogout }) {
+export default function SideNav({ onLogout, isMobile = false, isOpen = false, onClose }) {
   const location = useLocation();
   const { user, business } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -191,6 +191,13 @@ export default function SideNav({ onLogout }) {
   const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
 
   if (!isManager) return null;
+
+  // Close menu when clicking a link on mobile
+  const handleLinkClick = () => {
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
 
   const mainNavItems = [
     { path: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -230,6 +237,7 @@ export default function SideNav({ onLogout }) {
           <Link
             key={item.path}
             to={item.path}
+            onClick={handleLinkClick}
             style={{
               ...styles.navLink,
               ...(isActive(item.path) ? styles.navLinkActive : {}),
@@ -330,6 +338,7 @@ export default function SideNav({ onLogout }) {
               onClick={(e) => {
                 e.stopPropagation();
                 setShowProfileMenu(false);
+                handleLinkClick();
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "var(--gray-100)";

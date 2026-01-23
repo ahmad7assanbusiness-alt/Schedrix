@@ -144,6 +144,22 @@ body {
 
 #root {
   min-height: 100vh;
+  min-height: -webkit-fill-available; /* iOS Safari */
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Mobile responsive utilities */
+@media (max-width: 768px) {
+  /* Ensure content doesn't overflow on mobile */
+  * {
+    max-width: 100%;
+  }
+  
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
 }
 
 /* Utility Classes */
