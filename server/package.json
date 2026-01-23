@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "postinstall": "echo 'Skipping prisma generate in build - will run at startup'"
+    "postinstall": "DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma generate || echo 'Prisma generate failed, will retry at runtime'"
   },
   "keywords": [],
   "author": "",
