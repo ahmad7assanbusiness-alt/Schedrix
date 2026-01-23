@@ -143,7 +143,13 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-app.listen(PORT, HOST, () => {
+// Start server immediately to avoid Cloud Run timeout
+const server = app.listen(PORT, HOST, () => {
   console.log(`Server listening on ${HOST}:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`Health check available at http://${HOST}:${PORT}/health`);
 });
+
+// Set server timeout to match Cloud Run requirements
+server.keepAliveTimeout = 61000; // 61 seconds
+server.headersTimeout = 62000; // 62 seconds
