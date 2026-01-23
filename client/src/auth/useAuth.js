@@ -36,10 +36,20 @@ export function useAuth() {
       const { user, business } = await api.get("/auth/me");
       setUser(user);
       setBusiness(business);
+      // Update localStorage with fresh data
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+      if (business) {
+        localStorage.setItem("business", JSON.stringify(business));
+      }
     } catch (error) {
       api.setToken(null);
       setUser(null);
       setBusiness(null);
+      // Clear localStorage on error
+      localStorage.removeItem("user");
+      localStorage.removeItem("business");
     } finally {
       setLoading(false);
     }
