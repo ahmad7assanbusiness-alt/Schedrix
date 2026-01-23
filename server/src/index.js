@@ -14,33 +14,31 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Generate Prisma client at runtime (needed for Cloud Run buildpacks)
-// Check if Prisma client already exists to avoid unnecessary generation
+// Check if Prisma client exists, generate only if missing (fallback for build failures)
 const prismaClientPath = join(__dirname, "../node_modules/.prisma/client");
 const needsGeneration = !existsSync(prismaClientPath);
 
 if (needsGeneration) {
+  console.log("Prisma Client not found, generating as fallback...");
   try {
-    console.log("Prisma Client not found, generating...");
     // Use a dummy DATABASE_URL for generation (not needed for client generation)
     const generateEnv = {
       ...process.env,
       DATABASE_URL: process.env.DATABASE_URL || "postgresql://dummy:dummy@localhost:5432/dummy"
     };
     execSync("npx prisma generate --schema=./prisma/schema.prisma", { 
-      stdio: "pipe", // Use pipe instead of inherit to avoid blocking
+      stdio: "pipe",
       env: generateEnv,
       cwd: join(__dirname, ".."),
-      timeout: 20000 // 20 second timeout
+      timeout: 15000 // 15 second timeout
     });
     console.log("Prisma Client generated successfully");
   } catch (error) {
     console.error("Error generating Prisma Client:", error.message);
-    console.error("Continuing anyway - Prisma client might already exist or will be generated on first use");
-    // Continue anyway - might work if client exists from build
+    console.error("This should have been generated during build. Continuing anyway...");
   }
 } else {
-  console.log("Prisma Client already exists, skipping generation");
+  console.log("Prisma Client found, ready to use");
 }
 
 import authRoutes from "./routes/auth.js";
