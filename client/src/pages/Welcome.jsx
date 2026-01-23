@@ -352,7 +352,13 @@ export default function Welcome() {
         expectedRole: "OWNER",
       });
       login(token, user, business);
-      navigate("/dashboard");
+      // Use window.location for mobile browser compatibility
+      const isManager = user.role === "OWNER" || user.role === "MANAGER";
+      const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
+      // Small delay to ensure state is persisted, then full page reload for mobile
+      setTimeout(() => {
+        window.location.href = redirectPath;
+      }, 100);
     } catch (err) {
       const errorData = err.response?.data;
       if (errorData?.error === "ROLE_MISMATCH") {
@@ -436,7 +442,13 @@ export default function Welcome() {
         expectedRole: "EMPLOYEE",
       });
       login(token, user, business);
-      navigate("/dashboard");
+      // Use window.location for mobile browser compatibility
+      const isManager = user.role === "OWNER" || user.role === "MANAGER";
+      const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
+      // Small delay to ensure state is persisted, then full page reload for mobile
+      setTimeout(() => {
+        window.location.href = redirectPath;
+      }, 100);
     } catch (err) {
       const errorData = err.response?.data;
       if (errorData?.error === "ROLE_MISMATCH") {
