@@ -234,7 +234,11 @@ export default function EmployeeSideNav({ onLogout, isMobile = false, isOpen = f
   };
 
   return (
-    <nav style={styles.sidebar}>
+    <nav style={{
+      ...styles.sidebar,
+      ...(isMobile ? styles.sidebarMobile : {}),
+      ...(isMobile && isOpen ? styles.sidebarMobileOpen : {}),
+    }}>
       <div style={styles.logo}>
         <div style={styles.logoText}>Schedrix</div>
       </div>

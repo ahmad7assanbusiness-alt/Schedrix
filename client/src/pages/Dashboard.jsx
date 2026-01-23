@@ -6,6 +6,7 @@ const styles = {
   container: {
     maxWidth: "1400px",
     margin: "0 auto",
+    width: "100%",
   },
   header: {
     background: "var(--bg-primary)",
@@ -14,6 +15,11 @@ const styles = {
     padding: "var(--spacing-xl)",
     marginBottom: "var(--spacing-xl)",
     display: "flex",
+    flexDirection: "column",
+    gap: "var(--spacing-md)",
+  },
+  headerDesktop: {
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
@@ -132,6 +138,17 @@ const styles = {
 
 export default function Dashboard() {
   const { user, business } = useAuth();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   if (!user) {
     return <div>Loading...</div>;
