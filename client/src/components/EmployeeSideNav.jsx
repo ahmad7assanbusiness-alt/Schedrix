@@ -211,7 +211,8 @@ export default function EmployeeSideNav({ onLogout }) {
       return location.pathname === "/employee/dashboard" || location.pathname === "/dashboard";
     }
     if (path.startsWith("/employee/settings")) {
-      return location.pathname.startsWith("/employee/settings");
+      // For settings, check exact match or if it's the specific settings page
+      return location.pathname === path;
     }
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
