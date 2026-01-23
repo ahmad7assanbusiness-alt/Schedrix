@@ -1,9 +1,8 @@
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client.js";
 
 export default function GoogleOAuthCallback() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -15,13 +14,13 @@ export default function GoogleOAuthCallback() {
 
     if (error) {
       console.error("[DEBUG] GoogleOAuthCallback - OAuth error:", error);
-      navigate(`/welcome?error=oauth_failed&details=${encodeURIComponent(error)}`);
+      window.location.href = `/welcome?error=oauth_failed&details=${encodeURIComponent(error)}`;
       return;
     }
 
     if (!code) {
       console.error("[DEBUG] GoogleOAuthCallback - no code");
-      navigate("/welcome?error=oauth_failed&details=no_code");
+      window.location.href = "/welcome?error=oauth_failed&details=no_code";
       return;
     }
 
@@ -36,19 +35,28 @@ export default function GoogleOAuthCallback() {
 
         console.log("[DEBUG] GoogleOAuthCallback - response:", response);
 
-        // If redirect is needed, navigate to that URL
+        // If redirect is needed, use window.location.href for mobile compatibility
         if (response.redirectTo) {
-          const url = new URL(response.redirectTo);
-          navigate(url.pathname + url.search);
+          window.location.href = response.redirectTo;
         } else if (response.token) {
-          // User exists, redirect to success (which will handle role-based redirect)
-          navigate(`/auth/google/success?token=${response.token}`);
+          // User exists - save token immediately and redirect
+          localStorage.setItem("token", response.token);
+          if (response.user) {
+            localStorage.setItem("user", JSON.stringify(response.user));
+          }
+          if (response.business) {
+            localStorage.setItem("business", JSON.stringify(response.business));
+          }
+          // Use window.location.href for mobile Safari compatibility
+          setTimeout(() => {
+            window.location.href = `/auth/google/success?token=${response.token}`;
+          }, 100);
         } else if (response.error === "user_not_found") {
           // User doesn't exist - show error message
           const errorMsg = response.message || "Account not found. Please register first.";
-          navigate(`/welcome?error=user_not_found&details=${encodeURIComponent(errorMsg)}`);
+          window.location.href = `/welcome?error=user_not_found&details=${encodeURIComponent(errorMsg)}`;
         } else {
-          navigate("/welcome?error=oauth_failed");
+          window.location.href = "/welcome?error=oauth_failed";
         }
       } catch (err) {
         console.error("[DEBUG] GoogleOAuthCallback - error:", err);
@@ -56,16 +64,16 @@ export default function GoogleOAuthCallback() {
         if (errorData?.error === "user_not_found") {
           // User doesn't exist - show specific error message
           const errorMsg = errorData.message || "Account not found. Please register first.";
-          navigate(`/welcome?error=user_not_found&details=${encodeURIComponent(errorMsg)}`);
+          window.location.href = `/welcome?error=user_not_found&details=${encodeURIComponent(errorMsg)}`;
         } else {
           const errorMsg = errorData?.error || errorData?.message || err.message || "processing_failed";
-          navigate(`/welcome?error=oauth_failed&details=${encodeURIComponent(errorMsg)}`);
+          window.location.href = `/welcome?error=oauth_failed&details=${encodeURIComponent(errorMsg)}`;
         }
       }
     };
 
     processCallback();
-  }, [searchParams, navigate]);
+  }, [searchParams]);
 
   return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Processing Google login...</div>;
 }
