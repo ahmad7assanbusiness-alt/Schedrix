@@ -1,6 +1,25 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { execSync } from "child_process";
+
+// Load environment variables first
+dotenv.config();
+
+// Generate Prisma client at runtime (needed for Cloud Run buildpacks)
+// This ensures DATABASE_URL is available from environment variables
+try {
+  console.log("Generating Prisma Client...");
+  execSync("npx prisma generate", { 
+    stdio: "inherit",
+    env: { ...process.env }
+  });
+  console.log("Prisma Client generated successfully");
+} catch (error) {
+  console.warn("Warning: Prisma generate failed, continuing anyway:", error.message);
+  // Continue anyway - Prisma client might already be generated
+}
+
 import authRoutes from "./routes/auth.js";
 import businessRoutes from "./routes/business.js";
 import availabilityRoutes from "./routes/availability.js";
@@ -8,8 +27,6 @@ import schedulingRoutes from "./routes/scheduling.js";
 import templatesRoutes from "./routes/templates.js";
 import billingRoutes from "./routes/billing.js";
 import prisma from "./prisma.js";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;

@@ -11,6 +11,7 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: env("DATABASE_URL"),
+    // Use a fallback during build, actual DATABASE_URL will be used at runtime
+    url: env("DATABASE_URL") || "postgresql://placeholder:placeholder@localhost:5432/placeholder",
   },
 });
