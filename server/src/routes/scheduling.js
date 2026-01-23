@@ -123,30 +123,42 @@ router.get("/", authMiddleware, async (req, res) => {
       }
     }
 
-    // Add pagination
-    const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 per page
-    const skip = (page - 1) * limit;
+    // Add pagination (optional - backward compatible)
+    const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
+    
+    if (hasPagination) {
+      const page = parseInt(req.query.page) || 1;
+      const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 per page
+      const skip = (page - 1) * limit;
 
-    const [schedules, total] = await Promise.all([
-      prisma.scheduleWeek.findMany({
-        where: whereClause,
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.scheduleWeek.count({ where: whereClause }),
-    ]);
+      const [schedules, total] = await Promise.all([
+        prisma.scheduleWeek.findMany({
+          where: whereClause,
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.scheduleWeek.count({ where: whereClause }),
+      ]);
 
-    res.json({
-      data: schedules,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      return res.json({
+        data: schedules,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    }
+
+    // Backward compatible: return array if no pagination params
+    const schedules = await prisma.scheduleWeek.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
     });
+
+    res.json(schedules);
   } catch (error) {
     console.error("List schedules error:", error);
     res.status(500).json({ error: "Internal server error" });
