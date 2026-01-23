@@ -205,7 +205,7 @@ function GoogleCallback() {
             const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
             // Force localStorage sync and wait a bit longer for mobile browsers
             localStorage.setItem("token", token);
-            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("user", JSON.stringify(data.user));
             if (data.business) {
               localStorage.setItem("business", JSON.stringify(data.business));
             }

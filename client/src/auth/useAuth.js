@@ -55,6 +55,9 @@ export function useAuth() {
     api.setToken(null);
     setUser(null);
     setBusiness(null);
+    // Clear localStorage
+    localStorage.removeItem("user");
+    localStorage.removeItem("business");
   }
 
   return { user, business, loading, login, logout, reload: loadUser };
