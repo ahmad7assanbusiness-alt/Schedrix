@@ -143,7 +143,6 @@ function OnboardingCheck({ children }) {
 
 function GoogleCallback() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { login } = useAuth();
 
   useEffect(() => {
@@ -151,25 +150,19 @@ function GoogleCallback() {
     const error = searchParams.get("error");
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'GoogleCallback started',data:{hasToken:!!token,hasError:!!error,apiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-    // #endregion
     console.log("[DEBUG] GoogleCallback - token:", token ? "present" : "missing", "error:", error);
 
     if (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'Error in URL params',data:{error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
       console.log("[DEBUG] GoogleCallback - redirecting with error:", error);
-      navigate(`/welcome?error=${error}`);
+      window.location.href = `/welcome?error=${error}`;
       return;
     }
 
     if (token) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'Fetching /auth/me with token',data:{tokenLength:token.length,apiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
       console.log("[DEBUG] GoogleCallback - fetching /auth/me with token");
+      // Save token immediately for mobile Safari
+      localStorage.setItem("token", token);
+      
       // Get user info with the token
       fetch(`${apiUrl}/auth/me`, {
         headers: {
@@ -177,15 +170,9 @@ function GoogleCallback() {
         },
       })
         .then((res) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me response received',data:{status:res.status,statusText:res.statusText,ok:res.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-          // #endregion
           console.log("[DEBUG] GoogleCallback - /auth/me response:", res.status, res.statusText);
           if (!res.ok) {
             return res.json().then(err => {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me error response',data:{error:err},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-              // #endregion
               console.error("[DEBUG] GoogleCallback - /auth/me error:", err);
               throw new Error(err.error || "Failed to authenticate");
             });
@@ -193,51 +180,45 @@ function GoogleCallback() {
           return res.json();
         })
         .then((data) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me success',data:{hasUser:!!data.user,hasBusiness:!!data.business,userRole:data.user?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-          // #endregion
           console.log("[DEBUG] GoogleCallback - /auth/me data:", data);
           if (data.user) {
-            login(token, data.user, data.business);
-            // Ensure token is saved to localStorage before redirect
-            // Use window.location for mobile browser compatibility
-            const isManager = data.user.role === "OWNER" || data.user.role === "MANAGER";
-            const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
-            // Force localStorage sync and wait a bit longer for mobile browsers
+            // Save everything to localStorage first
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(data.user));
             if (data.business) {
               localStorage.setItem("business", JSON.stringify(data.business));
             }
-            // Longer delay for mobile browsers to ensure persistence
+            
+            // Update auth state
+            login(token, data.user, data.business);
+            
+            // Determine redirect path
+            const isManager = data.user.role === "OWNER" || data.user.role === "MANAGER";
+            const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
+            
+            // Use window.location.href for mobile Safari - force full page reload
+            // Longer delay for mobile browsers to ensure localStorage persistence
             setTimeout(() => {
               window.location.href = redirectPath;
-            }, 300);
+            }, 500); // Increased delay for mobile
           } else {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'No user in response',data:{data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-            // #endregion
             console.error("[DEBUG] GoogleCallback - no user in response:", data);
-            navigate("/welcome?error=auth_failed");
+            window.location.href = "/welcome?error=auth_failed";
           }
         })
         .catch((err) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'/auth/me fetch failed',data:{errorMessage:err.message,errorName:err.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-          // #endregion
           console.error("[DEBUG] GoogleCallback - fetch error:", err);
-          navigate("/welcome?error=auth_failed");
+          // Clear token on error
+          localStorage.removeItem("token");
+          window.location.href = "/welcome?error=auth_failed";
         });
     } else {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'No token in URL',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
       console.error("[DEBUG] GoogleCallback - no token in URL");
-      navigate("/welcome?error=no_token");
+      window.location.href = "/welcome?error=no_token";
     }
-  }, [searchParams, navigate, login]);
+  }, [searchParams, login]);
 
-  return <div>Completing login...</div>;
+  return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Completing login...</div>;
 }
 
 function App() {
