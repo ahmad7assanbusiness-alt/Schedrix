@@ -2,22 +2,45 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
+import { existsSync } from "fs";
+import { join } from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 // Load environment variables first
 dotenv.config();
 
+// Get the directory path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 // Generate Prisma client at runtime (needed for Cloud Run buildpacks)
-// This ensures DATABASE_URL is available from environment variables
-try {
-  console.log("Generating Prisma Client...");
-  execSync("npx prisma generate", { 
-    stdio: "inherit",
-    env: { ...process.env }
-  });
-  console.log("Prisma Client generated successfully");
-} catch (error) {
-  console.warn("Warning: Prisma generate failed, continuing anyway:", error.message);
-  // Continue anyway - Prisma client might already be generated
+// Check if Prisma client already exists to avoid unnecessary generation
+const prismaClientPath = join(__dirname, "../node_modules/.prisma/client");
+const needsGeneration = !existsSync(prismaClientPath);
+
+if (needsGeneration) {
+  try {
+    console.log("Prisma Client not found, generating...");
+    // Use a dummy DATABASE_URL for generation (not needed for client generation)
+    const generateEnv = {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL || "postgresql://dummy:dummy@localhost:5432/dummy"
+    };
+    execSync("npx prisma generate --schema=./prisma/schema.prisma", { 
+      stdio: "pipe", // Use pipe instead of inherit to avoid blocking
+      env: generateEnv,
+      cwd: join(__dirname, ".."),
+      timeout: 20000 // 20 second timeout
+    });
+    console.log("Prisma Client generated successfully");
+  } catch (error) {
+    console.error("Error generating Prisma Client:", error.message);
+    console.error("Continuing anyway - Prisma client might already exist or will be generated on first use");
+    // Continue anyway - might work if client exists from build
+  }
+} else {
+  console.log("Prisma Client already exists, skipping generation");
 }
 
 import authRoutes from "./routes/auth.js";
