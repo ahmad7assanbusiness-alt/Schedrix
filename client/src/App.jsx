@@ -236,6 +236,7 @@ function GoogleCallback() {
 function App() {
   return (
     <BrowserRouter>
+      <InstallPrompt />
       <Routes>
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
