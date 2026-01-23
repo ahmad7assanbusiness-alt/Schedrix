@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "./auth/useAuth.js";
+import InstallPrompt from "./components/InstallPrompt.jsx";
 import Welcome from "./pages/Welcome.jsx";
 import CompleteOwnerRegistration from "./pages/CompleteOwnerRegistration.jsx";
 import CompleteEmployeeRegistration from "./pages/CompleteEmployeeRegistration.jsx";
