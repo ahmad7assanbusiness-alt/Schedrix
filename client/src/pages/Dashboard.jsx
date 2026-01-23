@@ -195,7 +195,10 @@ export default function Dashboard() {
 
   return (
     <div style={styles.container}>
-        <div style={styles.header}>
+        <div style={{
+          ...styles.header,
+          ...(!isMobile ? styles.headerDesktop : {}),
+        }}>
           <div style={styles.headerContent}>
             <h1 style={styles.title}>Dashboard</h1>
             <p style={styles.subtitle}>Welcome back, {user.name}</p>
