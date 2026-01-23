@@ -188,11 +188,17 @@ export default function CompleteOwnerRegistration() {
         ownerName,
       });
 
-          login(token, user, business);
-          // Use window.location for mobile browser compatibility
-          setTimeout(() => {
-            window.location.href = "/dashboard";
-          }, 100);
+      login(token, user, business);
+      // Ensure token is saved to localStorage before redirect
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      if (business) {
+        localStorage.setItem("business", JSON.stringify(business));
+      }
+      // Longer delay for mobile browsers to ensure persistence
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 300);
     } catch (err) {
       setError(err.response?.data?.error || err.message || "Registration failed");
     } finally {

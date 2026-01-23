@@ -203,10 +203,16 @@ export default function CompleteEmployeeRegistration() {
       });
 
       login(token, user, business);
-      // Use window.location for mobile browser compatibility
+      // Ensure token is saved to localStorage before redirect
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      if (business) {
+        localStorage.setItem("business", JSON.stringify(business));
+      }
+      // Longer delay for mobile browsers to ensure persistence
       setTimeout(() => {
         window.location.href = "/employee/dashboard";
-      }, 100);
+      }, 300);
     } catch (err) {
       setError(err.response?.data?.error || err.message || "Registration failed");
     } finally {
