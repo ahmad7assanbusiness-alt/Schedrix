@@ -7,6 +7,22 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Try to restore user from localStorage first (for faster initial load)
+    const savedUser = localStorage.getItem("user");
+    const savedBusiness = localStorage.getItem("business");
+    
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+        if (savedBusiness) {
+          setBusiness(JSON.parse(savedBusiness));
+        }
+      } catch (e) {
+        console.error("Failed to parse saved user:", e);
+      }
+    }
+    
+    // Then verify with server
     const token = api.getToken();
     if (token) {
       loadUser();

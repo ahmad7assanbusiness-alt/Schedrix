@@ -199,13 +199,20 @@ function GoogleCallback() {
           console.log("[DEBUG] GoogleCallback - /auth/me data:", data);
           if (data.user) {
             login(token, data.user, data.business);
-            // Redirect based on user role - use window.location for mobile compatibility
+            // Ensure token is saved to localStorage before redirect
+            // Use window.location for mobile browser compatibility
             const isManager = data.user.role === "OWNER" || data.user.role === "MANAGER";
             const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
-            // Small delay to ensure state is persisted, then full page reload for mobile
+            // Force localStorage sync and wait a bit longer for mobile browsers
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(user));
+            if (data.business) {
+              localStorage.setItem("business", JSON.stringify(data.business));
+            }
+            // Longer delay for mobile browsers to ensure persistence
             setTimeout(() => {
               window.location.href = redirectPath;
-            }, 100);
+            }, 300);
           } else {
             // #region agent log
             fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:GoogleCallback',message:'No user in response',data:{data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
