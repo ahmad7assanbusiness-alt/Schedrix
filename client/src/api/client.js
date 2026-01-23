@@ -44,13 +44,7 @@ async function apiRequest(endpoint, options = {}) {
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
-      headers: {
-        ...headers,
-        // Prevent aggressive caching on mobile browsers
-        'Cache-Control': 'no-cache',
-      },
-      // Force fresh requests on mobile
-      cache: 'no-store',
+      headers,
     });
 
     if (response.status === 401) {

@@ -160,26 +160,6 @@ body {
   body {
     overflow-x: hidden;
   }
-  
-  /* Fix iOS Safari viewport issues */
-  @supports (-webkit-touch-callout: none) {
-    body {
-      min-height: -webkit-fill-available;
-    }
-    #root {
-      min-height: -webkit-fill-available;
-    }
-  }
-}
-
-/* Force hardware acceleration on mobile for better performance */
-@media (max-width: 768px) {
-  * {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-  }
 }
 
 /* Utility Classes */
