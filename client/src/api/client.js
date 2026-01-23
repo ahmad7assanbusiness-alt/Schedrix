@@ -42,20 +42,15 @@ async function apiRequest(endpoint, options = {}) {
   }
 
   try {
-    // Add cache-busting for mobile browsers
-    const cacheBuster = `?t=${Date.now()}`;
-    const url = endpoint.includes('?') 
-      ? `${API_URL}${endpoint}&_t=${Date.now()}` 
-      : `${API_URL}${endpoint}${cacheBuster}`;
-    
-    const response = await fetch(url, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers: {
         ...headers,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+        // Prevent aggressive caching on mobile browsers
+        'Cache-Control': 'no-cache',
       },
+      // Force fresh requests on mobile
+      cache: 'no-store',
     });
 
     if (response.status === 401) {
