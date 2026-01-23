@@ -9,15 +9,28 @@ export default defineConfig({
       registerType: "autoUpdate",
       devOptions: { enabled: true }, // lets you test PWA locally
       manifest: {
-        name: "ScheduleManager",
-        short_name: "Schedule",
+        name: "Schedrix - Schedule Manager",
+        short_name: "Schedrix",
+        description: "Manage your team schedules and availability",
         start_url: "/",
         display: "standalone",
+        orientation: "portrait",
         background_color: "#ffffff",
         theme_color: "#6366f1",
+        scope: "/",
         icons: [
-          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" }
+          { 
+            src: "/pwa-192.png", 
+            sizes: "192x192", 
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          { 
+            src: "/pwa-512.png", 
+            sizes: "512x512", 
+            type: "image/png",
+            purpose: "any maskable"
+          }
         ]
       },
       // Only include icons in manifest if files exist and are valid
