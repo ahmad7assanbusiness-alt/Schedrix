@@ -213,7 +213,8 @@ export default function SideNav({ onLogout }) {
       return location.pathname === "/dashboard";
     }
     if (path.startsWith("/settings")) {
-      return location.pathname.startsWith("/settings");
+      // For settings, check exact match or if it's the specific settings page
+      return location.pathname === path;
     }
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
