@@ -276,7 +276,7 @@ export default function Onboarding() {
 
           {currentStep === 1 && (
             <div>
-              <h1 style={styles.title}>Welcome to Schedrix, {user?.name}! 👋</h1>
+              <h1 style={styles.title}>Welcome to Opticore, {user?.name}! 👋</h1>
               <p style={styles.subtitle}>
                 Let's get you set up. This will only take a minute.
               </p>

@@ -150,9 +150,9 @@ export default function InstallPrompt() {
     return (
       <div style={styles.banner}>
         <div style={styles.content}>
-          <div style={styles.title}>Install Schedrix</div>
+          <div style={styles.title}>Install Opticore</div>
           <div style={styles.description}>
-            Add Schedrix to your home screen for quick access and a better experience.
+            Add Opticore to your home screen for quick access and a better experience.
           </div>
         </div>
         <div style={styles.buttonGroup}>
@@ -190,9 +190,9 @@ export default function InstallPrompt() {
     return (
       <div style={styles.banner}>
         <div style={styles.content}>
-          <div style={styles.title}>Install Schedrix on iOS</div>
+          <div style={styles.title}>Install Opticore on iOS</div>
           <div style={styles.description}>
-            Add Schedrix to your home screen for quick access.
+            Add Opticore to your home screen for quick access.
           </div>
           <div style={styles.iosInstructions}>
             <div style={styles.instructionStep}>
