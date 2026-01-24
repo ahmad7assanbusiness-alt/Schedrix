@@ -6,11 +6,14 @@ import { ThemeProvider } from './contexts/ThemeContext.jsx'
 import { registerSW } from 'virtual:pwa-register'
 import { initializeNotifications, checkForAppUpdate } from './services/notificationService.js'
 
-// iOS PWA fix: Clear service worker cache on app start if needed
-if (window.navigator.standalone && 'caches' in window) {
+// PWA fix: Clear service worker cache on app start if needed (iOS and Desktop)
+const isPWA = window.navigator.standalone || 
+              window.matchMedia('(display-mode: standalone)').matches;
+
+if (isPWA && 'caches' in window) {
   // Check if we need to clear stale caches
   const cacheVersion = localStorage.getItem('sw-cache-version');
-  const currentVersion = '2.0'; // Increment when making breaking changes
+  const currentVersion = '2.1'; // Increment when making breaking changes
   
   if (cacheVersion !== currentVersion) {
     caches.keys().then((cacheNames) => {
