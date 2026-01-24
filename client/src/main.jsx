@@ -10,13 +10,11 @@ import { initializeNotifications, checkForAppUpdate } from './services/notificat
 const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
-    console.log("New content available, reloading...");
-    // For iOS PWAs, force immediate reload without user interaction
-    if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
-      updateSW(true); // Force immediate update for PWA
-    } else {
-      // Show update notification for browser users
-      if (Notification.permission === "granted") {
+    console.log("New content available");
+    // Don't auto-reload on iOS - let user control it
+    // iOS Safari can crash with aggressive reloads
+    if (Notification.permission === "granted") {
+      try {
         const notification = new Notification("App Update Available", {
           body: "A new version of Opticore is available. Click to update now.",
           icon: "/pwa-192.png",
@@ -29,11 +27,17 @@ const updateSW = registerSW({
           updateSW(true);
           notification.close();
         };
-      } else {
+      } catch (error) {
+        console.error('Notification error:', error);
         // Fallback: show in-app prompt
         if (confirm("A new version of Opticore is available. Update now?")) {
           updateSW(true);
         }
+      }
+    } else {
+      // Fallback: show in-app prompt
+      if (confirm("A new version of Opticore is available. Update now?")) {
+        updateSW(true);
       }
     }
   },
@@ -43,13 +47,23 @@ const updateSW = registerSW({
   onRegistered(registration) {
     console.log('SW Registered: ', registration);
     
-    // Check for updates every 30 seconds when app is active
+    // Check for updates less frequently to avoid iOS crashes
+    // Only check when app becomes visible, not on interval
     if (registration) {
-      setInterval(() => {
-        registration.update().catch(() => {
-          // Ignore update errors
-        });
-      }, 30000);
+      let updateCheckInProgress = false;
+      
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !updateCheckInProgress) {
+          updateCheckInProgress = true;
+          registration.update()
+            .catch(() => {
+              // Ignore update errors
+            })
+            .finally(() => {
+              updateCheckInProgress = false;
+            });
+        }
+      });
     }
   },
   onRegisterError(error) {
@@ -57,19 +71,19 @@ const updateSW = registerSW({
   },
 });
 
-// Initialize app services
-import { UpdateChecker } from './utils/updateChecker.js';
-
-// Initialize notifications when app loads
+// Initialize notifications when app loads (with error handling for iOS)
 if (navigator.serviceWorker) {
   navigator.serviceWorker.ready.then(() => {
-    initializeNotifications();
-    checkForAppUpdate();
+    try {
+      initializeNotifications();
+      checkForAppUpdate();
+    } catch (error) {
+      console.error('Error initializing notifications:', error);
+    }
+  }).catch((error) => {
+    console.error('Service worker ready error:', error);
   });
 }
-
-// Start aggressive update checking for PWA
-UpdateChecker.startPeriodicChecks();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

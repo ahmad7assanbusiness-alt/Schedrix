@@ -61,25 +61,32 @@ export class UpdateChecker {
         }
       }
 
-      // Method 3: Cache busting check
-      const cacheKey = 'last-update-check';
-      const lastCheck = localStorage.getItem(cacheKey);
-      const now = Date.now();
-      
-      // If it's been more than 5 minutes since last check, do a hard refresh
-      if (lastCheck && now - parseInt(lastCheck) > 5 * 60 * 1000) {
-        localStorage.setItem(cacheKey, now.toString());
+      // Method 3: Cache busting check (disabled for iOS to prevent crashes)
+      if (!/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        const cacheKey = 'last-update-check';
+        const lastCheck = localStorage.getItem(cacheKey);
+        const now = Date.now();
         
-        if (this.isPWA()) {
-          // Clear caches and reload
-          if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
+        // Only check if it's been more than 10 minutes (not 5)
+        if (lastCheck && now - parseInt(lastCheck) > 10 * 60 * 1000) {
+          localStorage.setItem(cacheKey, now.toString());
+          
+          // Don't auto-reload on iOS - let user control it
+          if (this.isPWA() && !/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+            // Only clear caches if not iOS
+            if ('caches' in window && forceReload) {
+              try {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+              } catch (error) {
+                console.error('Error clearing caches:', error);
+              }
+              window.location.reload();
+            }
           }
-          window.location.reload();
+        } else {
+          localStorage.setItem(cacheKey, now.toString());
         }
-      } else {
-        localStorage.setItem(cacheKey, now.toString());
       }
 
     } catch (error) {
@@ -96,26 +103,40 @@ export class UpdateChecker {
   }
 
   static startPeriodicChecks() {
-    // Check for updates every 30 seconds
+    // Disable aggressive checking on iOS to prevent crashes
+    // iOS Safari has issues with frequent reloads and cache clearing
+    if (this.isPWA() && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      console.log('iOS PWA detected - using minimal update checking');
+      // Only check when app becomes visible (not on interval)
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          // Delay check to avoid overwhelming iOS
+          setTimeout(() => {
+            this.checkForUpdates(false); // Don't force reload
+          }, 1000);
+        }
+      });
+      return;
+    }
+
+    // For non-iOS devices, check less frequently
+    // Check for updates every 5 minutes (not 30 seconds)
     setInterval(() => {
-      this.checkForUpdates();
-    }, 30000);
+      this.checkForUpdates(false);
+    }, 5 * 60 * 1000);
 
     // Check when app becomes visible
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
-        this.checkForUpdates();
+        setTimeout(() => {
+          this.checkForUpdates(false);
+        }, 1000);
       }
     });
 
-    // Check when app gains focus
-    window.addEventListener('focus', () => {
-      this.checkForUpdates();
-    });
-
-    // Initial check
+    // Initial check with delay
     setTimeout(() => {
-      this.checkForUpdates();
-    }, 2000);
+      this.checkForUpdates(false);
+    }, 5000);
   }
 }
