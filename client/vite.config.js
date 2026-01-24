@@ -12,7 +12,12 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//, /^\/manifest\.webmanifest$/],
+        navigateFallbackDenylist: [
+          /^\/api\//, 
+          /^\/auth\//, 
+          /^\/manifest\.webmanifest$/,
+          /^https:\/\//, // Don't intercept external URLs
+        ],
         cleanupOutdatedCaches: true,
         // Don't cache HTML files - always fetch fresh
         runtimeCaching: [
@@ -30,6 +35,17 @@ export default defineConfig({
           {
             urlPattern: /\/api\/.*/i,
             handler: 'NetworkOnly', // Never cache API calls
+            options: {
+              networkTimeoutSeconds: 10, // Timeout after 10 seconds
+            },
+          },
+          {
+            // Don't cache any external API calls
+            urlPattern: /^https:\/\/.*\/api\/.*/i,
+            handler: 'NetworkOnly',
+            options: {
+              networkTimeoutSeconds: 10,
+            },
           },
           {
             urlPattern: /\.(png|jpg|jpeg|svg|gif)$/i,
