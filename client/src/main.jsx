@@ -142,10 +142,7 @@ const updateSW = registerSW({
 });
 
 // Initialize notifications when app loads (only for installed PWAs)
-const isInstalledPWA = window.navigator.standalone || 
-                       window.matchMedia('(display-mode: standalone)').matches;
-
-if (navigator.serviceWorker && isInstalledPWA) {
+if (navigator.serviceWorker && isPWA) {
   navigator.serviceWorker.ready.then(() => {
     try {
       initializeNotifications();
@@ -159,8 +156,6 @@ if (navigator.serviceWorker && isInstalledPWA) {
 }
 
 // Logout on app close for PWA (iOS/Android)
-const isPWA = window.navigator.standalone || 
-              window.matchMedia('(display-mode: standalone)').matches;
 
 if (isPWA) {
   // Logout when app is closed (visibilitychange for iOS, beforeunload for Android)
