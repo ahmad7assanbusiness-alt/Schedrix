@@ -24,14 +24,20 @@ const styles = {
     marginLeft: 0,
     width: "100%",
     padding: "var(--spacing-md)",
+    paddingTop: "calc(var(--spacing-md) + env(safe-area-inset-top, 0px))",
+    paddingBottom: "calc(var(--spacing-md) + env(safe-area-inset-bottom, 0px))",
+    paddingLeft: "max(var(--spacing-md), env(safe-area-inset-left, 0px))",
+    paddingRight: "max(var(--spacing-md), env(safe-area-inset-right, 0px))",
   },
   mobileMenuButton: {
     position: "fixed",
-    top: "var(--spacing-md)",
-    left: "var(--spacing-md)",
+    top: "max(var(--spacing-md), env(safe-area-inset-top, 0px))",
+    left: "max(var(--spacing-md), env(safe-area-inset-left, 0px))",
     zIndex: 1000,
     width: "44px",
     height: "44px",
+    minWidth: "44px", /* iOS touch target minimum */
+    minHeight: "44px", /* iOS touch target minimum */
     borderRadius: "var(--radius-md)",
     border: "2px solid var(--gray-200)",
     background: "var(--bg-primary)",
@@ -42,6 +48,7 @@ const styles = {
     justifyContent: "center",
     fontSize: "var(--font-size-xl)",
     boxShadow: "var(--shadow-md)",
+    transition: "all var(--transition-base)",
   },
   overlay: {
     position: "fixed",

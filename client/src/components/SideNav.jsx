@@ -180,6 +180,16 @@ const styles = {
     cursor: "pointer",
     transition: "all var(--transition-base)",
   },
+  sidebarMobile: {
+    transform: "translateX(-100%)",
+    transition: "transform 0.3s ease-in-out",
+    width: "280px",
+    maxWidth: "85vw",
+  },
+  sidebarMobileOpen: {
+    transform: "translateX(0)",
+    boxShadow: "4px 0 20px rgba(0, 0, 0, 0.2)",
+  },
 };
 
 export default function SideNav({ onLogout, isMobile = false, isOpen = false, onClose }) {
