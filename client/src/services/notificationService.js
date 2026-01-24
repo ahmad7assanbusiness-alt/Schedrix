@@ -241,8 +241,8 @@ function showUpdateNotification() {
   if (Notification.permission === "granted") {
     const notification = new Notification("App Update Available", {
       body: "A new version of Opticore is available. Click to update now.",
-      icon: "/pwa-512.png",
-      badge: "/pwa-192.png",
+      icon: "/icon-source.png",
+      badge: "/icon-source.png",
       tag: "app-update",
       requireInteraction: true,
       actions: [

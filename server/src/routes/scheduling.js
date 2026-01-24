@@ -696,8 +696,8 @@ router.post("/:id/publish", authMiddleware, managerOnly, async (req, res) => {
         {
           title: "Schedule Republished",
           body: `The schedule for ${startDate} - ${endDate} has been updated and republished`,
-          icon: "/pwa-512.png",
-          badge: "/pwa-192.png",
+          icon: "/icon-source.png",
+          badge: "/icon-source.png",
           tag: "schedule-republished",
           data: {
             url: "/employee/schedule/my",
@@ -715,8 +715,8 @@ router.post("/:id/publish", authMiddleware, managerOnly, async (req, res) => {
         {
           title: "Schedule Published",
           body: `Your schedule for ${startDate} - ${endDate} has been published`,
-          icon: "/pwa-512.png",
-          badge: "/pwa-192.png",
+          icon: "/icon-source.png",
+          badge: "/icon-source.png",
           tag: "schedule-published",
           data: {
             url: "/employee/schedule/my",
@@ -770,8 +770,8 @@ router.post("/:id/unpublish", authMiddleware, managerOnly, async (req, res) => {
       {
         title: "Schedule Redacted",
         body: `The schedule for ${startDate} - ${endDate} has been redacted and is being updated`,
-        icon: "/pwa-512.png",
-        badge: "/pwa-192.png",
+        icon: "/icon-source.png",
+        badge: "/icon-source.png",
         tag: "schedule-redacted",
         data: {
           url: "/employee/schedule/my",
