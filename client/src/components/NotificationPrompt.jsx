@@ -25,10 +25,11 @@ const NotificationPrompt = () => {
     const shouldShowPrompt = () => {
       if (!user) return false;
       
-      // Don't show if user has already granted permission
+      // Don't show if user has already granted or denied permission (and was prompted)
       if (user.notificationPermission === 'granted') return false;
+      if (user.notificationPermission === 'denied' && user.notificationPrompted) return false;
       
-      // Show if user has never been prompted or has denied but we should ask again
+      // Show if user has never been prompted (pending) or denied but not prompted yet
       if (user.notificationPermission === 'pending' || 
           (user.notificationPermission === 'denied' && !user.notificationPrompted)) {
         return true;
@@ -38,61 +39,77 @@ const NotificationPrompt = () => {
     };
 
     if (shouldShowPrompt()) {
-      // Longer delay for iOS to ensure app is fully loaded
-      const delay = window.navigator.standalone ? 3000 : 2000;
-      const timeoutId = setTimeout(() => {
-        try {
-          setShowPrompt(true);
-        } catch (error) {
-          console.error('Error showing notification prompt:', error);
-        }
-      }, delay);
-      
-      return () => clearTimeout(timeoutId);
+      // Show immediately on first PWA open (no delay)
+      try {
+        setShowPrompt(true);
+      } catch (error) {
+        console.error('Error showing notification prompt:', error);
+      }
     }
   }, [user]);
 
   const handleAllow = async () => {
     setIsLoading(true);
+    setShowPrompt(false); // Hide immediately to prevent multiple clicks
+    
     try {
       // Request notification permission
       const permission = await requestNotificationPermission();
       
       if (permission) {
         // Subscribe to notifications
-        const subscription = await subscribeToPushNotifications();
+        await subscribeToPushNotifications();
         
         // Update user in database
-        await api.post('/notifications/permission', {
-          permission: 'granted',
-          prompted: true
-        });
+        try {
+          await api.post('/notifications/permission', {
+            permission: 'granted',
+            prompted: true
+          });
+        } catch (apiError) {
+          console.error('Error updating permission in database:', apiError);
+          // Continue even if API call fails
+        }
         
-        // Update user state
+        // Update user state immediately
         updateUser({
           ...user,
           notificationPermission: 'granted',
           notificationPrompted: true
         });
-        
-        setShowPrompt(false);
       } else {
-        // Permission denied
-        await api.post('/notifications/permission', {
-          permission: 'denied',
-          prompted: true
-        });
+        // Permission denied by browser
+        try {
+          await api.post('/notifications/permission', {
+            permission: 'denied',
+            prompted: true
+          });
+        } catch (apiError) {
+          console.error('Error updating permission in database:', apiError);
+        }
         
         updateUser({
           ...user,
           notificationPermission: 'denied',
           notificationPrompted: true
         });
-        
-        setShowPrompt(false);
       }
     } catch (error) {
       console.error('Error handling notification permission:', error);
+      // Even on error, mark as prompted so we don't show again
+      try {
+        await api.post('/notifications/permission', {
+          permission: 'denied',
+          prompted: true
+        });
+        updateUser({
+          ...user,
+          notificationPermission: 'denied',
+          notificationPrompted: true
+        });
+      } catch (apiError) {
+        console.error('Error updating permission after error:', apiError);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -100,23 +117,29 @@ const NotificationPrompt = () => {
 
   const handleDeny = async () => {
     setIsLoading(true);
+    setShowPrompt(false); // Hide immediately
+    
     try {
-      // Update user in database
+      // Update user in database - mark as denied and prompted
       await api.post('/notifications/permission', {
         permission: 'denied',
-        prompted: false // Keep false so we ask again next time
+        prompted: true // Mark as prompted so we don't ask again
       });
       
       // Update user state
       updateUser({
         ...user,
         notificationPermission: 'denied',
-        notificationPrompted: false
+        notificationPrompted: true
       });
-      
-      setShowPrompt(false);
     } catch (error) {
       console.error('Error updating notification permission:', error);
+      // Update state even if API fails
+      updateUser({
+        ...user,
+        notificationPermission: 'denied',
+        notificationPrompted: true
+      });
     } finally {
       setIsLoading(false);
     }

@@ -158,6 +158,48 @@ if (navigator.serviceWorker && isInstalledPWA) {
   });
 }
 
+// Logout on app close for PWA (iOS/Android)
+const isPWA = window.navigator.standalone || 
+              window.matchMedia('(display-mode: standalone)').matches;
+
+if (isPWA) {
+  // Logout when app is closed (visibilitychange for iOS, beforeunload for Android)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      // App is being closed/minimized - clear auth
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('business');
+      } catch (e) {
+        console.error('Error clearing auth on app close:', e);
+      }
+    }
+  });
+  
+  // Also handle beforeunload for Android
+  window.addEventListener('beforeunload', () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('business');
+    } catch (e) {
+      console.error('Error clearing auth on app close:', e);
+    }
+  });
+  
+  // Handle pagehide for iOS (more reliable)
+  window.addEventListener('pagehide', () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('business');
+    } catch (e) {
+      console.error('Error clearing auth on app close:', e);
+    }
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider>

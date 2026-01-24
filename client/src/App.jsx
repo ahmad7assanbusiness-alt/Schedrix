@@ -251,9 +251,19 @@ function App() {
           }
         />
 
-        {/* Owner/Manager routes with layout */}
+        {/* Root redirect */}
         <Route
           path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardRedirect />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Owner/Manager routes with layout */}
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <OnboardingCheck>
@@ -264,7 +274,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route index element={<Dashboard />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="templates" element={<Templates />} />
           <Route path="employees" element={<Employees />} />
