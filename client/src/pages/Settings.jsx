@@ -1,6 +1,18 @@
 import { Outlet, NavLink } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
+
+// Detect iPhone Safari specifically
+const isIphoneSafari = () => {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|OPiOS/.test(ua);
+  const isStandalone = window.navigator.standalone;
+  // Only detect Safari browser, not PWA
+  return isIOS && isSafari && !isStandalone;
+};
 
 const styles = {
   container: {
@@ -58,11 +70,24 @@ const styles = {
     padding: "var(--spacing-2xl)",
     boxShadow: "var(--shadow-sm)",
   },
+  mainFullWidth: {
+    flex: 1,
+    background: "var(--bg-primary)",
+    borderRadius: "var(--radius-lg)",
+    padding: "var(--spacing-2xl)",
+    boxShadow: "var(--shadow-sm)",
+    width: "100%",
+  },
 };
 
 export default function Settings() {
   const { user } = useAuth();
+  const [isIphone, setIsIphone] = useState(false);
   const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
+
+  useEffect(() => {
+    setIsIphone(isIphoneSafari());
+  }, []);
   
   const settingsPages = [
     { path: "profile", label: "Profile" },
@@ -81,29 +106,31 @@ export default function Settings() {
       </div>
 
       <div style={styles.content}>
-        <aside style={styles.sidebar}>
-          <nav style={styles.nav}>
-            {settingsPages.map((page) => {
-              // Determine the base path based on user role
-              const basePath = isManager ? "/settings" : "/employee/settings";
-              return (
-                <NavLink
-                  key={page.path}
-                  to={`${basePath}/${page.path}`}
-                  end={page.path === "profile"}
-                  style={({ isActive }) => ({
-                    ...styles.navLink,
-                    ...(isActive ? styles.navLinkActive : {}),
-                  })}
-                >
-                  {page.label}
-                </NavLink>
-              );
-            })}
-          </nav>
-        </aside>
+        {!isIphone && (
+          <aside style={styles.sidebar}>
+            <nav style={styles.nav}>
+              {settingsPages.map((page) => {
+                // Determine the base path based on user role
+                const basePath = isManager ? "/settings" : "/employee/settings";
+                return (
+                  <NavLink
+                    key={page.path}
+                    to={`${basePath}/${page.path}`}
+                    end={page.path === "profile"}
+                    style={({ isActive }) => ({
+                      ...styles.navLink,
+                      ...(isActive ? styles.navLinkActive : {}),
+                    })}
+                  >
+                    {page.label}
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </aside>
+        )}
 
-        <main style={styles.main}>
+        <main style={isIphone ? styles.mainFullWidth : styles.main}>
           <Outlet />
         </main>
       </div>
