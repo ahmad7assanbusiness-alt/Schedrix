@@ -8,15 +8,21 @@ import "../index.css";
 const styles = {
   page: {
     minHeight: "100vh",
+    minHeight: "-webkit-fill-available",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: "var(--spacing-xl)",
+    paddingTop: "calc(var(--spacing-xl) + env(safe-area-inset-top, 0px))",
+    paddingBottom: "calc(var(--spacing-xl) + env(safe-area-inset-bottom, 0px))",
+    paddingLeft: "max(var(--spacing-xl), env(safe-area-inset-left, 0px))",
+    paddingRight: "max(var(--spacing-xl), env(safe-area-inset-right, 0px))",
     position: "relative",
   },
   container: {
     width: "100%",
     maxWidth: "480px",
+    padding: "0 var(--spacing-md)",
   },
   card: {
     background: "var(--bg-primary)",

@@ -35,6 +35,9 @@ const styles = {
     WebkitTextFillColor: "transparent",
     marginBottom: "var(--spacing-sm)",
   },
+  titleMobile: {
+    fontSize: "var(--font-size-2xl)",
+  },
   subtitle: {
     color: "var(--text-secondary)",
     fontSize: "var(--font-size-lg)",
@@ -93,6 +96,10 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
     gap: "var(--spacing-lg)",
+  },
+  gridMobile: {
+    gridTemplateColumns: "1fr",
+    gap: "var(--spacing-md)",
   },
   card: {
     background: "var(--bg-primary)",
@@ -201,7 +208,10 @@ export default function Dashboard() {
           ...(!isMobile ? styles.headerDesktop : {}),
         }}>
           <div style={styles.headerContent}>
-            <h1 style={styles.title}>Dashboard</h1>
+            <h1 style={{
+              ...styles.title,
+              ...(isMobile ? styles.titleMobile : {}),
+            }}>Dashboard</h1>
             <p style={styles.subtitle}>Welcome back, {user.name}</p>
             {business && (
               <>
@@ -231,7 +241,10 @@ export default function Dashboard() {
           <h2 style={styles.sectionTitle}>
             {isManager ? "Manager Tools" : "Employee Tools"}
           </h2>
-          <div style={styles.grid}>
+          <div style={{
+            ...styles.grid,
+            ...(isMobile ? styles.gridMobile : {}),
+          }}>
             {(isManager ? managerCards : employeeCards).map((card, index) => (
               <Link
                 key={card.to}
