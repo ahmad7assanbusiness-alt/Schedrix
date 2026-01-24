@@ -43,6 +43,36 @@ const styles = {
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     marginBottom: "var(--spacing-sm)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    lineHeight: 1.1,
+    letterSpacing: "0.05em",
+  },
+  logoLetter: {
+    display: "block",
+  },
+  caption: {
+    fontSize: "var(--font-size-sm)",
+    color: "var(--text-secondary)",
+    fontWeight: 400,
+    marginTop: "var(--spacing-xs)",
+    fontStyle: "italic",
+    letterSpacing: "0.02em",
+  },
+  backButton: {
+    marginTop: "var(--spacing-lg)",
+    padding: "var(--spacing-sm) var(--spacing-md)",
+    fontSize: "var(--font-size-sm)",
+    fontWeight: 500,
+    color: "var(--text-secondary)",
+    background: "transparent",
+    border: "1px solid var(--gray-200)",
+    borderRadius: "var(--radius-md)",
+    cursor: "pointer",
+    transition: "all var(--transition-base)",
+    textAlign: "center",
+    width: "100%",
   },
   subtitle: {
     color: "var(--text-secondary)",
@@ -533,8 +563,12 @@ export default function Welcome() {
         <div style={styles.container}>
           <div style={styles.card}>
             <div style={styles.header}>
-              <h1 style={styles.logo}>ScheduleManager</h1>
-              <p style={styles.subtitle}>Enterprise workforce scheduling made simple</p>
+              <h1 style={styles.logo}>
+                {"Opticore".split("").map((letter, index) => (
+                  <span key={index} style={styles.logoLetter}>{letter}</span>
+                ))}
+              </h1>
+              <p style={styles.caption}>Scheduling made simple, teams made stronger</p>
             </div>
 
             <div style={styles.buttonGroup}>
@@ -578,7 +612,11 @@ export default function Welcome() {
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.header}>
-            <h1 style={styles.logo}>ScheduleManager</h1>
+            <h1 style={styles.logo}>
+              {"Opticore".split("").map((letter, index) => (
+                <span key={index} style={styles.logoLetter}>{letter}</span>
+              ))}
+            </h1>
             <p style={styles.subtitle}>
               {mode === "owner-register" || mode === "owner-login"
                 ? "Business Owner"
@@ -706,6 +744,23 @@ export default function Welcome() {
                   Click here to login
                 </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setMode("select")}
+                style={styles.backButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                  e.currentTarget.style.color = "var(--primary)";
+                  e.currentTarget.style.background = "var(--gray-50)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--gray-200)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                ← Go back to home
+              </button>
             </>
           )}
 
@@ -788,6 +843,23 @@ export default function Welcome() {
                   Click here to register
                 </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setMode("select")}
+                style={styles.backButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                  e.currentTarget.style.color = "var(--primary)";
+                  e.currentTarget.style.background = "var(--gray-50)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--gray-200)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                ← Go back to home
+              </button>
             </>
           )}
 
@@ -930,6 +1002,23 @@ export default function Welcome() {
                   Click here to login
                 </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setMode("select")}
+                style={styles.backButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                  e.currentTarget.style.color = "var(--primary)";
+                  e.currentTarget.style.background = "var(--gray-50)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--gray-200)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                ← Go back to home
+              </button>
             </>
           )}
 
@@ -1012,6 +1101,23 @@ export default function Welcome() {
                   Click here to register
                 </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setMode("select")}
+                style={styles.backButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                  e.currentTarget.style.color = "var(--primary)";
+                  e.currentTarget.style.background = "var(--gray-50)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--gray-200)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                ← Go back to home
+              </button>
             </>
           )}
         </div>
