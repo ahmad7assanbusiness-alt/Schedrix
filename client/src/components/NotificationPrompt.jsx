@@ -26,7 +26,15 @@ const NotificationPrompt = () => {
     // Only show prompt for installed PWAs, not browsers
     if (!isInstalledPWA()) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:25',message:'Not installed PWA, returning early',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:25',message:'Not installed PWA, returning early',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      return;
+    }
+
+    // Only show prompt AFTER user is logged in (not on Welcome page or auth pages)
+    if (!user || location.pathname === '/welcome' || location.pathname.startsWith('/auth/')) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:30',message:'User not logged in or on auth page, not showing prompt',data:{hasUser:!!user,pathname:location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
       return;
     }
@@ -56,24 +64,24 @@ const NotificationPrompt = () => {
       return;
     }
 
-    // Show the prompt - this is the first time
-    // Add a small delay to ensure page is fully loaded
+    // Show the prompt - user is logged in and this is the first time
+    // Add a delay to ensure page is fully loaded after login
     const timer = setTimeout(() => {
       try {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:66',message:'Showing prompt for first time',data:{currentShowPrompt:showPrompt,pathname:location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'A,C'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:66',message:'Showing prompt for first time after login',data:{currentShowPrompt:showPrompt,pathname:location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'A,C'})}).catch(()=>{});
         // #endregion
         setShowPrompt(true);
       } catch (error) {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:69',message:'Error in setShowPrompt(true)',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'D'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:69',message:'Error in setShowPrompt(true)',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
         console.error('Error showing notification prompt:', error);
       }
-    }, 500); // Small delay to let page render first
+    }, 1000); // Delay 1 second after login to let dashboard load
 
     return () => clearTimeout(timer);
-  }, [user]); // Only depend on user
+  }, [user, location.pathname]); // Depend on user and location
 
   const handleAllow = async () => {
     // #region agent log
