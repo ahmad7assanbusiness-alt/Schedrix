@@ -1112,6 +1112,13 @@ export default function Schedule() {
   }
 
   const dates = getDates();
+  // Determine correct dashboard path based on user role
+  const getDashboardPath = () => {
+    if (!user) return "/dashboard";
+    const isManager = user.role === "OWNER" || user.role === "MANAGER";
+    return isManager ? "/dashboard" : "/employee/dashboard";
+  };
+
   const positions = getUniquePositions();
 
   return (
@@ -1119,7 +1126,7 @@ export default function Schedule() {
       <div style={styles.page}>
         <div style={styles.container}>
           <div style={styles.card}>
-            <Link to="/dashboard" style={styles.backLink}>
+            <Link to={getDashboardPath()} style={styles.backLink}>
               ← Back to Dashboard
             </Link>
 
