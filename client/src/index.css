@@ -139,11 +139,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  /* iPhone safe area insets */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
 }
 
 #root {
@@ -151,9 +146,6 @@ body {
   min-height: -webkit-fill-available; /* iOS Safari */
   width: 100%;
   overflow-x: hidden;
-  /* iPhone safe area insets */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Mobile responsive utilities */
