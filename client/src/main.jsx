@@ -9,22 +9,43 @@ import { initializeNotifications, checkForAppUpdate } from './services/notificat
 // PWA fix: Clear service worker cache on app start if needed (iOS and Desktop)
 const isPWA = window.navigator.standalone || 
               window.matchMedia('(display-mode: standalone)').matches;
+const isIOSPWA = window.navigator.standalone;
 
 if (isPWA && 'caches' in window) {
   // Check if we need to clear stale caches
   const cacheVersion = localStorage.getItem('sw-cache-version');
-  const currentVersion = '2.1'; // Increment when making breaking changes
+  const currentVersion = '2.2'; // Increment when making breaking changes
   
-  if (cacheVersion !== currentVersion) {
+  // More aggressive cache clearing for iOS
+  if (cacheVersion !== currentVersion || isIOSPWA) {
     caches.keys().then((cacheNames) => {
+      const deletePromises = [];
       cacheNames.forEach((cacheName) => {
-        if (cacheName.includes('workbox') || cacheName.includes('static')) {
-          caches.delete(cacheName).then(() => {
-            console.log('Cleared stale cache:', cacheName);
+        // For iOS, clear ALL caches, not just workbox/static
+        if (isIOSPWA || cacheName.includes('workbox') || cacheName.includes('static') || cacheName.includes('images')) {
+          deletePromises.push(
+            caches.delete(cacheName).then(() => {
+              console.log('Cleared cache:', cacheName);
+            })
+          );
+        }
+      });
+      
+      Promise.all(deletePromises).then(() => {
+        localStorage.setItem('sw-cache-version', currentVersion);
+        
+        // For iOS, also unregister and re-register service worker
+        if (isIOSPWA && 'serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((registration) => {
+              registration.unregister().then(() => {
+                console.log('Unregistered old service worker for iOS');
+                // Service worker will be re-registered by registerSW below
+              });
+            });
           });
         }
       });
-      localStorage.setItem('sw-cache-version', currentVersion);
     });
   }
 }
@@ -70,8 +91,13 @@ const updateSW = registerSW({
   onRegistered(registration) {
     console.log('SW Registered: ', registration);
     
-    // Check for updates less frequently to avoid iOS crashes
-    // Only check when app becomes visible, not on interval
+    // For iOS, force immediate update check
+    if (registration && isIOSPWA) {
+      // Force update immediately on iOS
+      registration.update().catch(() => {});
+    }
+    
+    // Check for updates when app becomes visible
     if (registration) {
       let updateCheckInProgress = false;
       
@@ -87,6 +113,20 @@ const updateSW = registerSW({
             });
         }
       });
+      
+      // For iOS, also check periodically (but less frequently)
+      if (isIOSPWA) {
+        setInterval(() => {
+          if (!document.hidden && !updateCheckInProgress) {
+            updateCheckInProgress = true;
+            registration.update()
+              .catch(() => {})
+              .finally(() => {
+                updateCheckInProgress = false;
+              });
+          }
+        }, 5 * 60 * 1000); // Every 5 minutes for iOS
+      }
     }
   },
   onRegisterError(error) {
