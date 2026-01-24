@@ -56,15 +56,6 @@ const NotificationPrompt = () => {
       return;
     }
 
-    // Don't show on Welcome page - it blocks the login form
-    // Only show after user is logged in or on other pages
-    if (location.pathname === '/welcome') {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:57',message:'On Welcome page, not showing prompt to avoid blocking login',data:{pathname:location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      return;
-    }
-
     // Show the prompt - this is the first time
     // Add a small delay to ensure page is fully loaded
     const timer = setTimeout(() => {
@@ -82,7 +73,7 @@ const NotificationPrompt = () => {
     }, 500); // Small delay to let page render first
 
     return () => clearTimeout(timer);
-  }, [user, location.pathname]); // Depend on user and location
+  }, [user]); // Only depend on user
 
   const handleAllow = async () => {
     // #region agent log
@@ -195,6 +186,11 @@ const NotificationPrompt = () => {
   fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:186',message:'Component render: showPrompt is true, rendering modal',data:{showPrompt,userPermission:user?.notificationPermission,isLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
   // #endregion
 
+  // Ensure overlay is completely removed when not showing
+  if (!showPrompt) {
+    return null;
+  }
+
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
@@ -278,6 +274,9 @@ const styles = {
     padding: 'var(--spacing-lg)',
     animation: 'fadeIn 0.3s ease-out',
     pointerEvents: 'auto', // Ensure overlay can receive clicks
+  },
+  overlayHidden: {
+    display: 'none', // Completely hide when not showing
   },
   modal: {
     background: 'var(--bg-primary)',
