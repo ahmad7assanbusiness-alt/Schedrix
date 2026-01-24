@@ -1,51 +1,88 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Simple PNG generator - creates a minimal valid PNG with a colored square
-// This creates a 192x192 and 512x512 PNG with a gradient background matching the app theme
-
-function createPNGIcon(size, filename) {
-  // Create a simple PNG using base64 encoded minimal PNG data
-  // This is a valid PNG with a solid color (primary blue: #6366f1)
-  
-  // Minimal PNG structure for a solid color image
-  // PNG signature + IHDR + IDAT + IEND
-  const pngHeader = Buffer.from([
-    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-  ]);
-
-  // For a simple solution, we'll create a minimal valid PNG
-  // Using a library would be better, but for now we'll create a basic one
-  
-  // Actually, let's use a different approach - create a data URI style PNG
-  // Or better yet, let's just create a simple script that the user can run
-  // to generate proper icons using an online tool or ImageMagick if available
-  
-  console.log(`Creating ${size}x${size} icon: ${filename}`);
-  
-  // For now, we'll create a placeholder that indicates icons need to be generated
-  // The user should replace these with actual icons
-  const placeholderText = `This is a placeholder icon file.\nReplace with actual ${size}x${size} PNG icon.\nYou can generate icons at: https://realfavicongenerator.net/ or use any image editor.`;
-  
-  fs.writeFileSync(filename, placeholderText);
-  console.log(`Created placeholder: ${filename}`);
-  console.log(`⚠️  Please replace this with an actual ${size}x${size} PNG icon`);
+/**
+ * Generate a proper PNG icon with Opticore branding
+ * Creates a gradient background with "O" logo
+ */
+function generateIconSVG(size) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="${size}" height="${size}" rx="${size * 0.2}" fill="url(#grad)"/>
+  <text 
+    x="50%" 
+    y="50%" 
+    font-family="Arial, sans-serif" 
+    font-size="${size * 0.5}" 
+    font-weight="bold" 
+    fill="white" 
+    text-anchor="middle" 
+    dominant-baseline="central"
+    letter-spacing="-0.05em"
+  >O</text>
+</svg>`;
 }
 
-// Generate icons
+/**
+ * Create PNG icon from SVG
+ */
+async function createIcon(size, filename) {
+  try {
+    const svg = generateIconSVG(size);
+    const svgBuffer = Buffer.from(svg);
+    
+    // Convert SVG to PNG using sharp
+    await sharp(svgBuffer)
+      .resize(size, size)
+      .png()
+      .toFile(filename);
+    
+    console.log(`✅ Created PNG icon: ${filename} (${size}x${size})`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Error creating ${filename}:`, error.message);
+    return false;
+  }
+}
+
+// Generate all required icon sizes
 const publicDir = path.join(__dirname, '..', 'public');
-const icon192 = path.join(publicDir, 'pwa-192.png');
-const icon512 = path.join(publicDir, 'pwa-512.png');
 
-createPNGIcon(192, icon192);
-createPNGIcon(512, icon512);
+console.log('🎨 Generating Opticore PWA icons...\n');
 
-console.log('\n✅ Placeholder icons created!');
-console.log('📝 Next steps:');
-console.log('   1. Replace pwa-192.png with a 192x192 PNG icon');
-console.log('   2. Replace pwa-512.png with a 512x512 PNG icon');
-console.log('   3. You can use https://realfavicongenerator.net/ to generate icons from a logo');
+async function generateAllIcons() {
+  const icons = [
+    { size: 192, name: 'pwa-192.png' },
+    { size: 512, name: 'pwa-512.png' },
+    // iOS specific sizes
+    { size: 180, name: 'apple-touch-icon-180.png' },
+    { size: 167, name: 'apple-touch-icon-167.png' },
+    { size: 152, name: 'apple-touch-icon-152.png' },
+    { size: 120, name: 'apple-touch-icon-120.png' },
+  ];
+
+  const results = await Promise.all(
+    icons.map(icon => createIcon(icon.size, path.join(publicDir, icon.name)))
+  );
+
+  const successCount = results.filter(r => r).length;
+  
+  console.log(`\n✅ Successfully generated ${successCount}/${icons.length} icons!`);
+  console.log('\n📱 Icons are ready for PWA installation on:');
+  console.log('   - iPhone/iPad (iOS)');
+  console.log('   - Android devices');
+  console.log('   - Desktop browsers');
+}
+
+generateAllIcons().catch(console.error);

@@ -68,7 +68,15 @@ export default defineConfig({
           }
         ]
       },
-      includeAssets: ['pwa-192.png', 'pwa-512.png', 'sw-push.js']
+      includeAssets: [
+        'pwa-192.png', 
+        'pwa-512.png', 
+        'apple-touch-icon-180.png',
+        'apple-touch-icon-167.png',
+        'apple-touch-icon-152.png',
+        'apple-touch-icon-120.png',
+        'sw-push.js'
+      ]
     })
   ]
 });
