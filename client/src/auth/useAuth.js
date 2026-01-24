@@ -7,26 +7,51 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // iOS PWA fix: Ensure localStorage is accessible
+    const isIOSPWA = window.navigator.standalone;
+    
     // Try to restore user from localStorage first (for faster initial load)
-    const savedUser = localStorage.getItem("user");
-    const savedBusiness = localStorage.getItem("business");
+    let savedUser = null;
+    let savedBusiness = null;
+    let token = null;
+    
+    try {
+      savedUser = localStorage.getItem("user");
+      savedBusiness = localStorage.getItem("business");
+      token = api.getToken();
+    } catch (e) {
+      console.error("localStorage access error:", e);
+      // If localStorage fails, clear everything and start fresh
+      setLoading(false);
+      return;
+    }
     
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
         if (savedBusiness) {
           setBusiness(JSON.parse(savedBusiness));
         }
       } catch (e) {
         console.error("Failed to parse saved user:", e);
+        // Clear corrupted data
+        localStorage.removeItem("user");
+        localStorage.removeItem("business");
       }
     }
     
-    // Then verify with server
-    const token = api.getToken();
+    // Then verify with server if we have a token
     if (token) {
       loadUser();
     } else {
+      // No token - clear any stale user data
+      if (savedUser) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("business");
+        setUser(null);
+        setBusiness(null);
+      }
       setLoading(false);
     }
   }, []);
@@ -36,20 +61,40 @@ export function useAuth() {
       const { user, business } = await api.get("/auth/me");
       setUser(user);
       setBusiness(business);
-      // Update localStorage with fresh data
+      // Update localStorage with fresh data (with retry for iOS)
       if (user) {
-        localStorage.setItem("user", JSON.stringify(user));
+        try {
+          localStorage.setItem("user", JSON.stringify(user));
+        } catch (e) {
+          console.error("Failed to save user to localStorage:", e);
+        }
       }
       if (business) {
-        localStorage.setItem("business", JSON.stringify(business));
+        try {
+          localStorage.setItem("business", JSON.stringify(business));
+        } catch (e) {
+          console.error("Failed to save business to localStorage:", e);
+        }
       }
     } catch (error) {
-      api.setToken(null);
-      setUser(null);
-      setBusiness(null);
-      // Clear localStorage on error
-      localStorage.removeItem("user");
-      localStorage.removeItem("business");
+      console.error("Failed to load user:", error);
+      // Only clear if it's an auth error, not network error
+      if (error.message === "Unauthorized" || error.response?.status === 401) {
+        api.setToken(null);
+        setUser(null);
+        setBusiness(null);
+        // Clear localStorage on auth error
+        try {
+          localStorage.removeItem("user");
+          localStorage.removeItem("business");
+          localStorage.removeItem("token");
+        } catch (e) {
+          console.error("Failed to clear localStorage:", e);
+        }
+      } else {
+        // Network error - keep existing user data but mark as potentially stale
+        console.warn("Network error loading user, keeping cached data");
+      }
     } finally {
       setLoading(false);
     }

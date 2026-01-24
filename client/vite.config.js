@@ -14,21 +14,22 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/auth\//, /^\/manifest\.webmanifest$/],
         cleanupOutdatedCaches: true,
+        // Don't cache HTML files - always fetch fresh
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
+            handler: 'NetworkFirst', // Changed to NetworkFirst for better updates
             options: {
               cacheName: 'google-apis-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
+                maxAgeSeconds: 60 * 60 * 24, // Reduced to 1 day
               },
             },
           },
           {
             urlPattern: /\/api\/.*/i,
-            handler: 'NetworkOnly',
+            handler: 'NetworkOnly', // Never cache API calls
           },
           {
             urlPattern: /\.(png|jpg|jpeg|svg|gif)$/i,
@@ -37,7 +38,19 @@ export default defineConfig({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // Reduced to 7 days
+              },
+            },
+          },
+          {
+            // Don't cache HTML - always fetch fresh for iOS
+            urlPattern: /\.(html|js|css)$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'static-resources',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60, // 1 hour max
               },
             },
           },

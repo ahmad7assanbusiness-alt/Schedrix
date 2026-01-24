@@ -23,10 +23,25 @@ function getToken() {
 }
 
 function setToken(token) {
-  if (token) {
-    localStorage.setItem("token", token);
-  } else {
-    localStorage.removeItem("token");
+  try {
+    if (token) {
+      localStorage.setItem("token", token);
+      // Force sync for iOS
+      if (window.navigator.standalone) {
+        // iOS PWA - ensure token is persisted
+        setTimeout(() => {
+          const saved = localStorage.getItem("token");
+          if (saved !== token) {
+            console.warn("Token not persisted, retrying...");
+            localStorage.setItem("token", token);
+          }
+        }, 100);
+      }
+    } else {
+      localStorage.removeItem("token");
+    }
+  } catch (e) {
+    console.error("Failed to set token in localStorage:", e);
   }
 }
 
