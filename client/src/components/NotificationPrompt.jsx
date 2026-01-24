@@ -186,15 +186,6 @@ const NotificationPrompt = () => {
   if (!showPrompt) {
     return null;
   }
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:186',message:'Component render: showPrompt is true, rendering modal',data:{showPrompt,userPermission:user?.notificationPermission,isLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
-
-  // Ensure overlay is completely removed when not showing
-  if (!showPrompt) {
-    return null;
-  }
 
   return (
     <div style={styles.overlay}>
