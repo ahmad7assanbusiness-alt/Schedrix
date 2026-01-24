@@ -113,6 +113,9 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "var(--spacing-lg)",
+    position: "relative",
+    zIndex: 10, // Ensure forms are above any overlays
+    pointerEvents: "auto", // Ensure forms are interactive
   },
   inputGroup: {
     display: "flex",
@@ -152,11 +155,15 @@ const styles = {
     color: "white",
     boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
     marginTop: "var(--spacing-md)",
+    pointerEvents: "auto", // Ensure buttons are clickable
+    position: "relative",
+    zIndex: 10, // Ensure buttons are above any overlays
   },
   buttonDisabled: {
     opacity: 0.6,
     cursor: "not-allowed",
     transform: "none",
+    pointerEvents: "none", // Disable clicks when disabled
   },
   error: {
     padding: "var(--spacing-md)",
