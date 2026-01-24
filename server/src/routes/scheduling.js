@@ -654,6 +654,20 @@ router.post("/:id/publish", authMiddleware, managerOnly, async (req, res) => {
       return res.status(403).json({ error: "Not part of a business" });
     }
 
+    // Check current status before updating
+    const currentSchedule = await prisma.scheduleWeek.findFirst({
+      where: {
+        id: req.params.id,
+        businessId: req.user.businessId,
+      },
+    });
+
+    if (!currentSchedule) {
+      return res.status(404).json({ error: "Schedule not found" });
+    }
+
+    const wasPreviouslyPublished = currentSchedule.status === "PUBLISHED";
+
     const schedule = await prisma.scheduleWeek.updateMany({
       where: {
         id: req.params.id,
@@ -669,6 +683,51 @@ router.post("/:id/publish", authMiddleware, managerOnly, async (req, res) => {
     const updated = await prisma.scheduleWeek.findUnique({
       where: { id: req.params.id },
     });
+
+    // Send notifications to all employees
+    const { sendNotificationToBusinessEmployees } = await import("./notifications.js");
+    const startDate = new Date(updated.startDate).toLocaleDateString();
+    const endDate = new Date(updated.endDate).toLocaleDateString();
+    
+    if (wasPreviouslyPublished) {
+      // Republish notification
+      await sendNotificationToBusinessEmployees(
+        req.user.businessId,
+        {
+          title: "Schedule Republished",
+          body: `The schedule for ${startDate} - ${endDate} has been updated and republished`,
+          icon: "/pwa-192.png",
+          badge: "/pwa-192.png",
+          tag: "schedule-republished",
+          data: {
+            url: "/employee/schedule/my",
+            type: "schedule_republished",
+            scheduleId: updated.id,
+          },
+          requireInteraction: false,
+        },
+        req.user.id
+      );
+    } else {
+      // First publish notification
+      await sendNotificationToBusinessEmployees(
+        req.user.businessId,
+        {
+          title: "Schedule Published",
+          body: `Your schedule for ${startDate} - ${endDate} has been published`,
+          icon: "/pwa-192.png",
+          badge: "/pwa-192.png",
+          tag: "schedule-published",
+          data: {
+            url: "/employee/schedule/my",
+            type: "schedule_published",
+            scheduleId: updated.id,
+          },
+          requireInteraction: false,
+        },
+        req.user.id
+      );
+    }
 
     res.json(updated);
   } catch (error) {
@@ -700,6 +759,29 @@ router.post("/:id/unpublish", authMiddleware, managerOnly, async (req, res) => {
     const updated = await prisma.scheduleWeek.findUnique({
       where: { id: req.params.id },
     });
+
+    // Send notifications to all employees about schedule being redacted
+    const { sendNotificationToBusinessEmployees } = await import("./notifications.js");
+    const startDate = new Date(updated.startDate).toLocaleDateString();
+    const endDate = new Date(updated.endDate).toLocaleDateString();
+    
+    await sendNotificationToBusinessEmployees(
+      req.user.businessId,
+      {
+        title: "Schedule Redacted",
+        body: `The schedule for ${startDate} - ${endDate} has been redacted and is being updated`,
+        icon: "/pwa-192.png",
+        badge: "/pwa-192.png",
+        tag: "schedule-redacted",
+        data: {
+          url: "/employee/schedule/my",
+          type: "schedule_redacted",
+          scheduleId: updated.id,
+        },
+        requireInteraction: false,
+      },
+      req.user.id
+    );
 
     res.json(updated);
   } catch (error) {

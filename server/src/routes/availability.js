@@ -171,6 +171,29 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
       return { request, schedule, recurringRequests };
     });
 
+    // Send notifications to all employees
+    const { sendNotificationToBusinessEmployees } = await import("./notifications.js");
+    const startDateFormatted = new Date(startDate).toLocaleDateString();
+    const endDateFormatted = new Date(endDate).toLocaleDateString();
+    
+    await sendNotificationToBusinessEmployees(
+      req.user.businessId,
+      {
+        title: "New Availability Request",
+        body: `Please submit your availability for ${startDateFormatted} - ${endDateFormatted}`,
+        icon: "/pwa-192.png",
+        badge: "/pwa-192.png",
+        tag: "availability-request",
+        data: {
+          url: "/employee/availability/submit",
+          type: "availability_request",
+          requestId: result.request.id,
+        },
+        requireInteraction: false,
+      },
+      req.user.id
+    );
+
     // Return request with schedule info
     res.json({
       ...result.request,

@@ -136,6 +136,7 @@ app.use("/availability-requests", availabilityRoutes);
 app.use("/schedules", schedulingRoutes);
 app.use("/templates", templatesRoutes);
 app.use("/billing", billingRoutes);
+app.use("/notifications", notificationsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

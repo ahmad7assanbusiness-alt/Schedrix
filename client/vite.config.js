@@ -8,6 +8,13 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       devOptions: { enabled: true },
+      workbox: {
+        // Include push notification handler
+        importScripts: ['/sw-push.js'],
+        // Handle navigation requests
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\/.*/, /^\/auth\/.*/],
+      },
       manifest: {
         name: "Opticore - Schedule Manager",
         short_name: "Opticore",
@@ -33,7 +40,7 @@ export default defineConfig({
           }
         ]
       },
-      includeAssets: ['pwa-192.png', 'pwa-512.png']
+      includeAssets: ['pwa-192.png', 'pwa-512.png', 'sw-push.js']
     })
   ]
 });

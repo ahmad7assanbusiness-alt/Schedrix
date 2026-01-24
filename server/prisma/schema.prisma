@@ -63,6 +63,7 @@ model User {
   assignments          ShiftAssignment[]
   calendarIntegrations CalendarIntegration[]
   templateAssignments  TemplateEmployeeAssignment[]
+  pushSubscriptions   PushSubscription[]
 }
 
 model AvailabilityRequest {
@@ -169,4 +170,16 @@ model TemplateEmployeeAssignment {
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, userId])
+}
+
+model PushSubscription {
+  id       String   @id @default(cuid())
+  userId   String
+  endpoint String
+  keys     Json // {p256dh: string, auth: string}
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
 }
