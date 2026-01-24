@@ -156,25 +156,71 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-// Check for app updates
+// Check for app updates with aggressive update strategy
 export async function checkForAppUpdate() {
   try {
-    const registration = await navigator.serviceWorker.ready;
-    
-    // Check for updates
-    await registration.update();
-    
-    // Listen for new service worker
-    registration.addEventListener("updatefound", () => {
-      const newWorker = registration.installing;
-      
-      newWorker.addEventListener("statechange", () => {
-        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-          // New service worker available
-          showUpdateNotification();
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        // Force update check
+        await registration.update();
+        
+        // Check if there's a waiting service worker
+        if (registration.waiting) {
+          console.log("New service worker waiting, activating...");
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
-      });
-    });
+        
+        // Listen for controlling service worker changes
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            console.log("Controller changed, reloading...");
+            window.location.reload();
+          }
+        });
+        
+        // Listen for new service worker
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              // For PWAs, force immediate update
+              if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+                console.log("PWA mode detected, forcing immediate update...");
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              } else {
+                // Show update notification for browser users
+                showUpdateNotification();
+              }
+            }
+          });
+        });
+      }
+    }
+    
+    // Additional version check via build timestamp
+    try {
+      const response = await fetch('/manifest.webmanifest?t=' + Date.now());
+      if (response.ok) {
+        const manifest = await response.json();
+        const currentVersion = localStorage.getItem('app-build-time');
+        const newVersion = response.headers.get('last-modified') || Date.now().toString();
+        
+        if (currentVersion && currentVersion !== newVersion) {
+          console.log("Build version mismatch detected, forcing reload...");
+          localStorage.setItem('app-build-time', newVersion);
+          window.location.reload();
+        } else if (!currentVersion) {
+          localStorage.setItem('app-build-time', newVersion);
+        }
+      }
+    } catch (err) {
+      // Build version check failed, ignore
+      console.log("Build version check failed:", err.message);
+    }
   } catch (error) {
     console.error("Error checking for app update:", error);
   }
