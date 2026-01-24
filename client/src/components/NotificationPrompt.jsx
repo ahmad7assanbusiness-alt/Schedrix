@@ -220,49 +220,30 @@ const NotificationPrompt = () => {
 
   const handleDeny = async () => {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:175',message:'handleDeny called',data:{currentShowPrompt:showPrompt,userPermission:user?.notificationPermission,hasHandledPrompt:hasHandledPrompt.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B,D'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:115',message:'handleDeny called',data:{currentShowPrompt:showPrompt,hasHandledPrompt:hasHandledPrompt.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'B,D'})}).catch(()=>{});
     // #endregion
     setIsLoading(true);
     // Mark as handled immediately to prevent re-showing
     hasHandledPrompt.current = true;
+    // Mark as shown in localStorage so it never shows again
+    localStorage.setItem('opticore_notification_prompt_shown', 'true');
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:179',message:'Set hasHandledPrompt to true in handleDeny',data:{hasHandledPrompt:hasHandledPrompt.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A,C'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:121',message:'Set hasHandledPrompt and localStorage flag in handleDeny',data:{hasHandledPrompt:hasHandledPrompt.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'A,C'})}).catch(()=>{});
     // #endregion
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:182',message:'Calling setShowPrompt(false) in handleDeny',data:{currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:124',message:'Calling setShowPrompt(false) in handleDeny',data:{currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'B'})}).catch(()=>{});
     // #endregion
     setShowPrompt(false); // Hide immediately
     
+    // Update user in database (optional - for tracking)
     try {
-      // Update user in database - mark as denied and prompted
       await api.post('/notifications/permission', {
         permission: 'denied',
-        prompted: true // Mark as prompted so we don't ask again
-      });
-      
-      // Update user state
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:155',message:'Calling updateUser with denied in handleDeny',data:{beforePermission:user?.notificationPermission,afterPermission:'denied',currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
-      // #endregion
-      updateUser({
-        ...user,
-        notificationPermission: 'denied',
-        notificationPrompted: true
+        prompted: true
       });
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:162',message:'Error in handleDeny catch block',data:{error:error.message,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       console.error('Error updating notification permission:', error);
-      // Update state even if API fails
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:166',message:'Calling updateUser in catch',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
-      // #endregion
-      updateUser({
-        ...user,
-        notificationPermission: 'denied',
-        notificationPrompted: true
-      });
+      // Continue even if API fails
     } finally {
       setIsLoading(false);
     }
