@@ -33,15 +33,18 @@ if (isPWA && 'caches' in window) {
       
       Promise.all(deletePromises).then(() => {
         localStorage.setItem('sw-cache-version', currentVersion);
+        console.log('Cache cleared, version updated to', currentVersion);
         
-        // For iOS, also unregister and re-register service worker
+        // For iOS, force service worker update (but don't unregister - that breaks the app)
         if (isIOSPWA && 'serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then((registrations) => {
             registrations.forEach((registration) => {
-              registration.unregister().then(() => {
-                console.log('Unregistered old service worker for iOS');
-                // Service worker will be re-registered by registerSW below
-              });
+              // Force update instead of unregister
+              registration.update().catch(() => {});
+              // If there's a waiting worker, activate it
+              if (registration.waiting) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
             });
           });
         }
