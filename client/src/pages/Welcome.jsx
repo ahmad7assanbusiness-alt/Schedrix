@@ -43,6 +43,7 @@ const styles = {
     width: "100%",
     maxHeight: "calc(100vh - 120px)",
     overflow: "auto",
+    zIndex: 1, // Ensure card is above any potential overlays
   },
   header: {
     textAlign: "center",
