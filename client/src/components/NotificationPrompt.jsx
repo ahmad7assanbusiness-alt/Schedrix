@@ -26,8 +26,17 @@ const NotificationPrompt = () => {
     };
 
     if (shouldShowPrompt()) {
-      // Small delay to let the page load
-      setTimeout(() => setShowPrompt(true), 2000);
+      // Longer delay for iOS to ensure app is fully loaded
+      const delay = window.navigator.standalone ? 3000 : 2000;
+      const timeoutId = setTimeout(() => {
+        try {
+          setShowPrompt(true);
+        } catch (error) {
+          console.error('Error showing notification prompt:', error);
+        }
+      }, delay);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [user]);
 
