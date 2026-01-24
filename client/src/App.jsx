@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "./auth/useAuth.js";
+import { api } from "./api/client.js";
 import InstallPrompt from "./components/InstallPrompt.jsx";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import Welcome from "./pages/Welcome.jsx";
@@ -149,7 +150,6 @@ function GoogleCallback() {
   useEffect(() => {
     const token = searchParams.get("token");
     const error = searchParams.get("error");
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
     console.log("[DEBUG] GoogleCallback - token:", token ? "present" : "missing", "error:", error);
 
@@ -160,59 +160,66 @@ function GoogleCallback() {
     }
 
     if (token) {
-      console.log("[DEBUG] GoogleCallback - fetching /auth/me with token");
-      // Save token immediately for mobile Safari
-      localStorage.setItem("token", token);
+      console.log("[DEBUG] GoogleCallback - processing token");
+      // Save token immediately
+      api.setToken(token);
       
-      // Get user info with the token
-      fetch(`${apiUrl}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((res) => {
-          console.log("[DEBUG] GoogleCallback - /auth/me response:", res.status, res.statusText);
-          if (!res.ok) {
-            return res.json().then(err => {
-              console.error("[DEBUG] GoogleCallback - /auth/me error:", err);
-              throw new Error(err.error || "Failed to authenticate");
-            });
-          }
-          return res.json();
-        })
-        .then((data) => {
-          console.log("[DEBUG] GoogleCallback - /auth/me data:", data);
-          if (data.user) {
-            // Save everything to localStorage first
-            localStorage.setItem("token", token);
-            localStorage.setItem("user", JSON.stringify(data.user));
-            if (data.business) {
-              localStorage.setItem("business", JSON.stringify(data.business));
+      // Retry logic for network failures
+      const fetchUserWithRetry = async (retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            console.log(`[DEBUG] GoogleCallback - fetching /auth/me (attempt ${i + 1}/${retries})`);
+            const data = await api.get("/auth/me");
+            
+            console.log("[DEBUG] GoogleCallback - /auth/me data:", data);
+            if (data.user) {
+              // Save everything to localStorage
+              localStorage.setItem("token", token);
+              localStorage.setItem("user", JSON.stringify(data.user));
+              if (data.business) {
+                localStorage.setItem("business", JSON.stringify(data.business));
+              }
+              
+              // Update auth state
+              login(token, data.user, data.business);
+              
+              // Determine redirect path
+              const isManager = data.user.role === "OWNER" || data.user.role === "MANAGER";
+              const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
+              
+              // Use window.location.href for mobile Safari - force full page reload
+              setTimeout(() => {
+                window.location.href = redirectPath;
+              }, 300);
+              return; // Success, exit retry loop
+            } else {
+              throw new Error("No user in response");
+            }
+          } catch (err) {
+            console.error(`[DEBUG] GoogleCallback - attempt ${i + 1} failed:`, err);
+            
+            // If it's the last retry, give up
+            if (i === retries - 1) {
+              console.error("[DEBUG] GoogleCallback - all retries failed");
+              // Clear token on error
+              api.setToken(null);
+              localStorage.removeItem("token");
+              
+              // Show better error message
+              const errorMsg = err.message?.includes("Cannot connect") 
+                ? "network_error" 
+                : "auth_failed";
+              window.location.href = `/welcome?error=${errorMsg}`;
+              return;
             }
             
-            // Update auth state
-            login(token, data.user, data.business);
-            
-            // Determine redirect path
-            const isManager = data.user.role === "OWNER" || data.user.role === "MANAGER";
-            const redirectPath = isManager ? "/dashboard" : "/employee/dashboard";
-            
-            // Use window.location.href for mobile Safari - force full page reload
-            // Longer delay for mobile browsers to ensure localStorage persistence
-            setTimeout(() => {
-              window.location.href = redirectPath;
-            }, 500); // Increased delay for mobile
-          } else {
-            console.error("[DEBUG] GoogleCallback - no user in response:", data);
-            window.location.href = "/welcome?error=auth_failed";
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
           }
-        })
-        .catch((err) => {
-          console.error("[DEBUG] GoogleCallback - fetch error:", err);
-          // Clear token on error
-          localStorage.removeItem("token");
-          window.location.href = "/welcome?error=auth_failed";
-        });
+        }
+      };
+      
+      fetchUserWithRetry();
     } else {
       console.error("[DEBUG] GoogleCallback - no token in URL");
       window.location.href = "/welcome?error=no_token";
