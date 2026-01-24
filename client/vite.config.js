@@ -33,18 +33,35 @@ export default defineConfig({
             },
           },
           {
+            // Match /api/ paths (relative API calls)
             urlPattern: /\/api\/.*/i,
-            handler: 'NetworkOnly', // Never cache API calls
+            handler: 'NetworkFirst', // Network first, but don't cache
             options: {
+              cacheName: 'api-cache',
               networkTimeoutSeconds: 10, // Timeout after 10 seconds
+              expiration: {
+                maxEntries: 0, // Don't cache any API responses
+                maxAgeSeconds: 0, // No cache
+              },
+              cacheableResponse: {
+                statuses: [], // Don't cache any responses
+              },
             },
           },
           {
-            // Don't cache any external API calls
-            urlPattern: /^https:\/\/.*\/api\/.*/i,
-            handler: 'NetworkOnly',
+            // Match external HTTPS URLs (API server calls) - don't cache
+            urlPattern: /^https:\/\/.*\.run\.app\/.*/i,
+            handler: 'NetworkFirst',
             options: {
+              cacheName: 'external-api-cache',
               networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 0,
+                maxAgeSeconds: 0,
+              },
+              cacheableResponse: {
+                statuses: [],
+              },
             },
           },
           {
