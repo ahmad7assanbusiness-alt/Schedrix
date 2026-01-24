@@ -1,0 +1,139 @@
+import express from "express";
+import webpush from "web-push";
+import prisma from "../prisma.js";
+import { authMiddleware } from "../middleware/auth.js";
+
+const router = express.Router();
+
+// Configure VAPID keys
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:admin@opticore.ca";
+
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+} else {
+  console.warn("VAPID keys not configured. Push notifications will not work.");
+}
+
+// POST /notifications/subscribe - Subscribe user to push notifications
+router.post("/subscribe", authMiddleware, async (req, res) => {
+  try {
+    const subscription = req.body;
+
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: "Invalid subscription" });
+    }
+
+    // Save or update subscription
+    await prisma.pushSubscription.upsert({
+      where: {
+        userId_endpoint: {
+          userId: req.user.id,
+          endpoint: subscription.endpoint,
+        },
+      },
+      create: {
+        userId: req.user.id,
+        endpoint: subscription.endpoint,
+        keys: subscription.keys,
+      },
+      update: {
+        keys: subscription.keys,
+      },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Subscribe error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /notifications/unsubscribe - Unsubscribe user from push notifications
+router.post("/unsubscribe", authMiddleware, async (req, res) => {
+  try {
+    const subscription = req.body;
+
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: "Invalid subscription" });
+    }
+
+    await prisma.pushSubscription.deleteMany({
+      where: {
+        userId: req.user.id,
+        endpoint: subscription.endpoint,
+      },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Unsubscribe error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Helper function to send notification to user
+export async function sendNotificationToUser(userId, notification) {
+  try {
+    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+      console.warn("VAPID keys not configured, skipping notification");
+      return;
+    }
+
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { userId },
+    });
+
+    const promises = subscriptions.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: sub.keys,
+          },
+          JSON.stringify(notification)
+        );
+      } catch (error) {
+        console.error(`Error sending notification to ${sub.endpoint}:`, error);
+        // If subscription is invalid, remove it
+        if (error.statusCode === 410 || error.statusCode === 404) {
+          await prisma.pushSubscription.delete({
+            where: { id: sub.id },
+          });
+        }
+      }
+    });
+
+    await Promise.allSettled(promises);
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+}
+
+// Helper function to send notification to all employees in a business
+export async function sendNotificationToBusinessEmployees(
+  businessId,
+  notification,
+  excludeUserId = null
+) {
+  try {
+    const employees = await prisma.user.findMany({
+      where: {
+        businessId,
+        role: "EMPLOYEE",
+        ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+      },
+    });
+
+    const promises = employees.map((employee) =>
+      sendNotificationToUser(employee.id, notification)
+    );
+
+    await Promise.allSettled(promises);
+  } catch (error) {
+    console.error("Error sending notification to business employees:", error);
+  }
+}
+
+export default router;
