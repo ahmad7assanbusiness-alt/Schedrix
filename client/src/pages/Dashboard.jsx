@@ -188,13 +188,13 @@ export default function Dashboard() {
 
   const employeeCards = [
     {
-      to: "/availability/submit",
+      to: "/employee/availability/submit",
       icon: "✏️",
       title: "Submit Availability",
       description: "Let your manager know when you're available",
     },
     {
-      to: "/schedule/my",
+      to: "/employee/schedule/my",
       icon: "👤",
       title: "My Schedule",
       description: "View your personal schedule or the full team schedule",
