@@ -55,12 +55,10 @@ const styles = {
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     marginBottom: "var(--spacing-sm)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
     lineHeight: 1.1,
     letterSpacing: "0.05em",
     textAlign: "center",
+    margin: "0 0 var(--spacing-sm) 0",
   },
   logoLetter: {
     display: "block",
