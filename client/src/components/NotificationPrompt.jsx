@@ -8,7 +8,19 @@ const NotificationPrompt = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user, updateUser } = useAuth();
 
+  // Check if app is installed as PWA
+  const isInstalledPWA = () => {
+    return window.navigator.standalone || 
+           window.matchMedia('(display-mode: standalone)').matches ||
+           window.matchMedia('(display-mode: fullscreen)').matches;
+  };
+
   useEffect(() => {
+    // Only show prompt for installed PWAs, not browsers
+    if (!isInstalledPWA()) {
+      return;
+    }
+
     // Check if we should show the prompt
     const shouldShowPrompt = () => {
       if (!user) return false;

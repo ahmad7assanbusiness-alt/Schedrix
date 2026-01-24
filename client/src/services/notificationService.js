@@ -115,8 +115,18 @@ export async function isSubscribed() {
 // Initialize notifications (call on app load)
 export async function initializeNotifications() {
   try {
+    // Only initialize for installed PWAs
+    const isInstalledPWA = window.navigator.standalone || 
+                           window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (!isInstalledPWA) {
+      console.log("Not an installed PWA - skipping notification initialization");
+      return false;
+    }
+
     // Check if service worker is supported
     if (!("serviceWorker" in navigator)) {
+      console.warn("Service Worker not supported");
       return false;
     }
 

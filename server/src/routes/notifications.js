@@ -109,12 +109,26 @@ export async function sendNotificationToUser(userId, notification) {
 
     const promises = subscriptions.map(async (sub) => {
       try {
+        // Format notification for iOS/Android notification center
+        const pushPayload = {
+          title: notification.title || "Opticore",
+          body: notification.body || "You have a new notification",
+          icon: notification.icon || "/pwa-192.png",
+          badge: notification.badge || "/pwa-192.png",
+          tag: notification.tag || "default",
+          data: notification.data || {},
+          requireInteraction: notification.requireInteraction || false,
+          vibrate: [200, 100, 200], // Vibration pattern for Android
+          silent: false,
+          ...notification
+        };
+
         await webpush.sendNotification(
           {
             endpoint: sub.endpoint,
             keys: sub.keys,
           },
-          JSON.stringify(notification)
+          JSON.stringify(pushPayload)
         );
       } catch (error) {
         console.error(`Error sending notification to ${sub.endpoint}:`, error);
