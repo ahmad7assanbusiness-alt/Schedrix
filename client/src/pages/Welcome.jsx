@@ -564,9 +564,7 @@ export default function Welcome() {
           <div style={styles.card}>
             <div style={styles.header}>
               <h1 style={styles.logo}>
-                {"Opticore".split("").map((letter, index) => (
-                  <span key={index} style={styles.logoLetter}>{letter}</span>
-                ))}
+                Opticore
               </h1>
               <p style={styles.caption}>Scheduling made simple, teams made stronger</p>
             </div>
@@ -613,9 +611,7 @@ export default function Welcome() {
         <div style={styles.card}>
           <div style={styles.header}>
             <h1 style={styles.logo}>
-              {"Opticore".split("").map((letter, index) => (
-                <span key={index} style={styles.logoLetter}>{letter}</span>
-              ))}
+              Opticore
             </h1>
             <p style={styles.subtitle}>
               {mode === "owner-register" || mode === "owner-login"

@@ -96,6 +96,18 @@ self.addEventListener("message", (event) => {
   console.log("Service worker received message:", event.data);
 
   if (event.data && event.data.type === "SKIP_WAITING") {
+    console.log("Received SKIP_WAITING message, activating new service worker");
     self.skipWaiting();
   }
+});
+
+// Force immediate activation and control of clients
+self.addEventListener("install", (event) => {
+  console.log("Service worker installing, skipping waiting...");
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  console.log("Service worker activating, claiming clients...");
+  event.waitUntil(self.clients.claim());
 });
