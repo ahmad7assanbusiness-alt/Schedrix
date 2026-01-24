@@ -70,6 +70,11 @@ export function useAuth() {
     localStorage.removeItem("business");
   }
 
-  return { user, business, loading, login, logout, reload: loadUser };
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
+  return { user, business, loading, login, logout, reload: loadUser, updateUser };
 }
 

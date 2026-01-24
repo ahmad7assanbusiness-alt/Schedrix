@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } 
 import { useEffect } from "react";
 import { useAuth } from "./auth/useAuth.js";
 import InstallPrompt from "./components/InstallPrompt.jsx";
+import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import Welcome from "./pages/Welcome.jsx";
 import CompleteOwnerRegistration from "./pages/CompleteOwnerRegistration.jsx";
 import CompleteEmployeeRegistration from "./pages/CompleteEmployeeRegistration.jsx";
@@ -225,6 +226,7 @@ function App() {
   return (
     <BrowserRouter>
       <InstallPrompt />
+      <NotificationPrompt />
       <Routes>
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
