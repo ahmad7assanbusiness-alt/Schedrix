@@ -320,9 +320,13 @@ function App() {
           path="/schedule/my"
           element={
             <ProtectedRoute>
-              <EmployeeRoute>
-                <Navigate to="/employee/schedule/my" replace />
-              </EmployeeRoute>
+              <OnboardingCheck>
+                <EmployeeRoute>
+                  <EmployeeLayout>
+                    <ScheduleMy />
+                  </EmployeeLayout>
+                </EmployeeRoute>
+              </OnboardingCheck>
             </ProtectedRoute>
           }
         />
