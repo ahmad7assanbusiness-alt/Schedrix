@@ -16,47 +16,98 @@ const NotificationPrompt = () => {
   };
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:18',message:'useEffect triggered',data:{hasUser:!!user,userPermission:user?.notificationPermission,userPrompted:user?.notificationPrompted,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
+    // #endregion
+    
     // Only show prompt for installed PWAs, not browsers
     if (!isInstalledPWA()) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:22',message:'Not installed PWA, returning early',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return;
     }
 
     // Check if we should show the prompt
     const shouldShowPrompt = () => {
-      if (!user) return false;
+      if (!user) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:28',message:'shouldShowPrompt: no user',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        return false;
+      }
       
       // Don't show if user has already granted or denied permission (and was prompted)
-      if (user.notificationPermission === 'granted') return false;
-      if (user.notificationPermission === 'denied' && user.notificationPrompted) return false;
+      if (user.notificationPermission === 'granted') {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:32',message:'shouldShowPrompt: already granted',data:{permission:user.notificationPermission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        return false;
+      }
+      if (user.notificationPermission === 'denied' && user.notificationPrompted) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:35',message:'shouldShowPrompt: already denied and prompted',data:{permission:user.notificationPermission,prompted:user.notificationPrompted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        return false;
+      }
       
       // Show if user has never been prompted (pending) or denied but not prompted yet
       if (user.notificationPermission === 'pending' || 
           (user.notificationPermission === 'denied' && !user.notificationPrompted)) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:39',message:'shouldShowPrompt: returning true',data:{permission:user.notificationPermission,prompted:user.notificationPrompted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C,E'})}).catch(()=>{});
+        // #endregion
         return true;
       }
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:44',message:'shouldShowPrompt: returning false (default)',data:{permission:user.notificationPermission,prompted:user.notificationPrompted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       return false;
     };
 
     if (shouldShowPrompt()) {
       // Show immediately on first PWA open (no delay)
       try {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:50',message:'Calling setShowPrompt(true)',data:{currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
+        // #endregion
         setShowPrompt(true);
       } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:53',message:'Error in setShowPrompt(true)',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         console.error('Error showing notification prompt:', error);
       }
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:57',message:'shouldShowPrompt returned false, not showing',data:{currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
+      // #endregion
     }
-  }, [user]);
+  }, [user, showPrompt]);
 
   const handleAllow = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:65',message:'handleAllow called',data:{currentShowPrompt:showPrompt,userPermission:user?.notificationPermission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,D'})}).catch(()=>{});
+    // #endregion
     setIsLoading(true);
     // Don't hide immediately - wait for system permission response
     
     try {
       // Request notification permission (this shows the system dialog)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:72',message:'Calling requestNotificationPermission',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       const permission = await requestNotificationPermission();
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:75',message:'requestNotificationPermission returned',data:{permission,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,D'})}).catch(()=>{});
+      // #endregion
+      
       // Now hide the modal after we get the system response
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:78',message:'Calling setShowPrompt(false) in handleAllow',data:{permission,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       setShowPrompt(false);
       
       if (permission) {
@@ -80,6 +131,9 @@ const NotificationPrompt = () => {
         }
         
         // Update user state
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:95',message:'Calling updateUser with granted',data:{beforePermission:user?.notificationPermission,afterPermission:'granted',currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
+        // #endregion
         updateUser({
           ...user,
           notificationPermission: 'granted',
@@ -96,6 +150,9 @@ const NotificationPrompt = () => {
           console.error('Error updating permission in database:', apiError);
         }
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:110',message:'Calling updateUser with denied',data:{beforePermission:user?.notificationPermission,afterPermission:'denied',currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
+        // #endregion
         updateUser({
           ...user,
           notificationPermission: 'denied',
@@ -103,8 +160,14 @@ const NotificationPrompt = () => {
         });
       }
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:118',message:'Error in handleAllow catch block',data:{error:error.message,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       console.error('Error handling notification permission:', error);
       // Hide modal even on error
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:121',message:'Calling setShowPrompt(false) in catch block',data:{error:error.message,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,D'})}).catch(()=>{});
+      // #endregion
       setShowPrompt(false);
       
       // Mark as prompted so we don't show again
@@ -133,7 +196,13 @@ const NotificationPrompt = () => {
   };
 
   const handleDeny = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:140',message:'handleDeny called',data:{currentShowPrompt:showPrompt,userPermission:user?.notificationPermission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,D'})}).catch(()=>{});
+    // #endregion
     setIsLoading(true);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:143',message:'Calling setShowPrompt(false) in handleDeny',data:{currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     setShowPrompt(false); // Hide immediately
     
     try {
@@ -144,14 +213,23 @@ const NotificationPrompt = () => {
       });
       
       // Update user state
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:155',message:'Calling updateUser with denied in handleDeny',data:{beforePermission:user?.notificationPermission,afterPermission:'denied',currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
+      // #endregion
       updateUser({
         ...user,
         notificationPermission: 'denied',
         notificationPrompted: true
       });
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:162',message:'Error in handleDeny catch block',data:{error:error.message,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       console.error('Error updating notification permission:', error);
       // Update state even if API fails
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:166',message:'Calling updateUser in catch',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,C'})}).catch(()=>{});
+      // #endregion
       updateUser({
         ...user,
         notificationPermission: 'denied',
@@ -162,7 +240,16 @@ const NotificationPrompt = () => {
     }
   };
 
-  if (!showPrompt) return null;
+  // #region agent log
+  if (!showPrompt) {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:180',message:'Component render: showPrompt is false, returning null',data:{showPrompt,userPermission:user?.notificationPermission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    return null;
+  }
+  // #endregion
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:186',message:'Component render: showPrompt is true, rendering modal',data:{showPrompt,userPermission:user?.notificationPermission,isLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
 
   return (
     <div style={styles.overlay}>
