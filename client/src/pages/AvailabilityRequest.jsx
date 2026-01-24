@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
+import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
 
 const styles = {
@@ -267,6 +268,7 @@ const styles = {
 };
 
 export default function AvailabilityRequest() {
+  const { user } = useAuth();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [frequency, setFrequency] = useState("");
@@ -330,11 +332,18 @@ export default function AvailabilityRequest() {
     }
   }
 
+  // Determine correct dashboard path based on user role
+  const getDashboardPath = () => {
+    if (!user) return "/dashboard";
+    const isManager = user.role === "OWNER" || user.role === "MANAGER";
+    return isManager ? "/dashboard" : "/employee/dashboard";
+  };
+
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <div style={styles.card}>
-          <Link to="/dashboard" style={styles.backLink}>
+          <Link to={getDashboardPath()} style={styles.backLink}>
             ← Back to Dashboard
           </Link>
 

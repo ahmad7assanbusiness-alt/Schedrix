@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
 
 const styles = {
@@ -46,12 +47,21 @@ const styles = {
 };
 
 export default function PageLayout({ title, children, showBack = true }) {
+  const { user } = useAuth();
+  
+  // Determine correct dashboard path based on user role
+  const getDashboardPath = () => {
+    if (!user) return "/dashboard"; // Default fallback
+    const isManager = user.role === "OWNER" || user.role === "MANAGER";
+    return isManager ? "/dashboard" : "/employee/dashboard";
+  };
+
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <div style={styles.header}>
           {showBack && (
-            <Link to="/dashboard" style={styles.backLink}>
+            <Link to={getDashboardPath()} style={styles.backLink}>
               ← Back to Dashboard
             </Link>
           )}

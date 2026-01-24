@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client.js";
+import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
 
 const styles = {
@@ -249,6 +250,7 @@ function convert24To12(time24) {
 
 export default function AvailabilitySubmit() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [request, setRequest] = useState(null);
   const [entries, setEntries] = useState({});
   const [loading, setLoading] = useState(true);
@@ -379,12 +381,19 @@ export default function AvailabilitySubmit() {
     );
   }
 
+  // Determine correct dashboard path based on user role
+  const getDashboardPath = () => {
+    if (!user) return "/dashboard";
+    const isManager = user.role === "OWNER" || user.role === "MANAGER";
+    return isManager ? "/dashboard" : "/employee/dashboard";
+  };
+
   if (!request) {
     return (
       <div style={styles.page}>
         <div style={styles.container}>
           <div style={styles.card}>
-            <Link to="/dashboard" style={styles.backLink}>
+            <Link to={getDashboardPath()} style={styles.backLink}>
               ← Back to Dashboard
             </Link>
             <div style={styles.noRequest}>
@@ -403,7 +412,7 @@ export default function AvailabilitySubmit() {
     <div style={styles.page}>
       <div style={styles.container}>
         <div style={styles.card}>
-          <Link to="/dashboard" style={styles.backLink}>
+          <Link to={getDashboardPath()} style={styles.backLink}>
             ← Back to Dashboard
           </Link>
 

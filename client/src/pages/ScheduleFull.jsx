@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
+import { useAuth } from "../auth/useAuth.js";
 
 export default function ScheduleFull() {
+  const { user } = useAuth();
   const [schedules, setSchedules] = useState([]);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,12 +61,19 @@ export default function ScheduleFull() {
     return <div>Loading...</div>;
   }
 
+  // Determine correct dashboard path based on user role
+  const getDashboardPath = () => {
+    if (!user) return "/dashboard";
+    const isManager = user.role === "OWNER" || user.role === "MANAGER";
+    return isManager ? "/dashboard" : "/employee/dashboard";
+  };
+
   const dates = getDates();
 
   return (
     <div style={{ maxWidth: 1000, margin: "40px auto", padding: 20, color: "var(--text-primary)" }}>
       <div style={{ marginBottom: 20 }}>
-        <Link to="/dashboard" style={{ textDecoration: "none", color: "var(--primary)" }}>
+        <Link to={getDashboardPath()} style={{ textDecoration: "none", color: "var(--primary)" }}>
           ← Back to Dashboard
         </Link>
       </div>
