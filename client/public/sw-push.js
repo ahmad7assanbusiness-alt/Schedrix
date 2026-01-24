@@ -10,7 +10,7 @@ self.addEventListener("push", (event) => {
   let notificationData = {
     title: "Opticore",
     body: "You have a new notification",
-    icon: "/pwa-192.png",
+    icon: "/pwa-512.png",
     badge: "/pwa-192.png",
     tag: "default",
     // iOS/Android notification center settings
@@ -23,12 +23,12 @@ self.addEventListener("push", (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
-      notificationData = {
-        title: data.title || "Opticore",
-        body: data.body || "You have a new notification",
-        icon: data.icon || "/pwa-192.png",
-        badge: data.badge || "/pwa-192.png",
-        tag: data.tag || "default",
+          notificationData = {
+            title: data.title || "Opticore",
+            body: data.body || "You have a new notification",
+            icon: data.icon || "/pwa-512.png",
+            badge: data.badge || "/pwa-192.png",
+            tag: data.tag || "default",
         data: data.data || {},
         requireInteraction: data.requireInteraction || false,
         actions: data.actions || [],

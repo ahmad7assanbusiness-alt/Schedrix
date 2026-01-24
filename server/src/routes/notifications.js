@@ -110,11 +110,12 @@ export async function sendNotificationToUser(userId, notification) {
     const promises = subscriptions.map(async (sub) => {
       try {
         // Format notification for iOS/Android notification center
+        // Use pwa-512.png for icon (larger, better quality) and pwa-192.png for badge
         const pushPayload = {
           title: notification.title || "Opticore",
           body: notification.body || "You have a new notification",
-          icon: notification.icon || "/pwa-192.png",
-          badge: notification.badge || "/pwa-192.png",
+          icon: notification.icon || "/pwa-512.png", // Use larger icon for better visibility
+          badge: notification.badge || "/pwa-192.png", // Badge uses smaller icon
           tag: notification.tag || "default",
           data: notification.data || {},
           requireInteraction: notification.requireInteraction || false,
