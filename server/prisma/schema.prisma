@@ -56,6 +56,8 @@ model User {
   role                Role     @default(EMPLOYEE)
   businessId          String?
   onboardingCompleted Boolean  @default(false)
+  notificationPermission String? @default("pending") // "pending", "granted", "denied"
+  notificationPrompted   Boolean @default(false)
   createdAt           DateTime @default(now())
 
   business             Business?                    @relation(fields: [businessId], references: [id])

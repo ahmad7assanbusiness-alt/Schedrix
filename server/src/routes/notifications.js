@@ -158,4 +158,35 @@ export async function sendNotificationToBusinessEmployees(
   }
 }
 
+// POST /notifications/permission - Update user notification permission
+router.post("/permission", authMiddleware, async (req, res) => {
+  try {
+    const { permission, prompted } = req.body;
+    const userId = req.user.id;
+
+    if (!["pending", "granted", "denied"].includes(permission)) {
+      return res.status(400).json({ error: "Invalid permission value" });
+    }
+
+    // Update user's notification permission
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        notificationPermission: permission,
+        notificationPrompted: prompted,
+        updatedAt: new Date(),
+      },
+    });
+
+    res.json({ 
+      message: "Notification permission updated successfully",
+      notificationPermission: updatedUser.notificationPermission,
+      notificationPrompted: updatedUser.notificationPrompted,
+    });
+  } catch (error) {
+    console.error("Error updating notification permission:", error);
+    res.status(500).json({ error: "Failed to update notification permission" });
+  }
+});
+
 export default router;
