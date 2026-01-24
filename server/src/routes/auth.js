@@ -631,6 +631,8 @@ router.get("/me", authMiddleware, async (req, res) => {
         role: user.role,
         businessId: user.businessId,
         onboardingCompleted: user.onboardingCompleted,
+        notificationPermission: user.notificationPermission || "pending",
+        notificationPrompted: user.notificationPrompted || false,
       },
       business: user.business
         ? {
