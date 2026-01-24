@@ -102,14 +102,8 @@ const NotificationPrompt = () => {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:119',message:'Calling setShowPrompt(false) in handleAllow',data:{permission,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
+      // Hide immediately - React will re-render and remove the overlay
       setShowPrompt(false);
-      // Force a small delay to ensure state updates and DOM re-renders
-      setTimeout(() => {
-        // Ensure prompt is fully removed from DOM
-        if (showPrompt) {
-          setShowPrompt(false);
-        }
-      }, 100);
       
       if (permission) {
         // Permission granted - subscribe to notifications
@@ -181,6 +175,7 @@ const NotificationPrompt = () => {
   // #region agent log
   if (!showPrompt) {
     fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:180',message:'Component render: showPrompt is false, returning null',data:{showPrompt,userPermission:user?.notificationPermission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // Return null immediately - no overlay should be rendered
     return null;
   }
   // #endregion
