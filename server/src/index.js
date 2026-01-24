@@ -48,6 +48,7 @@ import availabilityRoutes from "./routes/availability.js";
 import schedulingRoutes from "./routes/scheduling.js";
 import templatesRoutes from "./routes/templates.js";
 import billingRoutes from "./routes/billing.js";
+import notificationsRoutes from "./routes/notifications.js";
 import prisma from "./prisma.js";
 
 const app = express();
