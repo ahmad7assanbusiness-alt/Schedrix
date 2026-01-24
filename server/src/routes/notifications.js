@@ -26,7 +26,8 @@ router.post("/subscribe", authMiddleware, async (req, res) => {
     }
 
     // Save or update subscription
-    await prisma.pushSubscription.upsert({
+    try {
+      await prisma.pushSubscription.upsert({
       where: {
         userId_endpoint: {
           userId: req.user.id,
@@ -41,7 +42,17 @@ router.post("/subscribe", authMiddleware, async (req, res) => {
       update: {
         keys: subscription.keys,
       },
-    });
+      });
+    } catch (dbError) {
+      // Table doesn't exist yet
+      if (dbError.code === 'P2021' || dbError.message?.includes('does not exist')) {
+        return res.status(503).json({ 
+          error: "Push notifications not configured. Database migration required.",
+          message: "Please run 'prisma db push' to create the PushSubscription table."
+        });
+      }
+      throw dbError;
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -81,9 +92,20 @@ export async function sendNotificationToUser(userId, notification) {
       return;
     }
 
-    const subscriptions = await prisma.pushSubscription.findMany({
-      where: { userId },
-    });
+    // Check if PushSubscription table exists (graceful degradation)
+    let subscriptions;
+    try {
+      subscriptions = await prisma.pushSubscription.findMany({
+        where: { userId },
+      });
+    } catch (dbError) {
+      // Table doesn't exist yet - log and continue without sending notifications
+      if (dbError.code === 'P2021' || dbError.message?.includes('does not exist')) {
+        console.warn("PushSubscription table does not exist. Run 'prisma db push' to create it.");
+        return;
+      }
+      throw dbError;
+    }
 
     const promises = subscriptions.map(async (sub) => {
       try {
