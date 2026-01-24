@@ -250,7 +250,7 @@ export default function EmployeeSideNav({ onLogout, isMobile = false, isOpen = f
       ...(isMobile && isOpen ? styles.sidebarMobileOpen : {}),
     }}>
       <div style={styles.logo}>
-        <div style={styles.logoText}>Schedrix</div>
+        <div style={styles.logoText}>Opticore</div>
       </div>
 
       <div style={styles.navSection}>

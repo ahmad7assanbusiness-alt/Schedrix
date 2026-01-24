@@ -243,7 +243,7 @@ export default function SideNav({ onLogout, isMobile = false, isOpen = false, on
       ...(isMobile && isOpen ? styles.sidebarMobileOpen : {}),
     }}>
       <div style={styles.logo}>
-        <div style={styles.logoText}>Schedrix</div>
+        <div style={styles.logoText}>Opticore</div>
       </div>
 
       <div style={styles.navSection}>
