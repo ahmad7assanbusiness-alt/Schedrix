@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/useAuth.js';
 import { api } from '../api/client.js';
-import { NotificationService } from '../services/notificationService.js';
+import { requestNotificationPermission, subscribeToPushNotifications } from '../services/notificationService.js';
 
 const NotificationPrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -35,11 +35,11 @@ const NotificationPrompt = () => {
     setIsLoading(true);
     try {
       // Request notification permission
-      const permission = await NotificationService.requestPermission();
+      const permission = await requestNotificationPermission();
       
-      if (permission === 'granted') {
+      if (permission) {
         // Subscribe to notifications
-        const subscription = await NotificationService.subscribe();
+        const subscription = await subscribeToPushNotifications();
         
         // Update user in database
         await api.post('/notifications/permission', {
