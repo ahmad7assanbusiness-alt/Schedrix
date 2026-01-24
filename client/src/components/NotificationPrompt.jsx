@@ -50,15 +50,23 @@ const NotificationPrompt = () => {
 
   const handleAllow = async () => {
     setIsLoading(true);
-    setShowPrompt(false); // Hide immediately to prevent multiple clicks
+    // Don't hide immediately - wait for system permission response
     
     try {
-      // Request notification permission
+      // Request notification permission (this shows the system dialog)
       const permission = await requestNotificationPermission();
       
+      // Now hide the modal after we get the system response
+      setShowPrompt(false);
+      
       if (permission) {
-        // Subscribe to notifications
-        await subscribeToPushNotifications();
+        // Permission granted - subscribe to notifications
+        try {
+          await subscribeToPushNotifications();
+        } catch (subError) {
+          console.error('Error subscribing to push notifications:', subError);
+          // Continue even if subscription fails
+        }
         
         // Update user in database
         try {
@@ -71,14 +79,14 @@ const NotificationPrompt = () => {
           // Continue even if API call fails
         }
         
-        // Update user state immediately
+        // Update user state
         updateUser({
           ...user,
           notificationPermission: 'granted',
           notificationPrompted: true
         });
       } else {
-        // Permission denied by browser
+        // Permission denied by system
         try {
           await api.post('/notifications/permission', {
             permission: 'denied',
@@ -96,7 +104,10 @@ const NotificationPrompt = () => {
       }
     } catch (error) {
       console.error('Error handling notification permission:', error);
-      // Even on error, mark as prompted so we don't show again
+      // Hide modal even on error
+      setShowPrompt(false);
+      
+      // Mark as prompted so we don't show again
       try {
         await api.post('/notifications/permission', {
           permission: 'denied',
@@ -109,6 +120,12 @@ const NotificationPrompt = () => {
         });
       } catch (apiError) {
         console.error('Error updating permission after error:', apiError);
+        // Update state even if API fails
+        updateUser({
+          ...user,
+          notificationPermission: 'denied',
+          notificationPrompted: true
+        });
       }
     } finally {
       setIsLoading(false);
@@ -177,7 +194,10 @@ const NotificationPrompt = () => {
           <button 
             onClick={handleAllow} 
             disabled={isLoading}
-            style={styles.allowButton}
+            style={{
+              ...styles.allowButton,
+              ...(isLoading ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+            }}
             onMouseEnter={(e) => {
               if (!isLoading) e.currentTarget.style.transform = 'scale(1.02)';
             }}
@@ -185,7 +205,7 @@ const NotificationPrompt = () => {
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            {isLoading ? 'Setting up...' : 'Allow Notifications'}
+            {isLoading ? 'Waiting for permission...' : 'Allow Notifications'}
           </button>
           
           <button 
