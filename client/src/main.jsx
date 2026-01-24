@@ -6,6 +6,26 @@ import { ThemeProvider } from './contexts/ThemeContext.jsx'
 import { registerSW } from 'virtual:pwa-register'
 import { initializeNotifications, checkForAppUpdate } from './services/notificationService.js'
 
+// iOS PWA fix: Clear service worker cache on app start if needed
+if (window.navigator.standalone && 'caches' in window) {
+  // Check if we need to clear stale caches
+  const cacheVersion = localStorage.getItem('sw-cache-version');
+  const currentVersion = '2.0'; // Increment when making breaking changes
+  
+  if (cacheVersion !== currentVersion) {
+    caches.keys().then((cacheNames) => {
+      cacheNames.forEach((cacheName) => {
+        if (cacheName.includes('workbox') || cacheName.includes('static')) {
+          caches.delete(cacheName).then(() => {
+            console.log('Cleared stale cache:', cacheName);
+          });
+        }
+      });
+      localStorage.setItem('sw-cache-version', currentVersion);
+    });
+  }
+}
+
 // Register service worker for PWA with aggressive update strategy
 const updateSW = registerSW({
   immediate: true,
