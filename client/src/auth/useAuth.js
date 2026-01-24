@@ -7,45 +7,18 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // iOS PWA fix: Ensure localStorage is accessible
-    const isIOSPWA = window.navigator.standalone;
-    
-    // iOS-specific: Retry localStorage access if it fails
-    const getLocalStorageItem = (key) => {
-      let retries = isIOSPWA ? 3 : 1;
-      for (let i = 0; i < retries; i++) {
-        try {
-          return localStorage.getItem(key);
-        } catch (e) {
-          if (i === retries - 1) {
-            console.error(`localStorage access failed for ${key}:`, e);
-            return null;
-          }
-          // Wait and retry for iOS
-          if (isIOSPWA && i < retries - 1) {
-            // Synchronous retry with small delay simulation
-            const start = Date.now();
-            while (Date.now() - start < 50 * (i + 1)) {
-              // Small delay
-            }
-          }
-        }
-      }
-      return null;
-    };
-    
     // Try to restore user from localStorage first (for faster initial load)
     let savedUser = null;
     let savedBusiness = null;
     let token = null;
     
     try {
-      savedUser = getLocalStorageItem("user");
-      savedBusiness = getLocalStorageItem("business");
+      savedUser = localStorage.getItem("user");
+      savedBusiness = localStorage.getItem("business");
       token = api.getToken();
     } catch (e) {
       console.error("localStorage access error:", e);
-      // If localStorage fails, clear everything and start fresh
+      // If localStorage fails, just continue without cached data
       setLoading(false);
       return;
     }
@@ -89,26 +62,14 @@ export function useAuth() {
   }, []);
 
   async function loadUser() {
-    const isIOSPWA = window.navigator.standalone;
-    
     try {
       const { user, business } = await api.get("/auth/me");
       setUser(user);
       setBusiness(business);
-      // Update localStorage with fresh data (with retry for iOS)
+      // Update localStorage with fresh data
       if (user) {
         try {
           localStorage.setItem("user", JSON.stringify(user));
-          // iOS: Verify persistence
-          if (isIOSPWA) {
-            setTimeout(() => {
-              const saved = localStorage.getItem("user");
-              if (!saved || JSON.parse(saved).id !== user.id) {
-                console.warn("User not persisted on iOS, retrying...");
-                localStorage.setItem("user", JSON.stringify(user));
-              }
-            }, 200);
-          }
         } catch (e) {
           console.error("Failed to save user to localStorage:", e);
         }
@@ -116,16 +77,6 @@ export function useAuth() {
       if (business) {
         try {
           localStorage.setItem("business", JSON.stringify(business));
-          // iOS: Verify persistence
-          if (isIOSPWA) {
-            setTimeout(() => {
-              const saved = localStorage.getItem("business");
-              if (!saved || JSON.parse(saved).id !== business.id) {
-                console.warn("Business not persisted on iOS, retrying...");
-                localStorage.setItem("business", JSON.stringify(business));
-              }
-            }, 200);
-          }
         } catch (e) {
           console.error("Failed to save business to localStorage:", e);
         }

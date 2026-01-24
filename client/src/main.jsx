@@ -7,51 +7,55 @@ import { registerSW } from 'virtual:pwa-register'
 import { initializeNotifications, checkForAppUpdate } from './services/notificationService.js'
 
 // PWA fix: Clear service worker cache on app start if needed (iOS and Desktop)
+// Run this AFTER app loads to not block login
 const isPWA = window.navigator.standalone || 
               window.matchMedia('(display-mode: standalone)').matches;
 const isIOSPWA = window.navigator.standalone;
 
-if (isPWA && 'caches' in window) {
-  // Check if we need to clear stale caches
-  const cacheVersion = localStorage.getItem('sw-cache-version');
-  const currentVersion = '2.2'; // Increment when making breaking changes
-  
-  // More aggressive cache clearing for iOS
-  if (cacheVersion !== currentVersion || isIOSPWA) {
-    caches.keys().then((cacheNames) => {
-      const deletePromises = [];
-      cacheNames.forEach((cacheName) => {
-        // For iOS, clear ALL caches, not just workbox/static
-        if (isIOSPWA || cacheName.includes('workbox') || cacheName.includes('static') || cacheName.includes('images')) {
-          deletePromises.push(
-            caches.delete(cacheName).then(() => {
-              console.log('Cleared cache:', cacheName);
-            })
-          );
-        }
-      });
-      
-      Promise.all(deletePromises).then(() => {
-        localStorage.setItem('sw-cache-version', currentVersion);
-        console.log('Cache cleared, version updated to', currentVersion);
+// Delay cache clearing to not interfere with login
+setTimeout(() => {
+  if (isPWA && 'caches' in window) {
+    // Check if we need to clear stale caches
+    const cacheVersion = localStorage.getItem('sw-cache-version');
+    const currentVersion = '2.2'; // Increment when making breaking changes
+    
+    // More aggressive cache clearing for iOS
+    if (cacheVersion !== currentVersion || isIOSPWA) {
+      caches.keys().then((cacheNames) => {
+        const deletePromises = [];
+        cacheNames.forEach((cacheName) => {
+          // For iOS, clear ALL caches, not just workbox/static
+          if (isIOSPWA || cacheName.includes('workbox') || cacheName.includes('static') || cacheName.includes('images')) {
+            deletePromises.push(
+              caches.delete(cacheName).then(() => {
+                console.log('Cleared cache:', cacheName);
+              })
+            );
+          }
+        });
         
-        // For iOS, force service worker update (but don't unregister - that breaks the app)
-        if (isIOSPWA && 'serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then((registrations) => {
-            registrations.forEach((registration) => {
-              // Force update instead of unregister
-              registration.update().catch(() => {});
-              // If there's a waiting worker, activate it
-              if (registration.waiting) {
-                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-              }
+        Promise.all(deletePromises).then(() => {
+          localStorage.setItem('sw-cache-version', currentVersion);
+          console.log('Cache cleared, version updated to', currentVersion);
+          
+          // For iOS, force service worker update (but don't unregister - that breaks the app)
+          if (isIOSPWA && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+              registrations.forEach((registration) => {
+                // Force update instead of unregister
+                registration.update().catch(() => {});
+                // If there's a waiting worker, activate it
+                if (registration.waiting) {
+                  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
             });
-          });
-        }
+          }
+        });
       });
-    });
+    }
   }
-}
+}, 2000); // Wait 2 seconds after app loads to not block login
 
 // Register service worker for PWA with aggressive update strategy
 const updateSW = registerSW({
