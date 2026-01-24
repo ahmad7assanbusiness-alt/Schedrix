@@ -13,6 +13,10 @@ self.addEventListener("push", (event) => {
     icon: "/pwa-192.png",
     badge: "/pwa-192.png",
     tag: "default",
+    // iOS/Android notification center settings
+    requireInteraction: false,
+    silent: false,
+    vibrate: [200, 100, 200],
   };
 
   // Parse push data
@@ -28,6 +32,8 @@ self.addEventListener("push", (event) => {
         data: data.data || {},
         requireInteraction: data.requireInteraction || false,
         actions: data.actions || [],
+        vibrate: data.vibrate || [200, 100, 200],
+        silent: data.silent || false,
       };
     } catch (e) {
       // If not JSON, try text
@@ -35,7 +41,7 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  // Show notification
+  // Show notification in device notification center
   event.waitUntil(
     self.registration.showNotification(notificationData.title, notificationData)
   );

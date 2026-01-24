@@ -71,8 +71,11 @@ const updateSW = registerSW({
   },
 });
 
-// Initialize notifications when app loads (with error handling for iOS)
-if (navigator.serviceWorker) {
+// Initialize notifications when app loads (only for installed PWAs)
+const isInstalledPWA = window.navigator.standalone || 
+                       window.matchMedia('(display-mode: standalone)').matches;
+
+if (navigator.serviceWorker && isInstalledPWA) {
   navigator.serviceWorker.ready.then(() => {
     try {
       initializeNotifications();
