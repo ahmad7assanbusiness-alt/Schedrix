@@ -55,17 +55,22 @@ const NotificationPrompt = () => {
     }
 
     // Show the prompt - this is the first time
-    try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:51',message:'Showing prompt for first time',data:{currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'A,C'})}).catch(()=>{});
-      // #endregion
-      setShowPrompt(true);
-    } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:54',message:'Error in setShowPrompt(true)',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-      console.error('Error showing notification prompt:', error);
-    }
+    // Add a small delay to ensure page is fully loaded
+    const timer = setTimeout(() => {
+      try {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:51',message:'Showing prompt for first time',data:{currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'A,C'})}).catch(()=>{});
+        // #endregion
+        setShowPrompt(true);
+      } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:54',message:'Error in setShowPrompt(true)',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
+        console.error('Error showing notification prompt:', error);
+      }
+    }, 500); // Small delay to let page render first
+
+    return () => clearTimeout(timer);
   }, [user]); // Only depend on user
 
   const handleAllow = async () => {
@@ -93,11 +98,18 @@ const NotificationPrompt = () => {
       fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:116',message:'requestNotificationPermission returned',data:{permission,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B,D'})}).catch(()=>{});
       // #endregion
       
-      // Now hide the modal after we get the system response
+      // Hide the modal immediately after we get the system response
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NotificationPrompt.jsx:119',message:'Calling setShowPrompt(false) in handleAllow',data:{permission,currentShowPrompt:showPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
       setShowPrompt(false);
+      // Force a small delay to ensure state updates and DOM re-renders
+      setTimeout(() => {
+        // Ensure prompt is fully removed from DOM
+        if (showPrompt) {
+          setShowPrompt(false);
+        }
+      }, 100);
       
       if (permission) {
         // Permission granted - subscribe to notifications
@@ -259,6 +271,7 @@ const styles = {
     zIndex: 10000,
     padding: 'var(--spacing-lg)',
     animation: 'fadeIn 0.3s ease-out',
+    pointerEvents: 'auto', // Ensure overlay can receive clicks
   },
   modal: {
     background: 'var(--bg-primary)',
