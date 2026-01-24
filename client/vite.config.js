@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       devOptions: { enabled: true },
       manifest: {
-        name: "Schedrix - Schedule Manager",
-        short_name: "Schedrix",
+        name: "Opticore - Schedule Manager",
+        short_name: "Opticore",
         description: "Manage your team schedules and availability",
         start_url: "/",
         display: "standalone",
