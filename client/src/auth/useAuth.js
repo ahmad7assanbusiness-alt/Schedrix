@@ -11,23 +11,23 @@ export function useAuth() {
     const isIOSPWA = window.navigator.standalone;
     
     // iOS-specific: Retry localStorage access if it fails
-    const getLocalStorageItem = (key, retries = 3) => {
+    const getLocalStorageItem = (key) => {
+      let retries = isIOSPWA ? 3 : 1;
       for (let i = 0; i < retries; i++) {
         try {
           return localStorage.getItem(key);
         } catch (e) {
-          if (i === retries - 1) throw e;
-          // Wait a bit and retry for iOS
-          if (isIOSPWA) {
-            return new Promise((resolve) => {
-              setTimeout(() => {
-                try {
-                  resolve(localStorage.getItem(key));
-                } catch {
-                  resolve(null);
-                }
-              }, 100 * (i + 1));
-            });
+          if (i === retries - 1) {
+            console.error(`localStorage access failed for ${key}:`, e);
+            return null;
+          }
+          // Wait and retry for iOS
+          if (isIOSPWA && i < retries - 1) {
+            // Synchronous retry with small delay simulation
+            const start = Date.now();
+            while (Date.now() - start < 50 * (i + 1)) {
+              // Small delay
+            }
           }
         }
       }
@@ -50,25 +50,16 @@ export function useAuth() {
       return;
     }
     
-    // Handle async result for iOS
-    if (savedUser instanceof Promise) {
-      savedUser.then((user) => {
-        if (user) {
-          try {
-            const parsedUser = JSON.parse(user);
-            setUser(parsedUser);
-          } catch (e) {
-            console.error("Failed to parse saved user:", e);
-          }
-        }
-      });
-      savedUser = null; // Will be handled async
-    } else if (savedUser) {
+    if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
-        if (savedBusiness && !(savedBusiness instanceof Promise)) {
-          setBusiness(JSON.parse(savedBusiness));
+        if (savedBusiness) {
+          try {
+            setBusiness(JSON.parse(savedBusiness));
+          } catch (e) {
+            console.error("Failed to parse saved business:", e);
+          }
         }
       } catch (e) {
         console.error("Failed to parse saved user:", e);
@@ -85,7 +76,7 @@ export function useAuth() {
       loadUser();
     } else {
       // No token - clear any stale user data
-      if (savedUser && !(savedUser instanceof Promise)) {
+      if (savedUser) {
         try {
           localStorage.removeItem("user");
           localStorage.removeItem("business");
