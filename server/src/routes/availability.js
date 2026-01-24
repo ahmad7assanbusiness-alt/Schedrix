@@ -181,8 +181,8 @@ router.post("/", authMiddleware, managerOnly, async (req, res) => {
       {
         title: "New Availability Request",
         body: `Please submit your availability for ${startDateFormatted} - ${endDateFormatted}`,
-        icon: "/pwa-512.png",
-        badge: "/pwa-192.png",
+        icon: "/icon-source.png",
+        badge: "/icon-source.png",
         tag: "availability-request",
         data: {
           url: "/employee/availability/submit",
