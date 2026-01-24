@@ -11,7 +11,7 @@ const styles = {
     borderTop: "2px solid var(--primary)",
     padding: "var(--spacing-lg)",
     boxShadow: "0 -4px 12px rgba(0, 0, 0, 0.15)",
-    zIndex: 10000,
+    zIndex: 9998, // Lower z-index to avoid blocking forms
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
