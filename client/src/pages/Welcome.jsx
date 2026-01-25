@@ -742,6 +742,19 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    // Ensure form submits on iOS PWA
+                    if (!loading && e.currentTarget.form) {
+                      e.currentTarget.form.requestSubmit();
+                    }
+                  }}
+                  onTouchStart={(e) => {
+                    // iOS touch fix - ensure button is clickable
+                    e.currentTarget.style.opacity = '0.8';
+                  }}
+                  onTouchEnd={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
@@ -841,6 +854,19 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    // Ensure form submits on iOS PWA
+                    if (!loading && e.currentTarget.form) {
+                      e.currentTarget.form.requestSubmit();
+                    }
+                  }}
+                  onTouchStart={(e) => {
+                    // iOS touch fix - ensure button is clickable
+                    e.currentTarget.style.opacity = '0.8';
+                  }}
+                  onTouchEnd={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
@@ -1099,6 +1125,19 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    // Ensure form submits on iOS PWA
+                    if (!loading && e.currentTarget.form) {
+                      e.currentTarget.form.requestSubmit();
+                    }
+                  }}
+                  onTouchStart={(e) => {
+                    // iOS touch fix - ensure button is clickable
+                    e.currentTarget.style.opacity = '0.8';
+                  }}
+                  onTouchEnd={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
