@@ -43,7 +43,8 @@ const styles = {
     width: "100%",
     maxHeight: "calc(100vh - 120px)",
     overflow: "auto",
-    zIndex: 1, // Ensure card is above any potential overlays
+    zIndex: 10000, // Ensure card is above NotificationPrompt (9999) and InstallPrompt (9998)
+    pointerEvents: "auto",
   },
   header: {
     textAlign: "center",
@@ -114,7 +115,7 @@ const styles = {
     flexDirection: "column",
     gap: "var(--spacing-lg)",
     position: "relative",
-    zIndex: 10, // Ensure forms are above any overlays
+    zIndex: 10000, // Ensure forms are above NotificationPrompt (9999) and InstallPrompt (9998)
     pointerEvents: "auto", // Ensure forms are interactive
   },
   inputGroup: {
