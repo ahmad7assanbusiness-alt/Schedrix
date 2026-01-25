@@ -754,15 +754,10 @@ export default function Welcome() {
                   disabled={loading}
                   onClick={(e) => {
                     // iOS PWA fix - ensure form submits
-                    e.preventDefault();
-                    e.stopPropagation();
+                    // Don't preventDefault - let the form submit naturally
                     if (!loading) {
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Trigger form submission
-                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                        form.dispatchEvent(submitEvent);
-                      }
+                      // The form's onSubmit handler will be called automatically
+                      // This onClick is just to ensure the button is responsive on iOS
                     }
                   }}
                   onTouchStart={(e) => {
@@ -883,15 +878,10 @@ export default function Welcome() {
                   disabled={loading}
                   onClick={(e) => {
                     // iOS PWA fix - ensure form submits
-                    e.preventDefault();
-                    e.stopPropagation();
+                    // Don't preventDefault - let the form submit naturally
                     if (!loading) {
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Trigger form submission
-                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                        form.dispatchEvent(submitEvent);
-                      }
+                      // The form's onSubmit handler will be called automatically
+                      // This onClick is just to ensure the button is responsive on iOS
                     }
                   }}
                   onTouchStart={(e) => {
@@ -1072,15 +1062,10 @@ export default function Welcome() {
                   disabled={loading}
                   onClick={(e) => {
                     // iOS PWA fix - ensure form submits
-                    e.preventDefault();
-                    e.stopPropagation();
+                    // Don't preventDefault - let the form submit naturally
                     if (!loading) {
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Trigger form submission
-                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                        form.dispatchEvent(submitEvent);
-                      }
+                      // The form's onSubmit handler will be called automatically
+                      // This onClick is just to ensure the button is responsive on iOS
                     }
                   }}
                   onTouchStart={(e) => {
@@ -1201,15 +1186,10 @@ export default function Welcome() {
                   disabled={loading}
                   onClick={(e) => {
                     // iOS PWA fix - ensure form submits
-                    e.preventDefault();
-                    e.stopPropagation();
+                    // Don't preventDefault - let the form submit naturally
                     if (!loading) {
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Trigger form submission
-                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                        form.dispatchEvent(submitEvent);
-                      }
+                      // The form's onSubmit handler will be called automatically
+                      // This onClick is just to ensure the button is responsive on iOS
                     }
                   }}
                   onTouchStart={(e) => {
