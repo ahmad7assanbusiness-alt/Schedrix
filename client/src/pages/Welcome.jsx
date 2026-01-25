@@ -862,33 +862,12 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable and provides feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure button click works
-                    // Don't prevent default - let the form submit naturally
-                    if (loading) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  onTouchStart={(e) => {
-                    // iOS touch feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity
-                    e.currentTarget.style.opacity = '1';
-                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                    cursor: loading ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {loading ? "Logging in..." : "Login"}
@@ -1153,33 +1132,12 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable and provides feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure button click works
-                    // Don't prevent default - let the form submit naturally
-                    if (loading) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  onTouchStart={(e) => {
-                    // iOS touch feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity
-                    e.currentTarget.style.opacity = '1';
-                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                    cursor: loading ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {loading ? "Logging in..." : "Login"}
