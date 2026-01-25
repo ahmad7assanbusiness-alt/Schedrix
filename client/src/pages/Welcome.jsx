@@ -681,13 +681,6 @@ export default function Welcome() {
               <form 
                 onSubmit={handleOwnerRegister} 
                 style={styles.form}
-                onTouchEnd={(e) => {
-                  // iOS PWA fix - ensure form can be submitted
-                  const form = e.currentTarget;
-                  if (form && !loading) {
-                    // Form will submit via onSubmit handler
-                  }
-                }}
               >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Business Name</label>
@@ -758,21 +751,23 @@ export default function Welcome() {
                       e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity and ensure form submits
-                    e.currentTarget.style.opacity = '1';
-                    if (!loading) {
-                      // Let the form submit naturally via onSubmit
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Small delay to ensure touch event completes
-                        setTimeout(() => {
-                          if (!loading) {
-                            form.requestSubmit();
-                          }
-                        }, 50);
-                      }
+                  onClick={(e) => {
+                    // iOS PWA fix - ensure button click works
+                    // Don't prevent default - let the form submit naturally
+                    if (loading) {
+                      e.preventDefault();
+                      e.stopPropagation();
                     }
+                  }}
+                  onTouchStart={(e) => {
+                    // iOS touch feedback
+                    if (!loading) {
+                      e.currentTarget.style.opacity = '0.8';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Restore opacity
+                    e.currentTarget.style.opacity = '1';
                   }}
                   style={{
                     ...styles.button,
@@ -850,13 +845,6 @@ export default function Welcome() {
               <form 
                 onSubmit={handleOwnerLogin} 
                 style={styles.form}
-                onTouchEnd={(e) => {
-                  // iOS PWA fix - ensure form can be submitted
-                  const form = e.currentTarget;
-                  if (form && !loading) {
-                    // Form will submit via onSubmit handler
-                  }
-                }}
               >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
@@ -889,21 +877,23 @@ export default function Welcome() {
                       e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity and ensure form submits
-                    e.currentTarget.style.opacity = '1';
-                    if (!loading) {
-                      // Let the form submit naturally via onSubmit
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Small delay to ensure touch event completes
-                        setTimeout(() => {
-                          if (!loading) {
-                            form.requestSubmit();
-                          }
-                        }, 50);
-                      }
+                  onClick={(e) => {
+                    // iOS PWA fix - ensure button click works
+                    // Don't prevent default - let the form submit naturally
+                    if (loading) {
+                      e.preventDefault();
+                      e.stopPropagation();
                     }
+                  }}
+                  onTouchStart={(e) => {
+                    // iOS touch feedback
+                    if (!loading) {
+                      e.currentTarget.style.opacity = '0.8';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Restore opacity
+                    e.currentTarget.style.opacity = '1';
                   }}
                   style={{
                     ...styles.button,
@@ -981,13 +971,6 @@ export default function Welcome() {
               <form 
                 onSubmit={handleEmployeeRegister} 
                 style={styles.form}
-                onTouchEnd={(e) => {
-                  // iOS PWA fix - ensure form can be submitted
-                  const form = e.currentTarget;
-                  if (form && !loading) {
-                    // Form will submit via onSubmit handler
-                  }
-                }}
               >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>First Name</label>
@@ -1080,21 +1063,23 @@ export default function Welcome() {
                       e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity and ensure form submits
-                    e.currentTarget.style.opacity = '1';
-                    if (!loading) {
-                      // Let the form submit naturally via onSubmit
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Small delay to ensure touch event completes
-                        setTimeout(() => {
-                          if (!loading) {
-                            form.requestSubmit();
-                          }
-                        }, 50);
-                      }
+                  onClick={(e) => {
+                    // iOS PWA fix - ensure button click works
+                    // Don't prevent default - let the form submit naturally
+                    if (loading) {
+                      e.preventDefault();
+                      e.stopPropagation();
                     }
+                  }}
+                  onTouchStart={(e) => {
+                    // iOS touch feedback
+                    if (!loading) {
+                      e.currentTarget.style.opacity = '0.8';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Restore opacity
+                    e.currentTarget.style.opacity = '1';
                   }}
                   style={{
                     ...styles.button,
@@ -1172,13 +1157,6 @@ export default function Welcome() {
               <form 
                 onSubmit={handleEmployeeLogin} 
                 style={styles.form}
-                onTouchEnd={(e) => {
-                  // iOS PWA fix - ensure form can be submitted
-                  const form = e.currentTarget;
-                  if (form && !loading) {
-                    // Form will submit via onSubmit handler
-                  }
-                }}
               >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
@@ -1211,21 +1189,23 @@ export default function Welcome() {
                       e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity and ensure form submits
-                    e.currentTarget.style.opacity = '1';
-                    if (!loading) {
-                      // Let the form submit naturally via onSubmit
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        // Small delay to ensure touch event completes
-                        setTimeout(() => {
-                          if (!loading) {
-                            form.requestSubmit();
-                          }
-                        }, 50);
-                      }
+                  onClick={(e) => {
+                    // iOS PWA fix - ensure button click works
+                    // Don't prevent default - let the form submit naturally
+                    if (loading) {
+                      e.preventDefault();
+                      e.stopPropagation();
                     }
+                  }}
+                  onTouchStart={(e) => {
+                    // iOS touch feedback
+                    if (!loading) {
+                      e.currentTarget.style.opacity = '0.8';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Restore opacity
+                    e.currentTarget.style.opacity = '1';
                   }}
                   style={{
                     ...styles.button,
