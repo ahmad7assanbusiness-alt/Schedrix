@@ -678,7 +678,17 @@ export default function Welcome() {
                 <div style={styles.dividerLine}></div>
               </div>
 
-              <form onSubmit={handleOwnerRegister} style={styles.form}>
+              <form 
+                onSubmit={handleOwnerRegister} 
+                style={styles.form}
+                onTouchEnd={(e) => {
+                  // iOS PWA fix - ensure form can be submitted
+                  const form = e.currentTarget;
+                  if (form && !loading) {
+                    // Form will submit via onSubmit handler
+                  }
+                }}
+              >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Business Name</label>
                   <input
@@ -743,9 +753,16 @@ export default function Welcome() {
                   type="submit"
                   disabled={loading}
                   onClick={(e) => {
-                    // Ensure form submits on iOS PWA
-                    if (!loading && e.currentTarget.form) {
-                      e.currentTarget.form.requestSubmit();
+                    // iOS PWA fix - ensure form submits
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!loading) {
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Trigger form submission
+                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        form.dispatchEvent(submitEvent);
+                      }
                     }
                   }}
                   onTouchStart={(e) => {
@@ -828,7 +845,17 @@ export default function Welcome() {
                 <div style={styles.dividerLine}></div>
               </div>
 
-              <form onSubmit={handleOwnerLogin} style={styles.form}>
+              <form 
+                onSubmit={handleOwnerLogin} 
+                style={styles.form}
+                onTouchEnd={(e) => {
+                  // iOS PWA fix - ensure form can be submitted
+                  const form = e.currentTarget;
+                  if (form && !loading) {
+                    // Form will submit via onSubmit handler
+                  }
+                }}
+              >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
                   <input
@@ -855,9 +882,16 @@ export default function Welcome() {
                   type="submit"
                   disabled={loading}
                   onClick={(e) => {
-                    // Ensure form submits on iOS PWA
-                    if (!loading && e.currentTarget.form) {
-                      e.currentTarget.form.requestSubmit();
+                    // iOS PWA fix - ensure form submits
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!loading) {
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Trigger form submission
+                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        form.dispatchEvent(submitEvent);
+                      }
                     }
                   }}
                   onTouchStart={(e) => {
@@ -940,7 +974,17 @@ export default function Welcome() {
                 <div style={styles.dividerLine}></div>
               </div>
 
-              <form onSubmit={handleEmployeeRegister} style={styles.form}>
+              <form 
+                onSubmit={handleEmployeeRegister} 
+                style={styles.form}
+                onTouchEnd={(e) => {
+                  // iOS PWA fix - ensure form can be submitted
+                  const form = e.currentTarget;
+                  if (form && !loading) {
+                    // Form will submit via onSubmit handler
+                  }
+                }}
+              >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>First Name</label>
                   <input
@@ -1027,9 +1071,16 @@ export default function Welcome() {
                   type="submit"
                   disabled={loading}
                   onClick={(e) => {
-                    // Ensure form submits on iOS PWA
-                    if (!loading && e.currentTarget.form) {
-                      e.currentTarget.form.requestSubmit();
+                    // iOS PWA fix - ensure form submits
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!loading) {
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Trigger form submission
+                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        form.dispatchEvent(submitEvent);
+                      }
                     }
                   }}
                   onTouchStart={(e) => {
@@ -1112,7 +1163,17 @@ export default function Welcome() {
                 <div style={styles.dividerLine}></div>
               </div>
 
-              <form onSubmit={handleEmployeeLogin} style={styles.form}>
+              <form 
+                onSubmit={handleEmployeeLogin} 
+                style={styles.form}
+                onTouchEnd={(e) => {
+                  // iOS PWA fix - ensure form can be submitted
+                  const form = e.currentTarget;
+                  if (form && !loading) {
+                    // Form will submit via onSubmit handler
+                  }
+                }}
+              >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
                   <input
@@ -1139,9 +1200,16 @@ export default function Welcome() {
                   type="submit"
                   disabled={loading}
                   onClick={(e) => {
-                    // Ensure form submits on iOS PWA
-                    if (!loading && e.currentTarget.form) {
-                      e.currentTarget.form.requestSubmit();
+                    // iOS PWA fix - ensure form submits
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!loading) {
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Trigger form submission
+                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        form.dispatchEvent(submitEvent);
+                      }
                     }
                   }}
                   onTouchStart={(e) => {
