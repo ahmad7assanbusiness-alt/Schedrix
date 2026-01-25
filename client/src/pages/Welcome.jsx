@@ -260,7 +260,19 @@ export default function Welcome() {
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [mode, setMode] = useState("select"); // "select", "owner-register", "owner-login", "employee-register", "employee-login"
+  const [mode, setMode] = useState("select");
+  
+  // Refs to store handler functions for direct iOS PWA calls
+  const ownerRegisterHandlerRef = useRef(null);
+  const ownerLoginHandlerRef = useRef(null);
+  const employeeRegisterHandlerRef = useRef(null);
+  const employeeLoginHandlerRef = useRef(null);
+  
+  // Store handlers in refs
+  ownerRegisterHandlerRef.current = handleOwnerRegister;
+  ownerLoginHandlerRef.current = handleOwnerLogin;
+  employeeRegisterHandlerRef.current = handleEmployeeRegister;
+  employeeLoginHandlerRef.current = handleEmployeeLogin; // "select", "owner-register", "owner-login", "employee-register", "employee-login"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -745,33 +757,12 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable and provides feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure button click works
-                    // Don't prevent default - let the form submit naturally
-                    if (loading) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  onTouchStart={(e) => {
-                    // iOS touch feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity
-                    e.currentTarget.style.opacity = '1';
-                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                    cursor: loading ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {loading ? "Registering..." : "Register"}
@@ -1057,33 +1048,12 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable and provides feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure button click works
-                    // Don't prevent default - let the form submit naturally
-                    if (loading) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  onTouchStart={(e) => {
-                    // iOS touch feedback
-                    if (!loading) {
-                      e.currentTarget.style.opacity = '0.8';
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Restore opacity
-                    e.currentTarget.style.opacity = '1';
-                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                    cursor: loading ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {loading ? "Registering..." : "Register"}
