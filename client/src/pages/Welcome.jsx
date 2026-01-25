@@ -367,6 +367,11 @@ export default function Welcome() {
 
   async function handleOwnerRegister(e) {
     e.preventDefault();
+    console.log('[Welcome] handleOwnerRegister called', { loading });
+    if (loading) {
+      console.log('[Welcome] Already loading, ignoring');
+      return;
+    }
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -414,6 +419,11 @@ export default function Welcome() {
 
   async function handleOwnerLogin(e) {
     e.preventDefault();
+    console.log('[Welcome] handleOwnerLogin called', { loading });
+    if (loading) {
+      console.log('[Welcome] Already loading, ignoring');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -457,6 +467,11 @@ export default function Welcome() {
 
   async function handleEmployeeRegister(e) {
     e.preventDefault();
+    console.log('[Welcome] handleEmployeeRegister called', { loading });
+    if (loading) {
+      console.log('[Welcome] Already loading, ignoring');
+      return;
+    }
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -510,6 +525,11 @@ export default function Welcome() {
 
   async function handleEmployeeLogin(e) {
     e.preventDefault();
+    console.log('[Welcome] handleEmployeeLogin called', { loading });
+    if (loading) {
+      console.log('[Welcome] Already loading, ignoring');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -757,12 +777,17 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    console.log('[Welcome] Submit button clicked', { loading, type: e.currentTarget.textContent });
+                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
                     cursor: loading ? 'not-allowed' : 'pointer',
+                    position: 'relative',
+                    zIndex: 10,
                   }}
                 >
                   {loading ? "Registering..." : "Register"}
@@ -834,8 +859,14 @@ export default function Welcome() {
               </div>
 
               <form 
-                onSubmit={handleOwnerLogin} 
+                onSubmit={(e) => {
+                  console.log('[Welcome] Owner login form onSubmit triggered');
+                  handleOwnerLogin(e);
+                }}
                 style={styles.form}
+                onClick={(e) => {
+                  console.log('[Welcome] Owner login form clicked', e.target);
+                }}
               >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
@@ -862,12 +893,17 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    console.log('[Welcome] Submit button clicked', { loading, type: e.currentTarget.textContent });
+                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
                     cursor: loading ? 'not-allowed' : 'pointer',
+                    position: 'relative',
+                    zIndex: 10,
                   }}
                 >
                   {loading ? "Logging in..." : "Login"}
@@ -939,8 +975,14 @@ export default function Welcome() {
               </div>
 
               <form 
-                onSubmit={handleEmployeeRegister} 
+                onSubmit={(e) => {
+                  console.log('[Welcome] Employee register form onSubmit triggered');
+                  handleEmployeeRegister(e);
+                }}
                 style={styles.form}
+                onClick={(e) => {
+                  console.log('[Welcome] Employee register form clicked', e.target);
+                }}
               >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>First Name</label>
@@ -1027,12 +1069,17 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    console.log('[Welcome] Submit button clicked', { loading, type: e.currentTarget.textContent });
+                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
                     cursor: loading ? 'not-allowed' : 'pointer',
+                    position: 'relative',
+                    zIndex: 10,
                   }}
                 >
                   {loading ? "Registering..." : "Register"}
@@ -1104,8 +1151,14 @@ export default function Welcome() {
               </div>
 
               <form 
-                onSubmit={handleEmployeeLogin} 
+                onSubmit={(e) => {
+                  console.log('[Welcome] Employee login form onSubmit triggered');
+                  handleEmployeeLogin(e);
+                }}
                 style={styles.form}
+                onClick={(e) => {
+                  console.log('[Welcome] Employee login form clicked', e.target);
+                }}
               >
                 <div style={styles.inputGroup}>
                   <label style={styles.label}>Email</label>
@@ -1132,12 +1185,17 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
+                  onClick={(e) => {
+                    console.log('[Welcome] Submit button clicked', { loading, type: e.currentTarget.textContent });
+                  }}
                   style={{
                     ...styles.button,
                     ...(loading ? styles.buttonDisabled : {}),
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
                     cursor: loading ? 'not-allowed' : 'pointer',
+                    position: 'relative',
+                    zIndex: 10,
                   }}
                 >
                   {loading ? "Logging in..." : "Login"}
