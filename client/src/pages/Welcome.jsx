@@ -752,20 +752,27 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure form submits
-                    // Don't preventDefault - let the form submit naturally
+                  onTouchStart={(e) => {
+                    // iOS touch fix - ensure button is clickable and provides feedback
                     if (!loading) {
-                      // The form's onSubmit handler will be called automatically
-                      // This onClick is just to ensure the button is responsive on iOS
+                      e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable
-                    e.currentTarget.style.opacity = '0.8';
-                  }}
                   onTouchEnd={(e) => {
+                    // Restore opacity and ensure form submits
                     e.currentTarget.style.opacity = '1';
+                    if (!loading) {
+                      // Let the form submit naturally via onSubmit
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Small delay to ensure touch event completes
+                        setTimeout(() => {
+                          if (!loading) {
+                            form.requestSubmit();
+                          }
+                        }, 50);
+                      }
+                    }
                   }}
                   style={{
                     ...styles.button,
@@ -876,20 +883,27 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure form submits
-                    // Don't preventDefault - let the form submit naturally
+                  onTouchStart={(e) => {
+                    // iOS touch fix - ensure button is clickable and provides feedback
                     if (!loading) {
-                      // The form's onSubmit handler will be called automatically
-                      // This onClick is just to ensure the button is responsive on iOS
+                      e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable
-                    e.currentTarget.style.opacity = '0.8';
-                  }}
                   onTouchEnd={(e) => {
+                    // Restore opacity and ensure form submits
                     e.currentTarget.style.opacity = '1';
+                    if (!loading) {
+                      // Let the form submit naturally via onSubmit
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Small delay to ensure touch event completes
+                        setTimeout(() => {
+                          if (!loading) {
+                            form.requestSubmit();
+                          }
+                        }, 50);
+                      }
+                    }
                   }}
                   style={{
                     ...styles.button,
@@ -1060,20 +1074,27 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure form submits
-                    // Don't preventDefault - let the form submit naturally
+                  onTouchStart={(e) => {
+                    // iOS touch fix - ensure button is clickable and provides feedback
                     if (!loading) {
-                      // The form's onSubmit handler will be called automatically
-                      // This onClick is just to ensure the button is responsive on iOS
+                      e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable
-                    e.currentTarget.style.opacity = '0.8';
-                  }}
                   onTouchEnd={(e) => {
+                    // Restore opacity and ensure form submits
                     e.currentTarget.style.opacity = '1';
+                    if (!loading) {
+                      // Let the form submit naturally via onSubmit
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Small delay to ensure touch event completes
+                        setTimeout(() => {
+                          if (!loading) {
+                            form.requestSubmit();
+                          }
+                        }, 50);
+                      }
+                    }
                   }}
                   style={{
                     ...styles.button,
@@ -1184,20 +1205,27 @@ export default function Welcome() {
                 <button
                   type="submit"
                   disabled={loading}
-                  onClick={(e) => {
-                    // iOS PWA fix - ensure form submits
-                    // Don't preventDefault - let the form submit naturally
+                  onTouchStart={(e) => {
+                    // iOS touch fix - ensure button is clickable and provides feedback
                     if (!loading) {
-                      // The form's onSubmit handler will be called automatically
-                      // This onClick is just to ensure the button is responsive on iOS
+                      e.currentTarget.style.opacity = '0.8';
                     }
                   }}
-                  onTouchStart={(e) => {
-                    // iOS touch fix - ensure button is clickable
-                    e.currentTarget.style.opacity = '0.8';
-                  }}
                   onTouchEnd={(e) => {
+                    // Restore opacity and ensure form submits
                     e.currentTarget.style.opacity = '1';
+                    if (!loading) {
+                      // Let the form submit naturally via onSubmit
+                      const form = e.currentTarget.closest('form');
+                      if (form) {
+                        // Small delay to ensure touch event completes
+                        setTimeout(() => {
+                          if (!loading) {
+                            form.requestSubmit();
+                          }
+                        }, 50);
+                      }
+                    }
                   }}
                   style={{
                     ...styles.button,
