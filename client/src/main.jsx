@@ -1,10 +1,25 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:3',message:'Starting main.jsx - imports beginning',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
+// #endregion
 import './index.css'
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:6',message:'CSS import completed',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+// #endregion
 import App from './App.jsx'
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:9',message:'App component imported',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+// #endregion
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:12',message:'ThemeProvider imported',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+// #endregion
 import { registerSW } from 'virtual:pwa-register'
 import { initializeNotifications, checkForAppUpdate } from './services/notificationService.js'
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:16',message:'All imports completed successfully',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+// #endregion
 
 // PWA fix: Clear service worker cache on app start if needed (iOS and Desktop)
 // Run this AFTER app loads to not block login
@@ -58,6 +73,11 @@ setTimeout(() => {
 }, 2000); // Wait 2 seconds after app loads to not block login
 
 // Register service worker for PWA with aggressive update strategy
+// #region agent log
+try {
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:61',message:'About to register service worker',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+} catch(e) {}
+// #endregion
 const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
@@ -138,8 +158,14 @@ const updateSW = registerSW({
   },
   onRegisterError(error) {
     console.log('SW registration error', error);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:139',message:'Service worker registration error',data:{error:error?.message||String(error),timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
   },
 });
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:142',message:'Service worker registration setup completed',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+// #endregion
 
 // Initialize notifications when app loads (only for installed PWAs)
 if (navigator.serviceWorker && isPWA) {
@@ -195,11 +221,55 @@ if (isPWA) {
   });
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
-  </StrictMode>,
-)
-// Build fix applied
+// Global error handler to catch any unhandled errors
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:198',message:'Global error caught',data:{error:event.error?.message||String(event.error),filename:event.filename,lineno:event.lineno,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
+});
+
+// Unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:205',message:'Unhandled promise rejection',data:{reason:event.reason?.message||String(event.reason),timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
+});
+
+// #region agent log
+try {
+  const rootElement = document.getElementById('root');
+  console.log('[DEBUG] Root element:', rootElement);
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:215',message:'About to mount React root',data:{rootElementExists:!!rootElement,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  if (!rootElement) {
+    console.error('[DEBUG] Root element not found!');
+    throw new Error('Root element not found');
+  }
+  const root = createRoot(rootElement);
+  console.log('[DEBUG] React root created');
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:222',message:'React root created successfully',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  root.render(
+    <StrictMode>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </StrictMode>,
+  );
+  console.log('[DEBUG] React render called');
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:231',message:'React render called successfully',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,E'})}).catch(()=>{});
+} catch (error) {
+  console.error('[DEBUG] ERROR in React mounting:', error);
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:234',message:'ERROR in React mounting',data:{error:error?.message||String(error),stack:error?.stack,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,E'})}).catch(()=>{});
+  // Show error on screen instead of blank screen
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    rootElement.innerHTML = `<div style="padding: 20px; color: red;"><h1>Error Loading App</h1><p>${error.message}</p><pre>${error.stack}</pre></div>`;
+  }
+  throw error;
+}
+// #endregion
