@@ -221,15 +221,38 @@ if (isPWA) {
   });
 }
 
+// Global error handler to catch any unhandled errors
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:198',message:'Global error caught',data:{error:event.error?.message||String(event.error),filename:event.filename,lineno:event.lineno,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
+});
+
+// Unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:205',message:'Unhandled promise rejection',data:{reason:event.reason?.message||String(event.reason),timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
+});
+
 // #region agent log
 try {
   const rootElement = document.getElementById('root');
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:198',message:'About to mount React root',data:{rootElementExists:!!rootElement,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  console.log('[DEBUG] Root element:', rootElement);
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:215',message:'About to mount React root',data:{rootElementExists:!!rootElement,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
   if (!rootElement) {
+    console.error('[DEBUG] Root element not found!');
     throw new Error('Root element not found');
   }
   const root = createRoot(rootElement);
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:203',message:'React root created successfully',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  console.log('[DEBUG] React root created');
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:222',message:'React root created successfully',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
   root.render(
     <StrictMode>
       <ThemeProvider>
@@ -237,9 +260,16 @@ try {
       </ThemeProvider>
     </StrictMode>,
   );
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:211',message:'React render called successfully',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,E'})}).catch(()=>{});
+  console.log('[DEBUG] React render called');
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:231',message:'React render called successfully',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,E'})}).catch(()=>{});
 } catch (error) {
-  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:213',message:'ERROR in React mounting',data:{error:error?.message||String(error),stack:error?.stack,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,E'})}).catch(()=>{});
+  console.error('[DEBUG] ERROR in React mounting:', error);
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.jsx:234',message:'ERROR in React mounting',data:{error:error?.message||String(error),stack:error?.stack,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,E'})}).catch(()=>{});
+  // Show error on screen instead of blank screen
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    rootElement.innerHTML = `<div style="padding: 20px; color: red;"><h1>Error Loading App</h1><p>${error.message}</p><pre>${error.stack}</pre></div>`;
+  }
   throw error;
 }
 // #endregion
