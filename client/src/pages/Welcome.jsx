@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import { useAuth } from "../auth/useAuth.js";
@@ -260,18 +260,7 @@ export default function Welcome() {
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState("select");
-  
-  // Refs to store handler functions for direct iOS PWA calls
-  const ownerRegisterHandlerRef = useRef(null);
-  const ownerLoginHandlerRef = useRef(null);
-  const employeeRegisterHandlerRef = useRef(null);
-  const employeeLoginHandlerRef = useRef(null);
-  
-  // Store handlers in refs
-  ownerRegisterHandlerRef.current = handleOwnerRegister;
-  ownerLoginHandlerRef.current = handleOwnerLogin;
-  employeeRegisterHandlerRef.current = handleEmployeeRegister;
-  employeeLoginHandlerRef.current = handleEmployeeLogin; // "select", "owner-register", "owner-login", "employee-register", "employee-login"
+  // "select", "owner-register", "owner-login", "employee-register", "employee-login"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
