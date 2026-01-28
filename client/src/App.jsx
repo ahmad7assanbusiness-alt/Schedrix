@@ -1,10 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+// #region agent log
+try {
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:2',message:'App.jsx imports beginning',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,E'})}).catch(()=>{});
+} catch(e) {}
+// #endregion
 import { useAuth } from "./auth/useAuth.js";
 import { api } from "./api/client.js";
 import InstallPrompt from "./components/InstallPrompt.jsx";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import Welcome from "./pages/Welcome.jsx";
+// #region agent log
+try {
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:7',message:'App.jsx imports completed',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+} catch(e) {}
+// #endregion
 import CompleteOwnerRegistration from "./pages/CompleteOwnerRegistration.jsx";
 import CompleteEmployeeRegistration from "./pages/CompleteEmployeeRegistration.jsx";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback.jsx";
@@ -230,6 +240,11 @@ function GoogleCallback() {
 }
 
 function App() {
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:242',message:'App component rendering',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
   return (
     <BrowserRouter>
       <InstallPrompt />

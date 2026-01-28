@@ -1,5 +1,15 @@
 const getApiUrl = () => {
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/client.js:1',message:'getApiUrl called',data:{isDev:import.meta.env.DEV,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
   const envUrl = import.meta.env.VITE_API_URL;
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/client.js:5',message:'API URL check',data:{hasEnvUrl:!!envUrl,envUrl:envUrl||'not set',isDev:import.meta.env.DEV,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
   if (envUrl) return envUrl;
   
   // Development fallback
@@ -14,6 +24,11 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
+// #region agent log
+try {
+  fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/client.js:16',message:'API_URL initialized',data:{apiUrl:API_URL||'empty',timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+} catch(e) {}
+// #endregion
 
 // Log API URL for debugging (helps identify server URL)
 console.log("🔗 API Server URL:", API_URL);
