@@ -7,9 +7,10 @@ const getApiUrl = () => {
     return "http://localhost:4000";
   }
   
-  // Production safety check
-  console.error("VITE_API_URL environment variable is not set in production!");
-  throw new Error("API URL is not configured. Please set VITE_API_URL environment variable.");
+  // Production fallback - don't throw error, use a default or show warning
+  console.warn("VITE_API_URL environment variable is not set in production! Using fallback.");
+  // Return empty string or a default - the app will still load but API calls will fail
+  return "";
 };
 
 const API_URL = getApiUrl();
