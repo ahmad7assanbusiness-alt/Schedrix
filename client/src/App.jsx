@@ -7,7 +7,6 @@ try {
 // #endregion
 import { useAuth } from "./auth/useAuth.js";
 import { api } from "./api/client.js";
-import InstallPrompt from "./components/InstallPrompt.jsx";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import Welcome from "./pages/Welcome.jsx";
 // #region agent log
@@ -247,7 +246,6 @@ function App() {
   // #endregion
   return (
     <BrowserRouter>
-      <InstallPrompt />
       <NotificationPrompt />
       <Routes>
         <Route path="/welcome" element={<Welcome />} />
