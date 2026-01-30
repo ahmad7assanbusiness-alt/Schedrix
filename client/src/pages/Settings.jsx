@@ -114,7 +114,7 @@ export default function Settings() {
             <nav style={styles.nav}>
               {settingsPages.map((page) => {
                 // Determine the base path based on user role
-                const basePath = isManager ? "/settings" : "/employee/settings";
+                const basePath = isManager ? "/dashboard/settings" : "/employee/settings";
                 return (
                   <NavLink
                     key={page.path}
