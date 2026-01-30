@@ -217,19 +217,19 @@ export default function SideNav({ onLogout, isMobile = false, isOpen = false, on
   ];
 
   const settingsNavItems = [
-    { path: "/settings/profile", label: "Profile", icon: "👤" },
-    { path: "/settings/calendar", label: "Calendar", icon: "📆" },
-    { path: "/settings/security", label: "Security Center", icon: "🔒" },
-    { path: "/settings/billing", label: "Billing", icon: "💳" },
-    { path: "/settings/support", label: "Support", icon: "💬" },
-    { path: "/settings/legal", label: "Legal", icon: "⚖️" },
+    { path: "/dashboard/settings/profile", label: "Profile", icon: "👤" },
+    { path: "/dashboard/settings/calendar", label: "Calendar", icon: "📆" },
+    { path: "/dashboard/settings/security", label: "Security Center", icon: "🔒" },
+    { path: "/dashboard/settings/billing", label: "Billing", icon: "💳" },
+    { path: "/dashboard/settings/support", label: "Support", icon: "💬" },
+    { path: "/dashboard/settings/legal", label: "Legal", icon: "⚖️" },
   ];
 
   const isActive = (path) => {
     if (path === "/dashboard") {
       return location.pathname === "/dashboard";
     }
-    if (path.startsWith("/settings")) {
+    if (path.startsWith("/dashboard/settings") || path.startsWith("/employee/settings")) {
       // For settings, check exact match or if it's the specific settings page
       return location.pathname === path;
     }
@@ -347,7 +347,7 @@ export default function SideNav({ onLogout, isMobile = false, isOpen = false, on
         {showProfileMenu && (
           <div style={styles.dropdown}>
             <Link
-              to="/settings/profile"
+              to="/dashboard/settings/profile"
               style={styles.dropdownItem}
               onClick={(e) => {
                 e.stopPropagation();

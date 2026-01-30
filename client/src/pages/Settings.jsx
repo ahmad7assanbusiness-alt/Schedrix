@@ -110,12 +110,11 @@ export default function Settings() {
           <aside style={styles.sidebar}>
             <nav style={styles.nav}>
               {settingsPages.map((page) => {
-                // Determine the base path based on user role
-                const basePath = isManager ? "/dashboard/settings" : "/employee/settings";
+                // Use relative paths since we're already in the settings route context
                 return (
                   <NavLink
                     key={page.path}
-                    to={`${basePath}/${page.path}`}
+                    to={page.path}
                     end={page.path === "profile"}
                     style={({ isActive }) => ({
                       ...styles.navLink,
