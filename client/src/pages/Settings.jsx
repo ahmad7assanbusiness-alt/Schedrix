@@ -102,7 +102,7 @@ export default function Settings() {
     { path: "profile", label: "Profile" },
     { path: "calendar", label: "Calendar" },
     { path: "security", label: "Security Center" },
-    ...(isManager ? [{ path: "color-scheme", label: "Edit Color Scheme" }] : []),
+    { path: "color-scheme", label: "Edit Color Scheme" },
   ];
 
   return (

@@ -59,7 +59,7 @@ router.get("/employees", authMiddleware, managerOnly, async (req, res) => {
 });
 
 // PUT /business/color-scheme - Update business color scheme
-router.put("/color-scheme", authMiddleware, managerOnly, async (req, res) => {
+router.put("/color-scheme", authMiddleware, async (req, res) => {
   try {
     if (!req.user.businessId) {
       return res.status(404).json({ error: "Business not found" });

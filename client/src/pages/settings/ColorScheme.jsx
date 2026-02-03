@@ -52,11 +52,10 @@ const styles = {
 };
 
 export default function ColorScheme() {
-  const { business, user } = useAuth();
+  const { business } = useAuth();
   const [colorScheme, setColorScheme] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
 
   useEffect(() => {
     if (business?.colorScheme) {
@@ -75,11 +74,6 @@ export default function ColorScheme() {
   }, [business]);
 
   async function handleSave() {
-    if (!isManager) {
-      setMessage({ type: "error", text: "Only owners and managers can change color schemes" });
-      return;
-    }
-
     setLoading(true);
     setMessage(null);
 
@@ -100,17 +94,6 @@ export default function ColorScheme() {
     } finally {
       setLoading(false);
     }
-  }
-
-  if (!isManager) {
-    return (
-      <div>
-        <h2 style={styles.title}>Color Scheme</h2>
-        <p style={styles.subtitle}>
-          Only owners and managers can customize the color scheme.
-        </p>
-      </div>
-    );
   }
 
   return (
