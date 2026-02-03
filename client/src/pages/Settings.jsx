@@ -93,9 +93,7 @@ export default function Settings() {
     { path: "profile", label: "Profile" },
     { path: "calendar", label: "Calendar" },
     { path: "security", label: "Security Center" },
-    ...(isManager ? [{ path: "billing", label: "Billing" }] : []),
-    { path: "support", label: "Support" },
-    { path: "legal", label: "Legal" },
+    ...(isManager ? [{ path: "color-scheme", label: "Edit Color Scheme" }] : []),
   ];
 
   return (

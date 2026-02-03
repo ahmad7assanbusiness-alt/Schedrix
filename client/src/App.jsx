@@ -81,6 +81,7 @@ import Security from "./pages/settings/Security.jsx";
 import Billing from "./pages/settings/Billing.jsx";
 import Support from "./pages/settings/Support.jsx";
 import Legal from "./pages/settings/Legal.jsx";
+import ColorScheme from "./pages/settings/ColorScheme.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -301,6 +302,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="calendar" element={<CalendarSettings />} />
             <Route path="security" element={<Security />} />
+            <Route path="color-scheme" element={<ColorScheme />} />
             <Route path="billing" element={<Billing />} />
             <Route path="support" element={<Support />} />
             <Route path="legal" element={<Legal />} />

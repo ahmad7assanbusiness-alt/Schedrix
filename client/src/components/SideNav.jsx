@@ -218,8 +218,6 @@ export default function SideNav({ onLogout, isMobile = false, isOpen = false, on
 
   const settingsNavItems = [
     { path: "/dashboard/settings/profile", label: "Profile", icon: "👤" },
-    { path: "/dashboard/settings/calendar", label: "Calendar", icon: "📆" },
-    { path: "/dashboard/settings/security", label: "Security Center", icon: "🔒" },
     { path: "/dashboard/settings/billing", label: "Billing", icon: "💳" },
     { path: "/dashboard/settings/support", label: "Support", icon: "💬" },
     { path: "/dashboard/settings/legal", label: "Legal", icon: "⚖️" },
