@@ -211,28 +211,87 @@ export default function ColorPicker({ colorScheme, onChange }) {
 
       <div style={{ marginTop: "var(--spacing-xl)" }}>
         <div style={styles.label}>Customize Colors</div>
-        {Object.entries(customColors).map(([key, value]) => (
-          <div key={key} style={styles.colorGroup}>
-            <div style={styles.label}>{getColorLabel(key)}</div>
-            <div style={styles.colorRow}>
-              <input
-                type="color"
-                value={value}
-                onChange={(e) => handleColorChange(key, e.target.value)}
-                style={styles.colorInput}
-              />
-              <div
-                style={{
-                  ...styles.colorPreview,
-                  background: value,
-                  color: key === "tabBackground" ? "var(--text-primary)" : "white",
-                }}
-              >
-                {value}
-              </div>
+        {Object.entries(customColors).map(([key, value]) => {
+          // Skip color input for pageBackground if it's a gradient
+          const isGradient = key === "pageBackground" && value.includes("gradient");
+          
+          return (
+            <div key={key} style={styles.colorGroup}>
+              <div style={styles.label}>{getColorLabel(key)}</div>
+              {isGradient ? (
+                <div style={styles.colorRow}>
+                  <div
+                    style={{
+                      ...styles.colorPreview,
+                      background: value,
+                      width: "100%",
+                      color: "white",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    {value}
+                  </div>
+                  <button
+                    onClick={() => {
+                      // Extract first color from gradient or use primary
+                      const firstColor = customColors.primary;
+                      handleColorChange(key, firstColor);
+                    }}
+                    style={{
+                      padding: "var(--spacing-sm) var(--spacing-md)",
+                      borderRadius: "var(--radius-md)",
+                      border: "2px solid var(--gray-300)",
+                      background: "var(--bg-primary)",
+                      cursor: "pointer",
+                      fontSize: "var(--font-size-sm)",
+                      marginLeft: "var(--spacing-sm)",
+                    }}
+                  >
+                    Use Solid Color
+                  </button>
+                </div>
+              ) : (
+                <div style={styles.colorRow}>
+                  <input
+                    type="color"
+                    value={value.startsWith("#") ? value : "#6366f1"}
+                    onChange={(e) => handleColorChange(key, e.target.value)}
+                    style={styles.colorInput}
+                  />
+                  <div
+                    style={{
+                      ...styles.colorPreview,
+                      background: value,
+                      color: key === "tabBackground" ? "var(--text-primary)" : "white",
+                    }}
+                  >
+                    {value}
+                  </div>
+                  {key === "pageBackground" && !value.includes("gradient") && (
+                    <button
+                      onClick={() => {
+                        // Create gradient from primary and secondary
+                        const gradient = `linear-gradient(135deg, ${customColors.primary} 0%, ${customColors.secondary} 100%)`;
+                        handleColorChange(key, gradient);
+                      }}
+                      style={{
+                        padding: "var(--spacing-sm) var(--spacing-md)",
+                        borderRadius: "var(--radius-md)",
+                        border: "2px solid var(--gray-300)",
+                        background: "var(--bg-primary)",
+                        cursor: "pointer",
+                        fontSize: "var(--font-size-sm)",
+                        marginLeft: "var(--spacing-sm)",
+                      }}
+                    >
+                      Use Gradient
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
