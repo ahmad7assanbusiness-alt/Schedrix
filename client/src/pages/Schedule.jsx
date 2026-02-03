@@ -111,6 +111,11 @@ const styles = {
     background: "var(--bg-primary)",
     color: "var(--text-primary)",
     cursor: "pointer",
+    appearance: "auto",
+    WebkitAppearance: "menulist",
+    MozAppearance: "menulist",
+    zIndex: 1,
+    position: "relative",
   },
   submitButton: {
     width: "100%",
@@ -500,6 +505,7 @@ export default function Schedule() {
 
   useEffect(() => {
     loadSchedules();
+    loadTemplates();
   }, []);
 
   async function loadSchedules() {
@@ -508,6 +514,15 @@ export default function Schedule() {
       setSchedules(data);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function loadTemplates() {
+    try {
+      const data = await api.get("/templates");
+      setTemplates(data);
+    } catch (err) {
+      console.error("Failed to load templates:", err);
     }
   }
 
