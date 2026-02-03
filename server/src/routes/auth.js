@@ -531,6 +531,37 @@ router.put("/profile", authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /auth/color-scheme - Update user's personal color scheme
+router.put("/color-scheme", authMiddleware, async (req, res) => {
+  try {
+    const { colorScheme } = req.body;
+
+    if (!colorScheme) {
+      return res.status(400).json({ error: "Color scheme is required" });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { colorScheme },
+    });
+
+    res.json({
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        businessId: updatedUser.businessId,
+        onboardingCompleted: updatedUser.onboardingCompleted,
+        colorScheme: updatedUser.colorScheme,
+      },
+    });
+  } catch (error) {
+    console.error("Update color scheme error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // PUT /auth/change-password - Change user password
 router.put("/change-password", authMiddleware, async (req, res) => {
   try {
