@@ -361,7 +361,9 @@ export default function AvailabilitySubmit() {
         requestId: request.id,
         entries: entriesArray,
       });
-      navigate("/dashboard");
+      // Redirect based on user role
+      const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
+      navigate(isManager ? "/dashboard" : "/employee/dashboard");
     } catch (err) {
       setError(err.message || "Failed to submit availability");
     } finally {

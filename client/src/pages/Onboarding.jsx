@@ -5,6 +5,13 @@ import { api } from "../api/client.js";
 import ColorPicker from "../components/ColorPicker.jsx";
 import "../index.css";
 
+// Helper function to get dashboard path based on user role
+function getDashboardPath(user) {
+  if (!user) return "/dashboard";
+  const isManager = user.role === "OWNER" || user.role === "MANAGER";
+  return isManager ? "/dashboard" : "/employee/dashboard";
+}
+
 const styles = {
   page: {
     minHeight: "100vh",
@@ -214,11 +221,13 @@ export default function Onboarding() {
       
       // Reload user data to get updated onboardingCompleted status
       // This ensures the OnboardingCheck component recognizes the change
-      window.location.href = "/dashboard";
+      const dashboardPath = getDashboardPath(user);
+      window.location.href = dashboardPath;
     } catch (err) {
       console.error("Failed to complete onboarding:", err);
       // Still navigate to dashboard even if saving fails
-      window.location.href = "/dashboard";
+      const dashboardPath = getDashboardPath(user);
+      window.location.href = dashboardPath;
     } finally {
       setLoading(false);
     }
@@ -235,11 +244,13 @@ export default function Onboarding() {
       
       // Reload user data to get updated onboardingCompleted status
       // This ensures the OnboardingCheck component recognizes the change
-      window.location.href = "/dashboard";
+      const dashboardPath = getDashboardPath(user);
+      window.location.href = dashboardPath;
     } catch (err) {
       console.error("Failed to skip onboarding:", err);
       // Still navigate to dashboard even if saving fails
-      window.location.href = "/dashboard";
+      const dashboardPath = getDashboardPath(user);
+      window.location.href = dashboardPath;
     } finally {
       setLoading(false);
     }

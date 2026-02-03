@@ -211,9 +211,9 @@ export default function SideNav({ onLogout, isMobile = false, isOpen = false, on
 
   const mainNavItems = [
     { path: "/dashboard", label: "Dashboard", icon: "📊" },
-    { path: "/schedule", label: "Schedule Builder", icon: "📅" },
-    { path: "/templates", label: "Templates", icon: "📋" },
-    { path: "/employees", label: "Employees", icon: "👥" },
+    { path: "/dashboard/schedule", label: "Schedule Builder", icon: "📅" },
+    { path: "/dashboard/templates", label: "Templates", icon: "📋" },
+    { path: "/dashboard/employees", label: "Employees", icon: "👥" },
   ];
 
   const settingsNavItems = [

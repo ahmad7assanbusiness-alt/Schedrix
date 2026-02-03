@@ -196,6 +196,7 @@ export default function CompleteOwnerRegistration() {
         localStorage.setItem("business", JSON.stringify(business));
       }
       // Longer delay for mobile browsers to ensure persistence
+      // CompleteOwnerRegistration is always for owners, so redirect to /dashboard
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 300);
