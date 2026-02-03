@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../auth/useAuth.js";
 import "../index.css";
@@ -82,12 +82,18 @@ const styles = {
 
 export default function Settings() {
   const { user } = useAuth();
+  const location = useLocation();
   const [isIphone, setIsIphone] = useState(false);
   const isManager = user?.role === "OWNER" || user?.role === "MANAGER";
 
   useEffect(() => {
     setIsIphone(isIphoneSafari());
   }, []);
+
+  // Hide inner menu for billing, support, and legal pages
+  const hideInnerMenu = location.pathname.includes("/billing") || 
+                        location.pathname.includes("/support") || 
+                        location.pathname.includes("/legal");
   
   const settingsPages = [
     { path: "profile", label: "Profile" },
@@ -104,7 +110,7 @@ export default function Settings() {
       </div>
 
       <div style={styles.content}>
-        {!isIphone && (
+        {!isIphone && !hideInnerMenu && (
           <aside style={styles.sidebar}>
             <nav style={styles.nav}>
               {settingsPages.map((page) => {
@@ -127,7 +133,7 @@ export default function Settings() {
           </aside>
         )}
 
-        <main style={isIphone ? styles.mainFullWidth : styles.main}>
+        <main style={(isIphone || hideInnerMenu) ? styles.mainFullWidth : styles.main}>
           <Outlet />
         </main>
       </div>
