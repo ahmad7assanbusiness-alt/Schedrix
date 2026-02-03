@@ -468,19 +468,14 @@ router.post("/complete-onboarding", authMiddleware, async (req, res) => {
   try {
     const { calendarIntegrations, colorScheme } = req.body;
 
-    // Update user onboarding status
+    // Update user onboarding status and save color scheme to user
     await prisma.user.update({
       where: { id: req.user.id },
-      data: { onboardingCompleted: true },
+      data: {
+        onboardingCompleted: true,
+        ...(colorScheme && { colorScheme }),
+      },
     });
-
-    // Save color scheme to business if provided
-    if (colorScheme && req.user.businessId) {
-      await prisma.business.update({
-        where: { id: req.user.businessId },
-        data: { colorScheme },
-      });
-    }
 
     // In the future, save calendar integration preferences here
     // For now, we just mark onboarding as complete
