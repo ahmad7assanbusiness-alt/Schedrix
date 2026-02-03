@@ -52,14 +52,14 @@ const styles = {
 };
 
 export default function ColorScheme() {
-  const { business } = useAuth();
+  const { user, updateUser } = useAuth();
   const [colorScheme, setColorScheme] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
-    if (business?.colorScheme) {
-      setColorScheme(business.colorScheme);
+    if (user?.colorScheme) {
+      setColorScheme(user.colorScheme);
     } else {
       // Default color scheme
       setColorScheme({
@@ -71,19 +71,19 @@ export default function ColorScheme() {
         
       });
     }
-  }, [business]);
+  }, [user]);
 
   async function handleSave() {
     setLoading(true);
     setMessage(null);
 
     try {
-      const updatedBusiness = await api.put("/business/color-scheme", { colorScheme });
+      const { user: updatedUser } = await api.put("/auth/color-scheme", { colorScheme });
       setMessage({ type: "success", text: "Color scheme saved successfully! The changes will be applied immediately." });
       
-      // Update business in localStorage
-      if (updatedBusiness) {
-        localStorage.setItem("business", JSON.stringify(updatedBusiness));
+      // Update user in localStorage and auth context
+      if (updatedUser) {
+        updateUser(updatedUser);
         // Trigger a page reload to apply the new colors
         setTimeout(() => {
           window.location.reload();
@@ -100,7 +100,7 @@ export default function ColorScheme() {
     <div>
       <h2 style={styles.title}>Edit Color Scheme</h2>
       <p style={styles.subtitle}>
-        Customize your app's colors to match your brand. Changes will be applied immediately.
+        Customize your personal color scheme. Choose from presets or create your own custom colors. Changes will be applied immediately.
       </p>
       
       {colorScheme && (

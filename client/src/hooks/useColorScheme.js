@@ -2,11 +2,11 @@ import { useEffect } from "react";
 import { useAuth } from "../auth/useAuth.js";
 
 export function useColorScheme() {
-  const { business } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (business?.colorScheme) {
-      const colors = business.colorScheme;
+    if (user?.colorScheme) {
+      const colors = user.colorScheme;
       
       // Apply colors to CSS variables
       const root = document.documentElement;
@@ -52,7 +52,7 @@ export function useColorScheme() {
       root.style.removeProperty("--icon-color");
       root.style.removeProperty("--page-background");
     }
-  }, [business?.colorScheme]);
+  }, [user?.colorScheme]);
 }
 
 // Helper function to darken a color
