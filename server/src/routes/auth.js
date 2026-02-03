@@ -466,13 +466,21 @@ router.post("/join", async (req, res) => {
 // POST /auth/complete-onboarding - Mark onboarding as complete
 router.post("/complete-onboarding", authMiddleware, async (req, res) => {
   try {
-    const { calendarIntegrations } = req.body;
+    const { calendarIntegrations, colorScheme } = req.body;
 
     // Update user onboarding status
     await prisma.user.update({
       where: { id: req.user.id },
       data: { onboardingCompleted: true },
     });
+
+    // Save color scheme to business if provided
+    if (colorScheme && req.user.businessId) {
+      await prisma.business.update({
+        where: { id: req.user.businessId },
+        data: { colorScheme },
+      });
+    }
 
     // In the future, save calendar integration preferences here
     // For now, we just mark onboarding as complete
@@ -639,6 +647,7 @@ router.get("/me", authMiddleware, async (req, res) => {
             id: user.business.id,
             name: user.business.name,
             joinCode: user.business.joinCode,
+            colorScheme: user.business.colorScheme,
           }
         : null,
     });

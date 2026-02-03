@@ -62,8 +62,8 @@ const styles = {
     fontWeight: 500,
   },
   navLinkActive: {
-    background: "var(--primary-light)",
-    color: "var(--primary)",
+    background: "var(--tab-background, var(--primary-light))",
+    color: "var(--icon-color, var(--primary))",
     fontWeight: 600,
   },
   navLinkHover: {

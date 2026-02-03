@@ -7,6 +7,7 @@ try {
 // #endregion
 import { useAuth } from "./auth/useAuth.js";
 import { api } from "./api/client.js";
+import { useColorScheme } from "./hooks/useColorScheme.js";
 import NotificationPrompt from "./components/NotificationPrompt.jsx";
 import Welcome from "./pages/Welcome.jsx";
 // #region agent log
@@ -244,6 +245,10 @@ function App() {
     fetch('http://127.0.0.1:7242/ingest/fb733bfc-26f5-487b-8435-b59480da3071',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:242',message:'App component rendering',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
   } catch(e) {}
   // #endregion
+  
+  // Apply custom color scheme
+  useColorScheme();
+  
   return (
     <BrowserRouter>
       <NotificationPrompt />
