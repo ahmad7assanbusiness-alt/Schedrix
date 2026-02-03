@@ -36,6 +36,10 @@ export function useColorScheme() {
       if (colors.iconColor) {
         root.style.setProperty("--icon-color", colors.iconColor);
       }
+      
+      if (colors.pageBackground) {
+        root.style.setProperty("--page-background", colors.pageBackground);
+      }
     } else {
       // Reset to defaults if no color scheme
       const root = document.documentElement;
@@ -46,6 +50,7 @@ export function useColorScheme() {
       root.style.removeProperty("--accent");
       root.style.removeProperty("--tab-background");
       root.style.removeProperty("--icon-color");
+      root.style.removeProperty("--page-background");
     }
   }, [business?.colorScheme]);
 }
