@@ -173,13 +173,13 @@ export default function Dashboard() {
       description: "Create and manage availability requests for your team",
     },
     {
-      to: "/schedule",
+      to: "/dashboard/schedule",
       icon: "📊",
       title: "Schedule Builder",
       description: "Build and publish schedules for your team",
     },
     {
-      to: "/employees",
+      to: "/dashboard/employees",
       icon: "👥",
       title: "Employees",
       description: "Manage your team members",

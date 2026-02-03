@@ -366,15 +366,6 @@ function App() {
           }
         />
         
-        {/* Dashboard redirect - route employees to employee layout, managers to manager layout */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardRedirect />
-            </ProtectedRoute>
-          }
-        />
         <Route path="/" element={<Navigate to="/welcome" replace />} />
       </Routes>
     </BrowserRouter>
