@@ -216,8 +216,6 @@ export default function EmployeeSideNav({ onLogout, isMobile = false, isOpen = f
 
   const settingsNavItems = [
     { path: "/employee/settings/profile", label: "Profile", icon: "👤" },
-    { path: "/employee/settings/calendar", label: "Calendar", icon: "📆" },
-    { path: "/employee/settings/security", label: "Security Center", icon: "🔒" },
     { path: "/employee/settings/support", label: "Support", icon: "💬" },
     { path: "/employee/settings/legal", label: "Legal", icon: "⚖️" },
   ];
