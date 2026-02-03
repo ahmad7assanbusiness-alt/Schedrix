@@ -224,7 +224,7 @@ export default function EmployeeSideNav({ onLogout, isMobile = false, isOpen = f
 
   const isActive = (path) => {
     if (path === "/employee/dashboard") {
-      return location.pathname === "/employee/dashboard" || location.pathname === "/dashboard";
+      return location.pathname === "/employee/dashboard";
     }
     if (path.startsWith("/employee/settings")) {
       // For settings, check exact match or if it's the specific settings page
