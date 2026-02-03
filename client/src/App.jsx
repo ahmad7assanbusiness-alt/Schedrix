@@ -329,6 +329,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="calendar" element={<CalendarSettings />} />
             <Route path="security" element={<Security />} />
+            <Route path="color-scheme" element={<ColorScheme />} />
             <Route path="support" element={<Support />} />
             <Route path="legal" element={<Legal />} />
           </Route>
