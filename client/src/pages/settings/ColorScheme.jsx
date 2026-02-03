@@ -69,7 +69,7 @@ export default function ColorScheme() {
         accent: "#ec4899",
         tabBackground: "#f3f4f6",
         iconColor: "#6366f1",
-        pageBackground: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        
       });
     }
   }, [business]);
