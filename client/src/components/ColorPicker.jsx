@@ -93,6 +93,7 @@ const COLOR_PRESETS = [
     accent: "#ec4899",
     tabBackground: "#f3f4f6",
     iconColor: "#6366f1",
+    pageBackground: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
   },
   {
     name: "Ocean",
@@ -101,6 +102,7 @@ const COLOR_PRESETS = [
     accent: "#3b82f6",
     tabBackground: "#e0f2fe",
     iconColor: "#0ea5e9",
+    pageBackground: "linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)",
   },
   {
     name: "Forest",
@@ -109,6 +111,7 @@ const COLOR_PRESETS = [
     accent: "#34d399",
     tabBackground: "#d1fae5",
     iconColor: "#10b981",
+    pageBackground: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
   },
   {
     name: "Sunset",
@@ -117,6 +120,7 @@ const COLOR_PRESETS = [
     accent: "#f97316",
     tabBackground: "#fef3c7",
     iconColor: "#f59e0b",
+    pageBackground: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
   },
   {
     name: "Purple",
@@ -125,6 +129,7 @@ const COLOR_PRESETS = [
     accent: "#c084fc",
     tabBackground: "#f3e8ff",
     iconColor: "#a855f7",
+    pageBackground: "linear-gradient(135deg, #a855f7 0%, #9333ea 100%)",
   },
   {
     name: "Rose",
@@ -133,6 +138,7 @@ const COLOR_PRESETS = [
     accent: "#f43f5e",
     tabBackground: "#ffe4e6",
     iconColor: "#e11d48",
+    pageBackground: "linear-gradient(135deg, #e11d48 0%, #be123c 100%)",
   },
 ];
 
@@ -168,6 +174,7 @@ export default function ColorPicker({ colorScheme, onChange }) {
       accent: "Accent Color",
       tabBackground: "Tab Background",
       iconColor: "Icon Color",
+      pageBackground: "Page Background",
     };
     return labels[key] || key;
   };
