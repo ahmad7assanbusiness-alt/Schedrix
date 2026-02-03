@@ -5,6 +5,7 @@ import { z } from "zod";
 import dns from "dns";
 import { promisify } from "util";
 import { OAuth2Client } from "google-auth-library";
+import nodemailer from "nodemailer";
 import prisma from "../prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { initializeBusinessDatabase } from "../db/schemaManager.js";
@@ -562,30 +563,153 @@ router.put("/color-scheme", authMiddleware, async (req, res) => {
   }
 });
 
-// PUT /auth/change-password - Change user password
-router.put("/change-password", authMiddleware, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
+// In-memory store for verification codes (in production, use Redis or database)
+const verificationCodes = new Map(); // { userId: { code, expiresAt, verified } }
 
-    // Validate password requirements
-    const passwordError = validatePassword(newPassword);
-    if (passwordError) {
-      return res.status(400).json({ error: passwordError });
+// Generate verification code
+function generateVerificationCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+}
+
+// Email transporter setup
+function getEmailTransporter() {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("SMTP not configured. Email sending will fail.");
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: process.env.SMTP_PORT === "465",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
+
+// POST /auth/request-password-verification - Send verification code
+router.post("/request-password-verification", authMiddleware, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user || !user.email) {
+      return res.status(400).json({ error: "User email not found" });
     }
 
-    // Get current user with password
+    if (!user.password) {
+      return res.status(400).json({ error: "Password change not available for Google accounts" });
+    }
+
+    const code = generateVerificationCode();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+    verificationCodes.set(req.user.id, { code, expiresAt, verified: false });
+
+    // Send email
+    const transporter = getEmailTransporter();
+    if (!transporter) {
+      // In development, log the code instead
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[DEV] Verification code for ${user.email}: ${code}`);
+        return res.json({ success: true, message: "Verification code sent (check console in dev mode)" });
+      }
+      return res.status(500).json({ error: "Email service not configured" });
+    }
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: user.email,
+      subject: "Password Change Verification Code - Opticore",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6366f1;">Password Change Verification</h2>
+          <p>Your verification code is:</p>
+          <div style="background: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0; border-radius: 8px;">
+            ${code}
+          </div>
+          <p>This code will expire in 15 minutes.</p>
+          <p style="color: #6b7280; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    res.json({ success: true, message: "Verification code sent to your email" });
+  } catch (error) {
+    console.error("Request verification error:", error);
+    res.status(500).json({ error: "Failed to send verification code" });
+  }
+});
+
+// POST /auth/verify-password-code - Verify code
+router.post("/verify-password-code", authMiddleware, async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: "Verification code is required" });
+    }
+
+    const stored = verificationCodes.get(req.user.id);
+    if (!stored) {
+      return res.status(400).json({ error: "No verification code found. Please request a new one." });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      verificationCodes.delete(req.user.id);
+      return res.status(400).json({ error: "Verification code expired. Please request a new one." });
+    }
+
+    if (stored.code !== code) {
+      return res.status(400).json({ error: "Invalid verification code" });
+    }
+
+    // Mark as verified
+    verificationCodes.set(req.user.id, { ...stored, verified: true });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Verify code error:", error);
+    res.status(500).json({ error: "Failed to verify code" });
+  }
+});
+
+// PUT /auth/change-password - Change user password (requires verification)
+router.put("/change-password", authMiddleware, async (req, res) => {
+  try {
+    const { verificationCode, newPassword } = req.body;
+
+    // Check if user has password (not Google user)
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
     });
 
     if (!user || !user.password) {
-      return res.status(400).json({ error: "User not found or no password set" });
+      return res.status(400).json({ error: "Password change not available for Google accounts" });
     }
 
-    // Verify current password
-    const isValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isValid) {
-      return res.status(401).json({ error: "Current password is incorrect" });
+    // Verify code
+    const stored = verificationCodes.get(req.user.id);
+    if (!stored || !stored.verified) {
+      return res.status(400).json({ error: "Please verify your email first" });
+    }
+
+    if (stored.code !== verificationCode) {
+      return res.status(400).json({ error: "Invalid verification code" });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      verificationCodes.delete(req.user.id);
+      return res.status(400).json({ error: "Verification code expired. Please request a new one." });
+    }
+
+    // Validate password requirements
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // Hash new password
@@ -596,6 +720,9 @@ router.put("/change-password", authMiddleware, async (req, res) => {
       where: { id: req.user.id },
       data: { password: hashedPassword },
     });
+
+    // Clear verification code
+    verificationCodes.delete(req.user.id);
 
     res.json({ success: true });
   } catch (error) {
@@ -669,6 +796,7 @@ router.get("/me", authMiddleware, async (req, res) => {
         notificationPermission: user.notificationPermission || "pending",
         notificationPrompted: user.notificationPrompted || false,
         colorScheme: user.colorScheme,
+        hasPassword: !!user.password, // Indicate if user has password (not Google login)
       },
       business: user.business
         ? {

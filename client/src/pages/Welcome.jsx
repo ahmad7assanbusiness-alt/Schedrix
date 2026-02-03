@@ -668,7 +668,11 @@ export default function Welcome() {
                   }
                 }}
               >
-                <span>🔵</span>
+                <img 
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                  alt="Google"
+                  style={{ width: "20px", height: "20px" }}
+                />
                 <span>Continue with Google</span>
               </button>
               
@@ -808,7 +812,11 @@ export default function Welcome() {
                   }
                 }}
               >
-                <span>🔵</span>
+                <img 
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                  alt="Google"
+                  style={{ width: "20px", height: "20px" }}
+                />
                 <span>Continue with Google</span>
               </button>
               
@@ -910,7 +918,11 @@ export default function Welcome() {
                   }
                 }}
               >
-                <span>🔵</span>
+                <img 
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                  alt="Google"
+                  style={{ width: "20px", height: "20px" }}
+                />
                 <span>Continue with Google</span>
               </button>
               
@@ -1072,7 +1084,11 @@ export default function Welcome() {
                   }
                 }}
               >
-                <span>🔵</span>
+                <img 
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                  alt="Google"
+                  style={{ width: "20px", height: "20px" }}
+                />
                 <span>Continue with Google</span>
               </button>
               
