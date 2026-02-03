@@ -527,6 +527,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
         role: updatedUser.role,
         businessId: updatedUser.businessId,
         onboardingCompleted: updatedUser.onboardingCompleted,
+        colorScheme: updatedUser.colorScheme,
       },
     });
   } catch (error) {
@@ -641,13 +642,13 @@ router.get("/me", authMiddleware, async (req, res) => {
         onboardingCompleted: user.onboardingCompleted,
         notificationPermission: user.notificationPermission || "pending",
         notificationPrompted: user.notificationPrompted || false,
+        colorScheme: user.colorScheme,
       },
       business: user.business
         ? {
             id: user.business.id,
             name: user.business.name,
             joinCode: user.business.joinCode,
-            colorScheme: user.business.colorScheme,
           }
         : null,
     });

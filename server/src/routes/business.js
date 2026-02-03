@@ -24,7 +24,6 @@ router.get("/", authMiddleware, managerOnly, async (req, res) => {
       name: business.name,
       joinCode: business.joinCode,
       subscriptionStatus: business.subscriptionStatus,
-      colorScheme: business.colorScheme,
     });
   } catch (error) {
     console.error("Business error:", error);
@@ -58,36 +57,6 @@ router.get("/employees", authMiddleware, managerOnly, async (req, res) => {
   }
 });
 
-// PUT /business/color-scheme - Update business color scheme
-router.put("/color-scheme", authMiddleware, async (req, res) => {
-  try {
-    if (!req.user.businessId) {
-      return res.status(404).json({ error: "Business not found" });
-    }
-
-    const { colorScheme } = req.body;
-
-    if (!colorScheme) {
-      return res.status(400).json({ error: "Color scheme is required" });
-    }
-
-    const business = await prisma.business.update({
-      where: { id: req.user.businessId },
-      data: { colorScheme },
-    });
-
-    res.json({
-      id: business.id,
-      name: business.name,
-      joinCode: business.joinCode,
-      subscriptionStatus: business.subscriptionStatus,
-      colorScheme: business.colorScheme,
-    });
-  } catch (error) {
-    console.error("Update color scheme error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 export default router;
 

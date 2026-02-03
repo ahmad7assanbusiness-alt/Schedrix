@@ -61,6 +61,7 @@ model User {
   onboardingCompleted Boolean  @default(false)
   notificationPermission String? @default("pending") // "pending", "granted", "denied"
   notificationPrompted   Boolean @default(false)
+  colorScheme         Json?    // User's personal color scheme {primary, secondary, accent, tabBackground, iconColor, pageBackground}
   createdAt           DateTime @default(now())
 
   business             Business?                    @relation(fields: [businessId], references: [id])
