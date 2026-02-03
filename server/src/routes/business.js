@@ -24,6 +24,7 @@ router.get("/", authMiddleware, managerOnly, async (req, res) => {
       name: business.name,
       joinCode: business.joinCode,
       subscriptionStatus: business.subscriptionStatus,
+      colorScheme: business.colorScheme,
     });
   } catch (error) {
     console.error("Business error:", error);

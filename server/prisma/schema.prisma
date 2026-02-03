@@ -41,6 +41,9 @@ model Business {
   stripeCustomerId     String?  @unique
   stripeSubscriptionId String?  @unique
   subscriptionPlanId   String?  // e.g., "free", "pro", "enterprise"
+  
+  // Color scheme customization
+  colorScheme          Json?    // {primary: string, secondary: string, accent: string, tabBackground: string, iconColor: string}
 
   users                User[]
   availabilityRequests AvailabilityRequest[]

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth.js";
 import { api } from "../api/client.js";
+import ColorPicker from "../components/ColorPicker.jsx";
 import "../index.css";
 
 const styles = {
@@ -188,9 +189,10 @@ export default function Onboarding() {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCalendars, setSelectedCalendars] = useState([]);
+  const [colorScheme, setColorScheme] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const totalSteps = 2;
+  const totalSteps = 3;
 
   function toggleCalendar(calendarId) {
     setSelectedCalendars((prev) =>
@@ -203,10 +205,11 @@ export default function Onboarding() {
   async function handleComplete() {
     setLoading(true);
     try {
-      // Save selected calendar integrations (for now, just mark onboarding as complete)
+      // Save selected calendar integrations and color scheme
       // In the future, this would trigger OAuth flows for each selected calendar
       await api.post("/auth/complete-onboarding", {
         calendarIntegrations: selectedCalendars,
+        colorScheme: colorScheme,
       });
       
       // Reload user data to get updated onboardingCompleted status
@@ -227,6 +230,7 @@ export default function Onboarding() {
       // Mark onboarding as complete without calendar integrations
       await api.post("/auth/complete-onboarding", {
         calendarIntegrations: [],
+        colorScheme: colorScheme || null,
       });
       
       // Reload user data to get updated onboardingCompleted status
@@ -253,7 +257,7 @@ export default function Onboarding() {
                 ...(currentStep > 1 ? styles.stepLineActive : {}),
               }}
             />
-            {[1, 2].map((step) => (
+            {[1, 2, 3].map((step) => (
               <div key={step} style={styles.step}>
                 <div
                   style={{
@@ -268,7 +272,7 @@ export default function Onboarding() {
                   {step < currentStep ? "✓" : step}
                 </div>
                 <div style={styles.stepLabel}>
-                  {step === 1 ? "Welcome" : "Connect Calendar"}
+                  {step === 1 ? "Welcome" : step === 2 ? "Colors" : "Connect Calendar"}
                 </div>
               </div>
             ))}
@@ -299,6 +303,33 @@ export default function Onboarding() {
           )}
 
           {currentStep === 2 && (
+            <div>
+              <h2 style={styles.title}>Customize Your Colors</h2>
+              <p style={styles.subtitle}>
+                Choose a color scheme that matches your brand (you can change this later)
+              </p>
+              <ColorPicker
+                colorScheme={colorScheme}
+                onChange={setColorScheme}
+              />
+              <div style={styles.buttonGroup}>
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  style={{ ...styles.button, ...styles.buttonSecondary }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  style={{ ...styles.button, ...styles.buttonPrimary }}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
             <div>
               <h2 style={styles.title}>Connect Your Calendar</h2>
               <p style={styles.subtitle}>
@@ -334,7 +365,7 @@ export default function Onboarding() {
               </div>
               <div style={styles.buttonGroup}>
                 <button
-                  onClick={() => setCurrentStep(1)}
+                  onClick={() => setCurrentStep(2)}
                   style={{ ...styles.button, ...styles.buttonSecondary }}
                 >
                   Back
